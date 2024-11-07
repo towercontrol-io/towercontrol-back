@@ -8,6 +8,7 @@
 - 400: the query is incorrect, parameter format is incorrect
 - 404: the query is incorrect, the passed element does not exist
 - 403: the rights are not sufficient to perform the action
+- 409: the creation failed as the document already exists
 - 418: (I'm a teapot) when a hacking scenario is detected
 - 425: (too early) when an async request result query comes until the end of computation or over quota API
 - 429: (too many requests) when the user has reached the limit of requests

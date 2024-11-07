@@ -36,6 +36,7 @@ public class ActionResult {
         BADREQUEST,        // bad request (400)
         NOTFOUND,          // not found (404)
         FORBIDDEN,         // forbidden (403)
+        EXISTS,            // already exists (409)
         TEAPOT,            // I'm a teapot (418)
         TOO_EARLY,         // too early (425)
         TOO_MANY_REQUESTS, // too many requests (429)
@@ -157,6 +158,14 @@ public class ActionResult {
         ActionResult r = new ActionResult();
         r.setStatus(ACTION_RESULT.FORBIDDEN);
         r.setStatus_code(403);
+        r.setMessage(m);
+        return r;
+    }
+
+    public static ActionResult EXISTS(String m){
+        ActionResult r = new ActionResult();
+        r.setStatus(ACTION_RESULT.EXISTS);
+        r.setStatus_code(409);
         r.setMessage(m);
         return r;
     }

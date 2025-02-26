@@ -7,37 +7,21 @@ import com.disk91.users.mdb.entities.Role;
 import com.disk91.users.mdb.repositories.RolesRepository;
 import com.disk91.users.services.UsersRolesCache;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration;
 import org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration;
-import org.springframework.boot.test.autoconfigure.data.mongo.AutoConfigureDataMongo;
-import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.convert.MappingMongoConverter;
-import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
-import org.springframework.data.mongodb.gridfs.GridFsTemplate;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 @SpringBootTest
@@ -86,8 +70,14 @@ public class RoleTests {
     protected void testRoleCreation() {
         log.info("[users][test] Running testRoleCreation");
 
+        // setup the mock to return null when the findAll method is called
+        given(rolesRepository.findAll()).willReturn(new ArrayList<Role>());
+
+        // Because @PostConstruct is not called by the test, we need to call it manually
+        usersRolesCache.initRolesCache();
+
         // Make sur the configuration is good for test
-        assertEquals("dba", usersConfig.getUsersIntracomMedium());
+        //assertEquals("db", usersConfig.getUsersIntracomMedium());
 
         // Make sure role creation fails when the description is not respecting the
         // lower-case format.

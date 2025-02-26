@@ -15,7 +15,12 @@ The project is organized in a modular way. Each module is a package and has its 
     - _ModNameEntityCache.java_ (entity cache ex UsersRolesCache.java)
   - api (rest api)
     - interfaces (api definition)
+    - security (public vs protected endpoints)
   - config (configuration)
+
+## Customization
+The custom directory contains specific customization project, it will have a sub package corresponding to the related custom 
+project. The directory structure under this package corresponds to the standard module structure.
 
 ## Rules
 - A service can only refer a Repository belonging to the same module

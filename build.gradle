@@ -27,12 +27,13 @@ bootJar {
 }
 
 dependencies {
+	compileOnly 'org.springframework.boot:spring-boot-starter-data-jpa'
+
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 	implementation 'org.springframework.boot:spring-boot-starter-mail'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
-	// implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	implementation group: 'org.eclipse.paho', name:'org.eclipse.paho.client.mqttv3', version: '1.2.5'
@@ -41,14 +42,20 @@ dependencies {
 	implementation group: 'org.springdoc', name: 'springdoc-openapi-ui', version: '1.6.15'
 	implementation group: 'org.bouncycastle', name: 'bcprov-jdk18on', version: '1.79'
 	implementation group: 'io.jsonwebtoken', name: 'jjwt-api', version: '0.12.5'
-	implementation group: 'org.flywaydb', name: 'flyway-core', version: '10.4.1'
 
-	runtimeOnly group: 'org.postgresql', name: 'postgresql', version: '42.7.2'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation group: 'org.flywaydb', name: 'flyway-core', version: '10.4.1'
+	implementation group: 'org.postgresql', name: 'postgresql', version: '42.7.2'
+
 	runtimeOnly group: 'io.jsonwebtoken', name: 'jjwt-impl', version: '0.12.5'
 	runtimeOnly group: 'io.jsonwebtoken', name: 'jjwt-jackson', version: '0.12.5'
 	runtimeOnly group: 'org.flywaydb', name: 'flyway-database-postgresql', version: '10.4.1'
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	//testImplementation group: 'com.opentable.components', name: 'otj-pg-embedded', version: '1.1.0'
+	testImplementation group: 'io.zonky.test', name: 'embedded-postgres', version: '2.1.0'
+	testImplementation group: 'io.zonky.test', name: 'embedded-database-spring-test', version: '2.6.0'
+
     //testImplementation group: 'de.flapdoodle.embed', name: 'de.flapdoodle.embed.mongo', version: '4.12.6'
 }
 

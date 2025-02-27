@@ -53,8 +53,8 @@ public class WebSecurityProfile {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // Allow internal api
                         .requestMatchers("/").permitAll()
-                        .requestMatchers("/internal/3.0/exit").permitAll()
-                        .requestMatchers("/internal/3.0/health").permitAll()
+                        .requestMatchers("/common/3.0/exit").permitAll()
+                        .requestMatchers("/common/3.0/health").permitAll()
 
                         // Authenticate all other apis
                         .anyRequest().authenticated())

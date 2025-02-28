@@ -11,7 +11,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 @EnableScheduling
-//@EnableWebMvc
+@EnableWebMvc
 @Configuration
 @EnableAsync
 @SpringBootApplication

@@ -17,6 +17,7 @@ The project is organized in a modular way. Each module is a package and has its 
     - interfaces (api definition)
     - security (public vs protected endpoints)
   - config (configuration)
+  - interfaces (data model out of datbase and APIs)
 
 ## Customization
 The custom directory contains specific customization project, it will have a sub package corresponding to the related custom 

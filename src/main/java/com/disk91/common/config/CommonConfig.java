@@ -35,14 +35,34 @@ public class CommonConfig {
     // ----------------------------------------------
     // Common setup
     // ----------------------------------------------
-
     @Value("${common.encryption.key:d5b504d560363cfe33890c4f5343f387}")
     protected String encryptionKey;
     public String getEncryptionKey() {
         return encryptionKey;
     }
 
+    // ----------------------------------------------
+    // Database setup
+    // ----------------------------------------------
+    @Value("${common.mongo.sharding.enabled:false}")
+    protected boolean mongoShardingEnabled;
+    public boolean isMongoShardingEnabled() {
+        return mongoShardingEnabled;
+    }
 
+    @Value("${common.mongo.database:itc}")
+    protected String mongoDatabase;
+    public String getMongoDatabase() {
+        return mongoDatabase;
+    }
 
+    // ----------------------------------------------
+    // Google Api
+    // ----------------------------------------------
+    @Value("${common.google.api.key:}")
+    protected String googleApiKey;
+    public String getGoogleApiKey() {
+        return googleApiKey;
+    }
 
 }

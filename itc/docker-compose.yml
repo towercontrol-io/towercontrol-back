@@ -1,5 +1,4 @@
 services:
-
   itc:
     image: disk91/itc
     container_name: itc
@@ -12,9 +11,18 @@ services:
       postgres:
         condition: service_started
     environment:
-      - QC_CHIRPSTACK_API_URL=1234
+      - QC_CHIRPSTACK_API_URL=
+      - COMMON_PSQL_USER=itc
+      - COMMON_PSQL_PASSWORD=itc-password
+      - COMMON_GOOGLE_API_KEY=
     ports:
       - 127.0.0.1:8091:8091
+    networks:
+      - public_net
+      - mongo_net
+      - monitoring_net
+    profiles:
+      - itc
     logging: &logs
       driver: "json-file"
       options:
@@ -22,7 +30,6 @@ services:
 
   ## ==============================================================
   ## Postgresql
-
   postgres:
     image: postgres:17-alpine
     restart: unless-stopped
@@ -30,6 +37,10 @@ services:
     volumes:
       - ./postgresql/configuration/postgresql/initdb:/docker-entrypoint-initdb.d
       - ./postgresql/data:/var/lib/postgresql/data
+    networks:
+      - public_net
+    profiles:
+      - itc
     environment:
       - POSTGRES_PASSWORD=root
       - PSQL_ITC_PASSWORD=itc-password
@@ -37,37 +48,36 @@ services:
 
   ## ==============================================================
   ## MongoDB - Sharding mode
-
   ## Router - get the traffic request
   mongo-router01:
-     image: mongo:8.0.5
-     container_name: mongo-router-01
-     command: mongos --port 27017 --configdb rs-config-server/mongo-configsvr01:27017,mongo-configsvr02:27017,mongo-configsvr03:27017 --bind_ip_all
-     healthcheck:
-       test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
-       interval: 10s
-       timeout: 5s
-       retries: 3
-       start_period: 30s
-     ports:
-       - 127.0.0.1:27120:27017
-     restart: always
-     volumes:
-       - ./mongo/scripts:/scripts
-       - ./mongo/data/router-01:/data/db
-       - ./mongo/configuration/router-01:/data/configdb
-     profiles:
-       - mongo
-     depends_on:
-       - mongo-configsvr01
-       - mongo-configsvr02
-       - mongo-configsvr03
-       - mongo-shard01a
-       - mongo-shard02a
-       - mongo-shard03a
-     networks:
-       - mongo_net
-     logging: *logs
+    image: mongo:8.0.5
+    container_name: mongo-router-01
+    command: mongos --port 27017 --configdb rs-config-server/mongo-configsvr01:27017,mongo-configsvr02:27017,mongo-configsvr03:27017 --bind_ip_all
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    ports:
+      - 127.0.0.1:27220:27017
+    restart: always
+    volumes:
+      - ./mongo/scripts:/scripts
+      - ./mongo/data/router-01:/data/db
+      - ./mongo/configuration/router-01:/data/configdb
+    profiles:
+      - mongo
+    depends_on:
+      - mongo-configsvr01
+      - mongo-configsvr02
+      - mongo-configsvr03
+      - mongo-shard01a
+      - mongo-shard02a
+      - mongo-shard03a
+    networks:
+      - mongo_net
+    logging: *logs
 
   mongo-router02:
      image: mongo:8.0.5
@@ -80,7 +90,7 @@ services:
        retries: 3
        start_period: 30s
      ports:
-       - 127.0.0.1:27121:27017
+       - 127.0.0.1:27221:27017
      restart: always
      volumes:
        - ./mongo/scripts:/scripts
@@ -259,6 +269,7 @@ networks:
             itc: 172.98.1.99
             prometheus: 172.98.1.97
             grafana: 172.98.1.95
+            postgres: 172.98.1.93
             #nginx: 172.98.1.94
   mongo_net:
     ipam:
@@ -285,6 +296,6 @@ networks:
           gateway: 172.98.3.254
           aux_addresses:
             itc: 172.98.3.99
-            prometheus: 172.99.3.97
-            #mongo_exporter: 172.99.3.96
-            grafana: 172.99.3.95
+            prometheus: 172.98.3.97
+            grafana: 172.98.3.95
+            #mongo_exporter: 172.98.3.96

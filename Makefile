@@ -1,6 +1,6 @@
-DOCKER_COMP_CMD=docker compose
-DOCKER_CMD=docker
 CONF_DIR=./itc_run
+DOCKER_CMD=docker
+DOCKER_COMP_CMD=docker compose
 
 .FORCE:
 
@@ -10,14 +10,15 @@ back: .FORCE
 setup_base: .FORCE
 	-mkdir $(CONF_DIR)
 	cp -R ./itc/* $(CONF_DIR)
-	chown nobody:nogroup $(CONF_DIR)/prometheus
-	chown 472:root $(CONF_DIR)/grafana
+	-sudo chown nobody:nogroup $(CONF_DIR)/prometheus
+	-sudo chown 472:root $(CONF_DIR)/grafana
 
 # If you have a problem running setup with missing X11 ...
 # this is related to docker login
 # run gpg2 --full-generate-key
 setup_shared: setup_base .FORCE
-	$(DOCKER_COMP_CMD) --profile mongo up -d
+	cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo up --force-recreate -d ; cd -
+	-sleep 10
 	$(DOCKER_CMD) exec mongo-config-01 sh -c "mongosh < /scripts/config-server"
 	$(DOCKER_CMD) exec shard-01-node-a sh -c "mongosh < /scripts/shard-01-server"
 	$(DOCKER_CMD) exec shard-02-node-a sh -c "mongosh < /scripts/shard-02-server"
@@ -25,17 +26,26 @@ setup_shared: setup_base .FORCE
 	-sleep 10
 	$(DOCKER_CMD) exec mongo-router-01 sh -c "mongosh < /scripts/router-server"
 	-sleep 10
-	$(DOCKER_COMP_CMD) --profile mongo stop
+	cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo stop ; cd -
 
-setup: setup_base .FORCE
+setup: setup_shared .FORCE
 
 clear-setup: stop
 	echo "Are you sure, this will delete all mongodb data ?"
 	read response
-	rm -rf $(CONF_DIR)/mongo
-	rm -rf $(CONF_DIR)/configuration/mongo
+	rm -rf $(CONF_DIR)/mongo/data
+	rm -rf $(CONF_DIR)/mongo/configuration
 
 build: back
 
 install: setup back
 
+start:
+	cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc up -d ; cd -
+
+start-clean:
+	$(DOCKER_CMD) network prune
+	cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc up --force-recreate -d ; cd -
+
+stop:
+	cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc stop ; cd -

@@ -10,6 +10,7 @@ back: .FORCE
 setup_base: .FORCE
 	-mkdir $(CONF_DIR)
 	cp -R ./itc/* $(CONF_DIR)
+	rm $(CONF_DIR)/postgresql/data/.empty
 	-sudo chown nobody:nogroup $(CONF_DIR)/prometheus
 	-sudo chown 472:root $(CONF_DIR)/grafana
 
@@ -38,7 +39,7 @@ clear-setup: stop
 
 build: back
 
-install: setup back
+install: setup_shared back
 
 start:
 	cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc up -d ; cd -

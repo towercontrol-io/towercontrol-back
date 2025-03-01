@@ -36,11 +36,12 @@ import java.util.ArrayList;
 
 @Document(collection = "users_users")
 @CompoundIndexes({
-        @CompoundIndex(name = "login", def = "{'login': 'hashed'}", unique = true),
+        @CompoundIndex(name = "login", def = "{'login': 'hashed'}"),
 })
 public class User implements CloneableObject<User> {
-    @Transient
-    private final Logger log = LoggerFactory.getLogger(this.getClass());
+
+   @Transient
+   private final Logger log = LoggerFactory.getLogger(this.getClass());
 
     @Id
     private String id;

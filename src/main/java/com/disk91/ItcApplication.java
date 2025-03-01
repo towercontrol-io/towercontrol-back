@@ -1,4 +1,4 @@
-package com.disk91.iot;
+package com.disk91;
 
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.ExitCodeGenerator;
@@ -15,15 +15,15 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 @Configuration
 @EnableAsync
 @SpringBootApplication
-public class IotApplication implements CommandLineRunner, ExitCodeGenerator {
+public class ItcApplication implements CommandLineRunner, ExitCodeGenerator {
 
     public static boolean requestingExitForStartupFailure = false;
 
     public static ApplicationContext context;
 
     public static void main(String[] args) {
-        context = SpringApplication.run(IotApplication.class, args);
-        if (IotApplication.requestingExitForStartupFailure) {
+        context = SpringApplication.run(ItcApplication.class, args);
+        if (ItcApplication.requestingExitForStartupFailure) {
             exit();
         }
     }

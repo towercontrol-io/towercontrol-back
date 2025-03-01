@@ -90,6 +90,7 @@ public class JWTAuthorizationFilter extends GenericFilterBean {
                                 }
                                 if (user == null) return null;
                                 // @TODO - Manage authenticated users
+                                log.error("### TOBE IMPLEMENTED - Manage authenticated users");
                                 return null;
                             }
                             log.error("Invalid type of headers");
@@ -111,6 +112,8 @@ public class JWTAuthorizationFilter extends GenericFilterBean {
             String user = claims.getSubject();
 
             // @TODO Manage Authenticated users
+            log.error("### TOBE IMPLEMENTED - Manage authenticated users");
+
             return;
         } catch (ExpiredJwtException x) {
             // Expired

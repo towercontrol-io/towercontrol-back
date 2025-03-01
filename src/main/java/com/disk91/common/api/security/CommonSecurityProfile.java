@@ -19,6 +19,8 @@
  */
 package com.disk91.common.api.security;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,12 +31,14 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled=true)
 @Configuration
-@Order(1)
-public class WebSecurityProfile {
+public class CommonSecurityProfile {
+
+    private final Logger log = LoggerFactory.getLogger(this.getClass());
 
     @Autowired
     private JWTAuthenticationProvider jwtAuthenticationProvider;
@@ -42,11 +46,14 @@ public class WebSecurityProfile {
     @Autowired
     private JWTAuthorizationFilter jwtAuthorizationFilter;
 
+    @Order(2)
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain commonFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(AbstractHttpConfigurer::disable)
+                .httpBasic(AbstractHttpConfigurer::disable)
+                .addFilterAfter(jwtAuthorizationFilter, BasicAuthenticationFilter.class)
                 .authenticationProvider(jwtAuthenticationProvider)
                 .authorizeHttpRequests((authz) -> authz
                         // Allow all OPTIONS
@@ -56,9 +63,15 @@ public class WebSecurityProfile {
                         .requestMatchers("/common/3.0/exit").permitAll()
                         .requestMatchers("/common/3.0/health").permitAll()
 
-                        // Authenticate all other apis
-                        .anyRequest().authenticated())
-        ;
+                        // swagger documentation
+                        .requestMatchers("/swagger-doc/**").permitAll()
+                        .requestMatchers("/v3/api-docs/**").permitAll()
+                        .requestMatchers("/webjars/**").permitAll()
+                        // prometheus
+                        .requestMatchers("/actuator/**").permitAll()
 
+                        // Authenticate all other apis
+                        .anyRequest().authenticated()
+                );
         return http.build();
     }}

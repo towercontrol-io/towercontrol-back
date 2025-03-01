@@ -1,5 +1,6 @@
 package com.disk91.iot;
 
+import com.disk91.ItcApplication;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,13 +16,13 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.test.context.ActiveProfiles;
 
 
-@SpringBootTest(classes = IotApplication.class)
+@SpringBootTest(classes = ItcApplication.class)
 @ActiveProfiles("test")
 @EnableAutoConfiguration(exclude={MongoAutoConfiguration.class, MongoDataAutoConfiguration.class})
 @ExtendWith(MockitoExtension.class)
 @PropertySource(value = {"file:configuration/common-test.properties"}, ignoreResourceNotFound = true)
 @AutoConfigureEmbeddedDatabase
-public class IotApplicationTests {
+public class ItcApplicationTests {
 
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 

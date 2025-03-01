@@ -16,9 +16,6 @@ import org.springframework.data.annotation.Transient;
 )
 public class Param implements CloneableObject<Param> {
 
-    @Transient
-    protected final Logger log = LoggerFactory.getLogger(this.getClass());
-
     @Id
     @Column(name = "param_key", nullable = false, unique = true)
     protected String paramKey;

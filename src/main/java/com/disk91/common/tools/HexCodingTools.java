@@ -94,5 +94,23 @@ public class HexCodingTools {
     }
 
 
+    /**
+     * Ensure a String is an HexString value lower of upper case
+     */
+    public static boolean isHexString(String s) {
+        return s.matches("^[0-9a-fA-F]+$");
+    }
+
+    /**
+     * Return a random hexString with the given size in char
+     */
+    public static String getRandomHexString(int size) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < size; i++) {
+            sb.append(hexArray[(int) (Math.random() * 16)]);
+        }
+        return sb.toString();
+    }
+
 
 }

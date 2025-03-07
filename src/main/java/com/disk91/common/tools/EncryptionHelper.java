@@ -96,13 +96,13 @@ public class EncryptionHelper {
             return null;
         }
 
-        byte[] _iv = HexCodingTools.getBytesFromInt(HexCodingTools.getIntArray(iv));
+        byte[] _iv = HexCodingTools.getBytesFromInt(HexCodingTools.getIntArrayFromHexString(iv));
 
         try {
             IvParameterSpec iv_ = new IvParameterSpec(_iv);
             SecretKeySpec skeySpec = new SecretKeySpec(
                     HexCodingTools.getBytesFromInt(
-                            HexCodingTools.getIntArray(
+                            HexCodingTools.getIntArrayFromHexString(
                                     encKey
                             )), "AES");
             Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
@@ -128,12 +128,12 @@ public class EncryptionHelper {
      */
     public String decrypt(String tobeDecrypted, String iv, String encKey) {
 
-        byte[] _iv = HexCodingTools.getBytesFromInt(HexCodingTools.getIntArray(iv));
+        byte[] _iv = HexCodingTools.getBytesFromInt(HexCodingTools.getIntArrayFromHexString(iv));
         try {
             IvParameterSpec iv_ = new IvParameterSpec(_iv);
             SecretKeySpec skeySpec = new SecretKeySpec(
                     HexCodingTools.getBytesFromInt(
-                            HexCodingTools.getIntArray(
+                            HexCodingTools.getIntArrayFromHexString(
                                     encKey
                             )), "AES");
             Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");

@@ -37,7 +37,7 @@ public class HexCodingTools {
         return v;
     }
 
-    public static int[] getIntArray(String s) {
+    public static int[] getIntArrayFromHexString(String s) {
         int sz = s.length()/2;
         int ret[] = new int[sz];
 
@@ -45,6 +45,11 @@ public class HexCodingTools {
             ret[i/2] = hexStrToInt(s.substring(i,i+2));
         }
         return ret;
+    }
+
+    public static byte[] getByteArrayFromHexString(String s) {
+        int [] src = getIntArrayFromHexString(s);
+        return getBytesFromInt(src);
     }
 
 

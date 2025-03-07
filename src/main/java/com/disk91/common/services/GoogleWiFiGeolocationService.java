@@ -60,8 +60,9 @@ public class GoogleWiFiGeolocationService {
             g.addMac(mac);
         }
         ObjectMapper mapper = new ObjectMapper();
+        String json = null;
         try {
-            String json = mapper.writeValueAsString(g);
+            json = mapper.writeValueAsString(g);
             RestTemplate restTemplate = new RestTemplate();
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -83,12 +84,17 @@ public class GoogleWiFiGeolocationService {
             log.info("[common] Status code from Google : {}", statusCode);
             if ( statusCode == 404 ) {
                 log.info("[common] Position not found by google");
+                log.info("with {}",json);
+            } else {
+                log.info("[common] Error in google call");
+                log.info(e.getMessage());
+                log.info("with {}",json);
             }
             return null;
         } catch ( Exception e ) {
-            // 404 - no information
-            log.info("[common] Position not found by google");
+            log.info("[common] Exception in google call");
             log.info(e.getMessage());
+            log.info("with {}",json);
             return null;
         }
     }

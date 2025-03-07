@@ -64,8 +64,7 @@ public class CommonSecurityProfile {
                         .requestMatchers("/common/3.0/health").permitAll()
 
                         // swagger documentation
-                        .requestMatchers("/swagger-doc/**").permitAll()
-                        .requestMatchers("/v3/api-docs/**").permitAll()
+                        .requestMatchers("/api/**").permitAll()
                         .requestMatchers("/webjars/**").permitAll()
                         // prometheus
                         .requestMatchers("/actuator/**").permitAll()

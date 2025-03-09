@@ -129,8 +129,18 @@ public class Now {
         return formatter.format(instant);
     }
 
+    /**
+     * Sleep for ms
+     * @param ms
+     */
+    public static void sleep(long ms) {
+        try {
+            Thread.sleep(ms);
+        } catch ( InterruptedException x ) {};
+    }
+
     public static long ONE_FULL_DAY = 24*3600*1000;
-    public static long ONE_HOUR = 1*3600*1000;
+    public static long ONE_HOUR = 3600 * 1000;
 
     public static long ONE_MINUTE = 60*1000;
 

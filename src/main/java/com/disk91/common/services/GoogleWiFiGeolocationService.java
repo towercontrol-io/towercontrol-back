@@ -52,7 +52,7 @@ public class GoogleWiFiGeolocationService {
 
 
     public GoogleGeolocationOutput position(List<String> macs ) {
-        log.info("Search for {} macs ",macs.size());
+        log.info("[common] Google geolocation search for {} macs ",macs.size());
         if (macs.size() < 2) return null;
         GoogleGeolocationInput g = new GoogleGeolocationInput();
         g.initWifi();

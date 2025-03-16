@@ -65,4 +65,26 @@ public class CommonConfig {
         return googleApiKey;
     }
 
+    // ----------------------------------------------
+    // WiFi Geolocation
+    // ----------------------------------------------
+    @Value("${common.wifimac.cache.size:1000}")
+    protected int wifiMacCacheSize;
+    public int getWifiMacCacheSize() {
+        return wifiMacCacheSize;
+    }
+
+    @Value("${common.wifimac.cache.ttl:3600}")
+    protected int wifiMacCacheTtl;
+    public int getWifiMacCacheTtl() {
+        return wifiMacCacheTtl;
+    }
+
+    // Spring ISO duration (PT24H - 24 hours ; PT30M - 30 minutes)
+    @Value("${common.wifimac.cache.logperiod:PT24H}")
+    protected int wifiMacCacheLogPeriod;
+    public int getWifiMacCacheLogPeriod() {
+        return wifiMacCacheLogPeriod;
+    }
+
 }

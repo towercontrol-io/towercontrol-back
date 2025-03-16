@@ -2,6 +2,8 @@ package com.disk91.common.tools;
 
 public class GeolocationTools {
 
+    public record Coordinate(double lat, double lng) {}
+
     /**
      * Check if the given coordinate is a valid one
      * @param lat Latitude

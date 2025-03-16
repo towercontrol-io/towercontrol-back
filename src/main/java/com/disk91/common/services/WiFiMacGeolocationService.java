@@ -37,6 +37,7 @@ import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -121,7 +122,11 @@ public class WiFiMacGeolocationService {
 
     @Scheduled(fixedRateString = "${common.wifimac.cache.logperiod}", initialDelay = 3600_000)
     protected void wifiMacLocationCacheStatus() {
-        if ( commonConfig.getWifiMacCacheLogPeriod() >= Now.ONE_FULL_DAY || ! this.serviceEnable || commonConfig.getWifiMacCacheSize() == 0 ) return;
+        try {
+            Duration duration = Duration.parse(commonConfig.getWifiMacCacheLogPeriod());
+            if (duration.toMillis() >= Now.ONE_FULL_DAY ) return;
+        } catch (Exception ignored) {}
+        if ( ! this.serviceEnable || commonConfig.getWifiMacCacheSize() == 0 ) return;
         this.wifiMacLocationCache.log();
     }
 

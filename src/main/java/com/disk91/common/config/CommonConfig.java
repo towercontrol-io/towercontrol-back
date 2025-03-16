@@ -82,8 +82,8 @@ public class CommonConfig {
 
     // Spring ISO duration (PT24H - 24 hours ; PT30M - 30 minutes)
     @Value("${common.wifimac.cache.logperiod:PT24H}")
-    protected int wifiMacCacheLogPeriod;
-    public int getWifiMacCacheLogPeriod() {
+    protected String wifiMacCacheLogPeriod;
+    public String getWifiMacCacheLogPeriod() {
         return wifiMacCacheLogPeriod;
     }
 

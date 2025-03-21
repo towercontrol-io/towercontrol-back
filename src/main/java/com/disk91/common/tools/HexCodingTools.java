@@ -94,6 +94,10 @@ public class HexCodingTools {
         return new String(hexChars);
     }
 
+    public static String intToHexString(int v) {
+        return Integer.toHexString(v).toUpperCase();
+    }
+
     public static int getIntFromByte(byte src) {
         return (int)src & 0xFF;
     }

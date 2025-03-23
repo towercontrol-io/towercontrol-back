@@ -31,6 +31,38 @@ services:
         max-size: "100m"
 
   ## ==============================================================
+  ## Nginx - optional
+  nginx:
+    profiles:
+      - nginx
+    image: nginx:latest
+    ports:
+      - 80:80
+      - 443:443
+    restart: unless-stopped
+    environment:
+      - DOMAIN_NAME=
+    volumes:
+      - ./nginx/configuration:/etc/nginx/conf.d/:ro
+      - ./nginx/certbot/:/var/www/certbot/:ro
+      - ./nginx/ssl/:/etc/nginx/ssl/:ro
+      - ./nginx/htdocs:/var/www/:ro
+    depends_on:
+      - itc
+    networks:
+      - internal_net
+    logging: *logs
+
+  certbot:
+    image: certbot/certbot:latest
+    volumes:
+      - ./nginx/certbot/:/var/www/certbot/:rw
+      - ./nginx/ssl/:/etc/letsencrypt/:rw
+    networks:
+      - internal_net
+    logging: *logs
+
+  ## ==============================================================
   ## Postgresql
   postgres:
     image: postgres:17-alpine

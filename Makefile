@@ -15,13 +15,13 @@ setup_base: .FORCE
 	-sudo chown 472:root $(CONF_DIR)/grafana
 
 setup_nginx: .FORCE
-    cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile nginx --profile itc --profile mongo up --no-deps nginx -d ; cd -
-    sleep 10
-    @read -p "Domain name? " DOMAIN; cd $(CONF_DIR) ;$(DOCKER_COMP_CMD) run --rm certbot certonly --webroot --webroot-path /var/www/certbot/ -d $$DOMAIN ; cd -
-    sleep 5
-    cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile nginx --profile itc --profile mongo up stop ; cd -
-    mv $(CONF_DIR)/nginx/configuration/default.conf $(CONF_DIR)/nginx/configuration/default.conf.withoutssl
-    cp $(CONF_DIR)/nginx/configuration/default.conf-withssl $(CONF_DIR)/nginx/configuration/default.conf
+	cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile nginx --profile itc --profile mongo up --no-deps nginx -d ; cd -
+	sleep 10
+	@read -p "Domain name? " DOMAIN; cd $(CONF_DIR) ;$(DOCKER_COMP_CMD) run --rm certbot certonly --webroot --webroot-path /var/www/certbot/ -d $$DOMAIN ; cd -
+	sleep 5
+	cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile nginx --profile itc --profile mongo up stop ; cd -
+	mv $(CONF_DIR)/nginx/configuration/default.conf $(CONF_DIR)/nginx/configuration/default.conf.withoutssl
+	cp $(CONF_DIR)/nginx/configuration/default.conf-withssl $(CONF_DIR)/nginx/configuration/default.conf
 
 # If you have a problem running setup with missing X11 ...
 # this is related to docker login

@@ -43,10 +43,10 @@ services:
     environment:
       - DOMAIN_NAME=
     volumes:
-      - ./nginx/configuration:/etc/nginx/conf.d/:ro
+      - ./nginx/configuration/:/etc/nginx/conf.d/:ro
       - ./nginx/certbot/:/var/www/certbot/:ro
       - ./nginx/ssl/:/etc/nginx/ssl/:ro
-      - ./nginx/htdocs:/var/www/:ro
+      - ./nginx/htdocs:/var/www/front/:ro
     depends_on:
       - itc
     networks:

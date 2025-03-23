@@ -20,8 +20,8 @@ setup_nginx: .FORCE
 	@read -p "Domain name? " DOMAIN; cd $(CONF_DIR) ;$(DOCKER_COMP_CMD) run --rm certbot certonly --webroot --webroot-path /var/www/certbot/ -d $$DOMAIN ; cd -
 	sleep 5
 	cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile nginx --profile itc --profile mongo stop nginx ; cd -
-	mv $(CONF_DIR)/nginx/configuration/default.conf $(CONF_DIR)/nginx/configuration/default.conf.withoutssl
-	cp $(CONF_DIR)/nginx/configuration/default.conf-withssl $(CONF_DIR)/nginx/configuration/default.conf
+	mv $(CONF_DIR)/nginx/configuration/default.conf.template $(CONF_DIR)/nginx/configuration/default.conf.template.withoutssl
+	cp $(CONF_DIR)/nginx/configuration/default.conf.template.withssl $(CONF_DIR)/nginx/configuration/default.conf.template
 
 # If you have a problem running setup with missing X11 ...
 # this is related to docker login

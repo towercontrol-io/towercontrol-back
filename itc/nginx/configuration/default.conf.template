@@ -1,11 +1,8 @@
-map $host $domain_name {
-    default "$DOMAIN_NAME";
-}
 server {
     listen 80;
     listen [::]:80;
 
-    server_name $domain_name;
+    server_name ${DOMAIN_NAME} ${SECONDARY_NAME};
     server_tokens off;
 
     location /.well-known/acme-challenge/ {
@@ -13,6 +10,6 @@ server {
     }
 
     location / {
-        return 301 https://$domain_name$request_uri;
+        return 301 https://$host$request_uri;
     }
 }

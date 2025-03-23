@@ -1,14 +1,11 @@
 upstream backend {
    server localhost:8091;
 }
-map $host $domain_name {
-    default "$DOMAIN_NAME";
-}
 server {
     listen 80;
     listen [::]:80;
 
-    server_name $domain_name;
+    server_name ${DOMAIN_NAME} ${SECONDARY_NAME};
     server_tokens off;
 
     location /.well-known/acme-challenge/ {
@@ -16,7 +13,7 @@ server {
     }
 
     location / {
-        return 301 https://$domain_name$request_uri;
+        return 301 https://$host$request_uri;
     }
 }
 
@@ -25,10 +22,10 @@ server {
     listen [::]:443 ssl;
     http2 on;
 
-    server_name $domain_name;
+    server_name ${DOMAIN_NAME} ${SECONDARY_NAME};
 
-    ssl_certificate /etc/nginx/ssl/live/$domain_name/fullchain.pem;
-    ssl_certificate_key /etc/nginx/ssl/live/$domain_name/privkey.pem;
+    ssl_certificate /etc/nginx/ssl/live/${DOMAIN_NAME}/fullchain.pem;
+    ssl_certificate_key /etc/nginx/ssl/live/${DOMAIN_NAME}/privkey.pem;
 
     location ~ ^(/qc/|/webjars|/api/|/front/) {
          proxy_pass http://backend$request_uri;

@@ -42,8 +42,9 @@ services:
     restart: unless-stopped
     environment:
       - DOMAIN_NAME=
+      - SECONDARY_NAME=
     volumes:
-      - ./nginx/configuration/:/etc/nginx/conf.d/:ro
+      - ./nginx/configuration/:/etc/nginx/templates:rw,cached
       - ./nginx/certbot/:/var/www/certbot/:ro
       - ./nginx/ssl/:/etc/nginx/ssl/:ro
       - ./nginx/htdocs:/var/www/front/:ro

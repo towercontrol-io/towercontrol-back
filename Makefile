@@ -19,7 +19,7 @@ setup_nginx: .FORCE
 	sleep 10
 	@read -p "Domain name? " DOMAIN; cd $(CONF_DIR) ;$(DOCKER_COMP_CMD) run --rm certbot certonly --webroot --webroot-path /var/www/certbot/ -d $$DOMAIN ; cd -
 	sleep 5
-	cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile nginx --profile itc --profile mongo up stop ; cd -
+	cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile nginx --profile itc --profile mongo stop nginx ; cd -
 	mv $(CONF_DIR)/nginx/configuration/default.conf $(CONF_DIR)/nginx/configuration/default.conf.withoutssl
 	cp $(CONF_DIR)/nginx/configuration/default.conf-withssl $(CONF_DIR)/nginx/configuration/default.conf
 
@@ -51,11 +51,24 @@ build: back
 install: setup_shared back
 
 start:
-	cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc up -d ; cd -
+	@if [ -d $(CONF_DIR)/nginx/ssl/accounts ]; then \
+    		cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc --profile nginx up  -d ; cd - \
+    else \
+    		cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc up -d ; cd - \
+    fi
 
 start-clean:
 	$(DOCKER_CMD) network prune
-	cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc up --force-recreate -d ; cd -
+	@if [ -d $(CONF_DIR)/nginx/ssl/accounts ]; then \
+		cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc --profile nginx up --force-recreate -d ; cd - \
+    else \
+		cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc up --force-recreate -d ; cd - \
+    fi
 
 stop:
-	cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc stop ; cd -
+	@if [ -d $(CONF_DIR)/nginx/ssl/accounts ]; then \
+		cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc --profile nginx stop ; cd - \
+	else \
+		cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc stop ; cd - \
+    fi
+

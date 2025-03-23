@@ -52,23 +52,23 @@ install: setup_shared back
 
 start:
 	@if [ -d $(CONF_DIR)/nginx/ssl/accounts ]; then \
-    		cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc --profile nginx up  -d ; cd - \
+    		cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc --profile nginx up  -d ; cd - ;\
     else \
-    		cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc up -d ; cd - \
+    		cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc up -d ; cd - ;\
     fi
 
 start-clean:
 	$(DOCKER_CMD) network prune
 	@if [ -d $(CONF_DIR)/nginx/ssl/accounts ]; then \
-		cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc --profile nginx up --force-recreate -d ; cd - \
+		cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc --profile nginx up --force-recreate -d ; cd - ;\
     else \
-		cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc up --force-recreate -d ; cd - \
+		cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc up --force-recreate -d ; cd - ;\
     fi
 
 stop:
 	@if [ -d $(CONF_DIR)/nginx/ssl/accounts ]; then \
-		cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc --profile nginx stop ; cd - \
+		cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc --profile nginx stop ; cd - ;\
 	else \
-		cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc stop ; cd - \
+		cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc stop ; cd - ;\
     fi
 

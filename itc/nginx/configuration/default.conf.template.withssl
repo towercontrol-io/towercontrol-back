@@ -45,4 +45,6 @@ server {
          }
     }
 
+    root /var/www/front;
+
 }

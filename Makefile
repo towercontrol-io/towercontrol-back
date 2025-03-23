@@ -8,7 +8,7 @@ back: .FORCE
 	./gradlew build -x test && docker build -t disk91/itc .
 
 setup_base: .FORCE
-	-mkdir $(CONF_DIR)
+	mkdir $(CONF_DIR)
 	cp -R ./itc/* $(CONF_DIR)
 	rm $(CONF_DIR)/postgresql/data/.empty
 	-sudo chown nobody:nogroup $(CONF_DIR)/prometheus

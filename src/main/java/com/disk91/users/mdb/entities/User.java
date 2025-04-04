@@ -20,18 +20,32 @@
 
 package com.disk91.users.mdb.entities;
 
+import com.disk91.common.config.CommonConfig;
 import com.disk91.common.tools.CloneableObject;
+import com.disk91.common.tools.CustomField;
+import com.disk91.common.tools.EncryptionHelper;
+import com.disk91.common.tools.HexCodingTools;
+import com.disk91.common.tools.exceptions.ITParseException;
+import com.disk91.users.mdb.entities.sub.UserAcl;
 import com.disk91.users.mdb.entities.sub.UserAlertPreference;
 import com.disk91.users.mdb.entities.sub.UserBillingProfile;
 import com.disk91.users.mdb.entities.sub.UserProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 
 @Document(collection = "users_users")
@@ -44,105 +58,481 @@ public class User implements CloneableObject<User> {
    private final Logger log = LoggerFactory.getLogger(this.getClass());
 
     @Id
-    private String id;
+    protected String id;
 
     // Document version, used for later structure evolution
-    private int version;
+    protected int version;
 
     // hash of user login, usually the password of the user
-    private String login;
+    protected String login;
 
     // hash of the user password
-    private String password;
+    protected String password;
 
-    // encrypted user email
-    private String email;
+    // base64 + encrypted user email
+    protected String email;
 
     // encryption salt
-    private byte[] salt;
+    protected byte[] salt;
 
     // session signature salt for the JWT allowing to invalidate the session on logout or repudiation
-    private String secret;
+    protected String secret;
 
     // long term secret used for user profile encryption, derivative from password, so we can remove this key
     // after a certain period of time to make encrypted data unreadable and later user login can reactivate an account and
     // restore decryption mechanisms
-    private String userSecret;
+    protected String userSecret;
 
     // Last time the user has login
-    private long lastLogin;
+    protected long lastLogin;
 
     // Number of user login over time
-    private long countLogin;
+    protected long countLogin;
 
     // Registration Date (Ms since epoch)
-    private long registrationDate;
+    protected long registrationDate;
 
     // Registration IP (encrypted)
-    private String registrationIP;
+    protected String registrationIP;
 
     // Last profile modification date in Ms since epoch
-    private long modificationDate;
+    protected long modificationDate;
 
     // Validation String used during registration process
-    private String validationId;
+    protected String validationId;
 
     // Password Reset String used to validate the password reset process
-    private String passwordResetId;
+    protected String passwordResetId;
 
     // Password Reset String expiration date (Ms since epoch)
-    private long passwordResetExp;
+    protected long passwordResetExp;
 
     // Accout Status, active can login.
-    private boolean active;
+    protected boolean active;
 
     // Account locked status, user can't login but has been validated
-    private boolean locked;
+    protected boolean locked;
 
     // Password has expired and user need to change it on the next login
-    private boolean expiredPassword;
+    protected boolean expiredPassword;
 
     // This Account is an API account and not a human account, it can't login but we can have existing JWT
-    private boolean apiAccount;
+    protected boolean apiAccount;
 
     // User who own the apiAccount, here we have the Id of the user entry corresponding
-    private String apiAccountOwner;
+    protected String apiAccountOwner;
 
     // language to be used for the user, 2x2 letters country code (fr-fr)
-    private String language;
+    protected String language;
 
     // User Conditions has been validated
-    private boolean conditionValidation;
+    protected boolean conditionValidation;
 
     // User Condition validation date ( in Ms since epoch )
-    private long conditionValidationDate;
+    protected long conditionValidationDate;
 
     // Condition validation version (for revalidation when going to change)
-    private String conditionValidationVer;
+    protected String conditionValidationVer;
 
     // Lats communication message displayed
-    private long lastComMessageSeen;
+    protected long lastComMessageSeen;
 
     // List the Roles associated to the user
-    private ArrayList<String> roles;
+    protected ArrayList<String> roles;
 
     // List the ACL associated to the user
-    private ArrayList<String> acls;
+    protected ArrayList<UserAcl> acls;
 
     // User Alerts preferences
-    private UserAlertPreference alertPreference;
+    protected UserAlertPreference alertPreference;
 
     // User Profile information
-    private UserProfile profile;
+    protected UserProfile profile;
 
     // User Billing Profile information
-    private UserBillingProfile billingProfile;
+    protected UserBillingProfile billingProfile;
 
 
     // =========== Encryption Management ===========
+    @Transient
+    private static final String IV = "0123456789abcdef0123456789abcdef"; // 16 bytes IV for AES encryption
+
+    @Transient
+    @Autowired
+    protected CommonConfig commonConfig;
+
+    /**
+     * Generate the encryption key used for the personal or confidential data encryption
+     * This key is based on different element to maximize the security. It required the
+     * server key located in configuration file (file system), application key (jar file)
+     * and the userSecret (database) derivative from the user clear text password.
+     * All are 16 bytes long. the 3 keys are xored to compose the encryption key.
+     * IV is static from that class
+     * @return
+     */
+    protected byte[] getEncryptionKey() throws ITParseException {
+        if ( userSecret == null || userSecret.length() < 32 ) throw new ITParseException("User secret not set");
+        byte[] serverKey = HexCodingTools.getByteArrayFromHexString(commonConfig.getEncryptionKey());
+        byte[] applicationKey = HexCodingTools.getByteArrayFromHexString(commonConfig.getApplicationKey());
+        byte[] userKey = HexCodingTools.getByteArrayFromHexString(this.userSecret);
+        if ( serverKey.length != 16 || applicationKey.length != 16 || userKey.length != 16 ) {
+            log.error("[users] Encryption key is not 16 bytes long");
+            throw new ITParseException("Encryption key are not 16 bytes long");
+        }
+        byte[] encryptionKey = new byte[16];
+        for ( int i=0; i< encryptionKey.length; i++) {
+            encryptionKey[i] = (byte) (serverKey[i] ^ applicationKey[i] ^ userKey[i]);
+        }
+        return encryptionKey;
+    }
 
 
+    public String encrypt(String data) {
+        return null;
+    }
 
+
+    /**
+     * When the password is changed, it is necessary to rekey all information, as the password is used as a key
+     * in the signature of user data. The password is also hashed with salt
+     * @param password - clear text password
+     * @param create - true if the password is created for the first time (no rekeying required)
+     */
+    public void changePassword(String password, boolean create)
+    throws ITParseException
+    {
+        // If creation we need to generate a new salt
+        if ( create ) {
+            this.salt = new byte[16];
+            SecureRandom random = new SecureRandom();
+            random.nextBytes(this.salt);
+            this.secret = HexCodingTools.getRandomHexString(32);
+        }
+
+        try {
+
+            // Hash of the password with SHA256 ; this will be used to authenticate the user
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            digest.update(this.salt);
+            byte[] passwordHash = digest.digest(password.getBytes(StandardCharsets.UTF_8));
+
+            // Hash the password for the encryption key (purpose is to be able to lock personal data without having to
+            // delete the user account and let the user to later reactivate its account by logging into the system
+            char[] passwordChars = password.toCharArray();
+            PBEKeySpec spec = new PBEKeySpec(passwordChars, this.salt, 65536, 128);
+            SecretKeyFactory skf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
+            byte[] passwordHashForEncryption = skf.generateSecret(spec).getEncoded();
+
+            if ( create ) {
+                // We need to rekey all the encrypted data
+
+
+            }
+
+
+            // Save the change
+            this.password = HexCodingTools.bytesToHex(passwordHash);
+            this.userSecret = HexCodingTools.bytesToHex(passwordHashForEncryption);
+
+        } catch (NoSuchAlgorithmException e) {
+            log.error("[users] Error while hashing password", e);
+            throw new ITParseException("Unsupported hashing algorithm");
+        } catch (InvalidKeySpecException e) {
+            log.error("[users] Error while hashing password", e);
+            throw new ITParseException("Invalid key spec");
+        }
+
+    }
+
+    // ===================================================
+    // Encrypted Setters / Getters
+
+    @Transient
+    @Autowired
+    protected EncryptionHelper encryptionHelper;
+
+
+    /**
+     * Set the login of the user, this is the login used to authenticate the user
+     * We use a Hash of the login to avoid storing the login in clear text
+     * @return
+     */
+    public void setEncLogin(String login) throws ITParseException {
+        if ( this.salt == null || this.salt.length != 16 ) {
+            log.error("[users] Salt is not set or not 16 bytes long");
+            throw new ITParseException("Invalid Salt");
+        }
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            digest.update(this.salt);
+            byte[] loginHash = digest.digest(password.getBytes(StandardCharsets.UTF_8));
+            this.login = HexCodingTools.bytesToHex(loginHash);
+        } catch (NoSuchAlgorithmException e) {
+            log.error("[users] Error while hashing login", e);
+            throw new ITParseException("Unsupported hashing algorithm");
+        }
+    }
+
+    // --- Email
+
+    /**
+     * Returns the clear text email
+     * @return
+     */
+    public String getEncEmail() throws ITParseException {
+        String _email = encryptionHelper.decrypt(this.email, IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+        return _email;
+    }
+
+    /**
+     * Encrypt the email from the clear text value
+     * @param _email - clear text email
+     */
+    public void setEncEmail(String _email)  throws ITParseException {
+        this.email = encryptionHelper.encrypt(_email, IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+    }
+
+    // --- Registration IP
+
+    /**
+     * Encrypt the registration IP from the clear text value
+     */
+    public String getEncRegistrationIP() throws ITParseException {
+        return encryptionHelper.decrypt(this.registrationIP, IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+    }
+
+    /**
+     * Encrypt the registration IP from the clear text value
+     * @param _registrationIP - clear text registration IP
+     */
+    public void setEncRegistrationIP(String _registrationIP)  throws ITParseException {
+        this.registrationIP = encryptionHelper.encrypt(_registrationIP, IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+    }
+
+    // --------------------
+    // Profile
+    public String getEncProfileGender() throws ITParseException {
+        return encryptionHelper.decrypt(this.profile.getGender(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+    }
+
+    public String getEncProfileFirstName() throws ITParseException {
+        return encryptionHelper.decrypt(this.profile.getFirstName(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+    }
+
+    public String getEncProfileLastName() throws ITParseException {
+        return encryptionHelper.decrypt(this.profile.getLastName(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+    }
+
+    public String getEncProfilePhone() throws ITParseException {
+        return encryptionHelper.decrypt(this.profile.getPhoneNumber(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+    }
+
+    public String getEncProfileAddress() throws ITParseException {
+        return encryptionHelper.decrypt(this.profile.getAddress(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+    }
+
+    public String getEncProfileCity() throws ITParseException {
+        return encryptionHelper.decrypt(this.profile.getCity(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+    }
+
+    public String getEncProfileZipCode() throws ITParseException {
+        return encryptionHelper.decrypt(this.profile.getZipCode(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+    }
+
+    public String getEncProfileCountry() throws ITParseException {
+        return encryptionHelper.decrypt(this.profile.getCountry(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+    }
+
+    public ArrayList<CustomField> getEncProfileCustomFields() throws ITParseException {
+        ArrayList<CustomField> customFields = new ArrayList<>();
+        for ( CustomField cf : this.profile.getCustomFields() ) {
+            CustomField _cf = new CustomField();
+            _cf.setName(cf.getName());
+            _cf.setValue(encryptionHelper.decrypt(cf.getValue(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+            customFields.add(_cf);
+        }
+        return customFields;
+    }
+
+    public void setEncProfileGender(String _value)  throws ITParseException {
+        if (this.profile == null) throw new ITParseException("Profile not set");
+        this.profile.setGender(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+    }
+
+    public void setEncProfileFirstName(String _value)  throws ITParseException {
+        if (this.profile == null) throw new ITParseException("Profile not set");
+        this.profile.setFirstName(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+    }
+
+    public void setEncProfileLastName(String _value)  throws ITParseException {
+        if (this.profile == null) throw new ITParseException("Profile not set");
+        this.profile.setLastName(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+    }
+
+    public void setEncProfilePhone(String _value)  throws ITParseException {
+        if (this.profile == null) throw new ITParseException("Profile not set");
+        this.profile.setPhoneNumber(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+    }
+
+    public void setEncProfileAddress(String _value)  throws ITParseException {
+        if (this.profile == null) throw new ITParseException("Profile not set");
+        this.profile.setAddress(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+    }
+
+    public void setEncProfileCity(String _value)  throws ITParseException {
+        if (this.profile == null) throw new ITParseException("Profile not set");
+        this.profile.setCity(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+    }
+
+    public void setEncProfileZipCode(String _value)  throws ITParseException {
+        if (this.profile == null) throw new ITParseException("Profile not set");
+        this.profile.setZipCode(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+    }
+
+    public void setEncProfileCountry(String _value)  throws ITParseException {
+        if (this.profile == null) throw new ITParseException("Profile not set");
+        this.profile.setCountry(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+    }
+
+    public void setEncProfileCustomFields(ArrayList<CustomField> _value)  throws ITParseException {
+        if (this.profile == null) throw new ITParseException("Profile not set");
+        ArrayList<CustomField> customFields = new ArrayList<>();
+        for ( CustomField cf : _value ) {
+            CustomField _cf = new CustomField();
+            _cf.setName(cf.getName());
+            _cf.setValue(encryptionHelper.encrypt(cf.getValue(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+            customFields.add(_cf);
+        }
+        this.profile.setCustomFields(customFields);
+    }
+
+
+    // --------------------
+    // Billing Profile
+
+    public String getEncBillingGender() throws ITParseException {
+        return encryptionHelper.decrypt(this.billingProfile.getGender(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+    }
+
+    public String getEncBillingFirstName() throws ITParseException {
+        return encryptionHelper.decrypt(this.billingProfile.getFirstName(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+    }
+
+    public String getEncBillingLastName() throws ITParseException {
+        return encryptionHelper.decrypt(this.billingProfile.getLastName(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+    }
+
+    public String getEncBillingPhone() throws ITParseException {
+        return encryptionHelper.decrypt(this.billingProfile.getPhoneNumber(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+    }
+
+    public String getEncBillingAddress() throws ITParseException {
+        return encryptionHelper.decrypt(this.billingProfile.getAddress(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+    }
+
+    public String getEncBillingCity() throws ITParseException {
+        return encryptionHelper.decrypt(this.billingProfile.getCity(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+    }
+
+    public String getEncBillingZipCode() throws ITParseException {
+        return encryptionHelper.decrypt(this.billingProfile.getZipCode(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+    }
+
+    public String getEncBillingCountry() throws ITParseException {
+        return encryptionHelper.decrypt(this.billingProfile.getCountry(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+    }
+
+    public ArrayList<CustomField> getEncBillingCustomFields() throws ITParseException {
+        ArrayList<CustomField> customFields = new ArrayList<>();
+        for ( CustomField cf : this.billingProfile.getCustomFields() ) {
+            CustomField _cf = new CustomField();
+            _cf.setName(cf.getName());
+            _cf.setValue(encryptionHelper.decrypt(cf.getValue(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+            customFields.add(_cf);
+        }
+        return customFields;
+    }
+
+    public String getEncBillingCompanyName() throws ITParseException {
+        return encryptionHelper.decrypt(this.billingProfile.getCompanyName(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+    }
+
+    public String getEncBillingCountryCode() throws ITParseException {
+        return encryptionHelper.decrypt(this.billingProfile.getCountryCode(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+    }
+
+    public String getEncBillingVatNumber() throws ITParseException {
+        return encryptionHelper.decrypt(this.billingProfile.getVatNumber(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+    }
+
+    // ----
+
+    public void setEncBillingGender(String _value)  throws ITParseException {
+        if (this.billingProfile == null) throw new ITParseException("Profile not set");
+        this.billingProfile.setGender(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+    }
+
+    public void setEncBillingFirstName(String _value)  throws ITParseException {
+        if (this.billingProfile == null) throw new ITParseException("Profile not set");
+        this.billingProfile.setFirstName(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+    }
+
+    public void setEncBillingLastName(String _value)  throws ITParseException {
+        if (this.billingProfile == null) throw new ITParseException("Profile not set");
+        this.billingProfile.setLastName(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+    }
+
+    public void setEncBillingPhone(String _value)  throws ITParseException {
+        if (this.billingProfile == null) throw new ITParseException("Profile not set");
+        this.billingProfile.setPhoneNumber(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+    }
+
+    public void setEncBillingAddress(String _value)  throws ITParseException {
+        if (this.billingProfile == null) throw new ITParseException("Profile not set");
+        this.billingProfile.setAddress(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+    }
+
+    public void setEncBillingCity(String _value)  throws ITParseException {
+        if (this.billingProfile == null) throw new ITParseException("Profile not set");
+        this.billingProfile.setCity(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+    }
+
+    public void setEncBillingZipCode(String _value)  throws ITParseException {
+        if (this.billingProfile == null) throw new ITParseException("Profile not set");
+        this.billingProfile.setZipCode(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+    }
+
+    public void setEncBillingCountry(String _value)  throws ITParseException {
+        if (this.billingProfile == null) throw new ITParseException("Profile not set");
+        this.billingProfile.setCountry(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+    }
+
+    public void setEncBillingCustomFields(ArrayList<CustomField> _value)  throws ITParseException {
+        if (this.billingProfile == null) throw new ITParseException("Profile not set");
+        ArrayList<CustomField> customFields = new ArrayList<>();
+        for ( CustomField cf : _value ) {
+            CustomField _cf = new CustomField();
+            _cf.setName(cf.getName());
+            _cf.setValue(encryptionHelper.encrypt(cf.getValue(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+            customFields.add(_cf);
+        }
+        this.billingProfile.setCustomFields(customFields);
+    }
+
+    public void setEncBillingCompanyName(String _value)  throws ITParseException {
+        if (this.billingProfile == null) throw new ITParseException("Profile not set");
+        this.billingProfile.setCompanyName(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+    }
+
+    public void setEncBillingCountryCode(String _value)  throws ITParseException {
+        if (this.billingProfile == null) throw new ITParseException("Profile not set");
+        this.billingProfile.setCountryCode(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+    }
+
+    public void setEncBillingVatNumber(String _value)  throws ITParseException {
+        if (this.billingProfile == null) throw new ITParseException("Profile not set");
+        this.billingProfile.setVatNumber(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+    }
 
 
     // ========== CLONEABLE INTERFACE ==========
@@ -187,7 +577,10 @@ public class User implements CloneableObject<User> {
         u.setRoles(_roles);
 
         // Create a copy of the acls list
-        ArrayList<String> _acls = new ArrayList<String>(this.acls);
+        ArrayList<UserAcl> _acls = new ArrayList<UserAcl>();
+        for (UserAcl acl : this.acls) {
+            _acls.add(acl.clone());
+        }
         u.setAcls(_acls);
 
         u.setAlertPreference(this.alertPreference.clone());
@@ -416,11 +809,11 @@ public class User implements CloneableObject<User> {
         this.roles = roles;
     }
 
-    public ArrayList<String> getAcls() {
+    public ArrayList<UserAcl> getAcls() {
         return acls;
     }
 
-    public void setAcls(ArrayList<String> acls) {
+    public void setAcls(ArrayList<UserAcl> acls) {
         this.acls = acls;
     }
 

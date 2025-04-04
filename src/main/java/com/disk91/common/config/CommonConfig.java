@@ -41,6 +41,13 @@ public class CommonConfig {
         return encryptionKey;
     }
 
+    @Value("${common.application.key:a84c2d1f7b9e063d5f1a2e9c3b7d408e}")
+    protected String applicationKey;
+    public String getApplicationKey() {
+        return applicationKey;
+    }
+
+
     // ----------------------------------------------
     // Database setup
     // ----------------------------------------------
@@ -86,5 +93,10 @@ public class CommonConfig {
     public String getWifiMacCacheLogPeriod() {
         return wifiMacCacheLogPeriod;
     }
+
+
+
+
+
 
 }

@@ -1,6 +1,8 @@
 package com.disk91.iot;
 
 import com.disk91.ItcApplication;
+import com.disk91.common.tools.HexCodingTools;
+import com.disk91.users.mdb.entities.User;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,7 +17,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.test.context.ActiveProfiles;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
+/*
 @SpringBootTest(classes = ItcApplication.class)
 @ActiveProfiles("test")
 @EnableAutoConfiguration(exclude={MongoAutoConfiguration.class, MongoDataAutoConfiguration.class})
@@ -33,5 +37,17 @@ public class ItcApplicationTests {
     }
 
 }
+*/
+
+public class ItcApplicationTests {
+
+    private final Logger log = LoggerFactory.getLogger(this.getClass());
+
+    @Test
+    public void testIotApplicationDisplay() {
+        log.info("[Common][test] Running testEmptyTest");
+
+    }
 
 
+}

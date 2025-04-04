@@ -7,12 +7,12 @@ The user data structure is defined as follows:
   "version": "number",            // user structure version
   "login": "string",              // user name for login, this is a hash of the email
   "password": "string",           // password hash
-  "email": "string",              // user email [encrypted]
+  "email": "string",              // user email [Base64(encrypted)]
   "roles": [
-    { "role": "string" }          // user role collection, role are predefined
+     "string",                    // user role collection, role are predefined
   ],
   "acls": [
-    { "group": "string" }         // user acl collection, acl are based on groups and dynamic
+    { "group": "string", "roles" : [ "string"] }   // user acl collection, acl are based on groups and dynamic
   ],
   "salt": [ "numbers" ],          // encryption salt 
   "secret" :  "string",           // session signature salt for token repudiation
@@ -20,7 +20,7 @@ The user data structure is defined as follows:
   "lastLogin": "date",            // last login date in MS since epoch
   "countLogin": "number",         // login count
   "registrationDate": "date",     // user creation date in MS since epoch
-  "registrationIP": "string",     // IP address of the registration [encrypted]
+  "registrationIP": "string",     // IP address of the registration [Base64(encrypted)]
 
   "modificationDate": "date",     // last user modification date in MS since epoch
   "validationId": "string",       // randomly generated secret key for validation
@@ -42,34 +42,34 @@ The user data structure is defined as follows:
   },
   
   "profile": {
-        "gender": "string",           // user gender to be used
-        "firstname": "string",        // user first name [encrypted]
-        "lastname": "string",         // user last name [encrypted]
-        "phone": "string",            // user phone number [encrypted]
-        "address": "string",          // user address [encrypted]
-        "city": "string",             // user city [encrypted]
-        "zip": "string",              // user zip code [encrypted]
-        "country": "string",          // user country [encrypted]
+        "gender": "string",           // user gender to be used [Base64(encrypted)]
+        "firstname": "string",        // user first name [Base64(encrypted)]
+        "lastname": "string",         // user last name [Base64(encrypted)]
+        "phone": "string",            // user phone number [Base64(encrypted)]
+        "address": "string",          // user address [Base64(encrypted)]
+        "city": "string",             // user city [Base64(encrypted)]
+        "zip": "string",              // user zip code [Base64(encrypted)]
+        "country": "string",          // user country [Base64(encrypted)]
         "customFields": [{            // user custom fields
            "name": "string",          // custom field key [clear]
-           "value": "string"          // custom field value [encrypted] 
+           "value": "string"          // custom field value [Base64(encrypted)]
         }]
     },
     "billingProfile": {
-        "gender": "string",           // user gender to be used
-        "firstname": "string",        // user first name [encrypted]
-        "lastname": "string",         // user last name [encrypted]
-        "companyName": "string",      // user company name [encrypted]
-        "phone": "string",            // user phone number [encrypted]
-        "address": "string",          // user address [encrypted]
-        "city": "string",             // user city [encrypted]
-        "zip": "string",              // user zip code [encrypted]
-        "country": "string",          // user country [encrypted]
+        "gender": "string",           // user gender to be used [Base64(encrypted)]
+        "firstname": "string",        // user first name [Base64(encrypted)]
+        "lastname": "string",         // user last name [Base64(encrypted)]
+        "companyName": "string",      // user company name [Base64(encrypted)]
+        "phone": "string",            // user phone number [Base64(encrypted)]
+        "address": "string",          // user address [Base64(encrypted)]
+        "city": "string",             // user city [Base64(encrypted)]
+        "zip": "string",              // user zip code [Base64(encrypted)]
+        "country": "string",          // user country [Base64(encrypted)]
         "countryCode": "string",      // user 2 digit standard country code
-        "vatNumber": "string",        // user VAT number [encrypted]
+        "vatNumber": "string",        // user VAT number [Base64(encrypted)]
         "customFields": [{            // user custom fields
           "name": "string",           // custom field key [clear]
-          "value": "string"           // custom field value [encrypted] 
+          "value": "string"           // custom field value [Base64(encrypted)]
          }]
     },
     "conditionValidation": "boolean",   // user condition validation flag
@@ -103,6 +103,13 @@ session token to avoid verifications on every call. As a consequence, the role r
 
 - Role can be added dynamically by some other modules to cover certain authorizations specific for them, see [dynamic role](dynrole_structure.md)
 
+### User Acls
+
+A user has access rights to groups corresponding to the Groups defined elsewhere. A user who does not have a global right may 
+still have a specific right on a particular group. By default, a virtual group with the same name as the user exists without 
+needing to be explicitly listed; this represents the user's personal group. These personal groups are prefixed with `$user_`, 
+which is therefore not allowed for standard group names. This group can be shared via ACLs as well.
+
 ### User life cycle
 A user can be created manually by an administrator or after a self registration. User creation have different steps depending on the selected path:
 - self registration:
@@ -128,7 +135,11 @@ as a consequence, without a new login of the user with the right password, the d
 Data are AES encrypted, the encryption key is composed by
 - a Server key from parameter `user.server.key` from configuration file, randomly generated
 - an Application key from parameter `user.application.key` from Jar file, randomly generated
-- a User key from the `userSecret` field, generated from user password (field `password` is just a hash)
+- a User key from the `userSecret` field, generated from user raw password (field `password` is just a sha-256 hash)
+
+The key is 16 Bytes long (128bits) composed by the 3 keys listed above, all 16 Bytes long and Xored. The userSecret is
+generated from the password with PBKDF2 with salt.
+
 
 ### JWT signature
 JWT signature depends on

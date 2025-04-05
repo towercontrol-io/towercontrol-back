@@ -223,17 +223,65 @@ public class User implements CloneableObject<User> {
             SecretKeyFactory skf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
             byte[] passwordHashForEncryption = skf.generateSecret(spec).getEncoded();
 
-            if ( create ) {
+            if ( ! create ) {
                 // We need to rekey all the encrypted data
+                // Decode all Data ...
+                String _email = this.getEncEmail();
+                String _getRegistrationIP = this.getEncRegistrationIP();
+                String _getProfileGender = this.getEncProfileGender();
+                String _getProfileFirstName = this.getEncProfileFirstName();
+                String _getProfileLastName = this.getEncProfileLastName();
+                String _getProfilePhone = this.getEncProfilePhone();
+                String _getProfileAddress = this.getEncProfileAddress();
+                String _getProfileCity = this.getEncProfileCity();
+                String _getProfileZipCode = this.getEncProfileZipCode();
+                String _getProfileCountry = this.getEncProfileCountry();
+                ArrayList<CustomField> _getProfileCustomFields = this.getEncProfileCustomFields();
+                String _getBillingGender = this.getEncBillingGender();
+                String _getBillingFirstName = this.getEncBillingFirstName();
+                String _getBillingLastName = this.getEncBillingLastName();
+                String _getBillingPhone = this.getEncBillingPhone();
+                String _getBillingAddress = this.getEncBillingAddress();
+                String _getBillingCity = this.getEncBillingCity();
+                String _getBillingZipCode = this.getEncBillingZipCode();
+                String _getBillingCountry = this.getEncBillingCountry();
+                ArrayList<CustomField> _getBillingCustomFields = this.getEncBillingCustomFields();
+                String _getBillingCompanyName = this.getEncBillingCompanyName();
+                String _getBillingCountryCode = this.getEncBillingCountryCode();
+                String _getBillingVatNumber = this.getEncBillingVatNumber();
 
+                // Re-encrypt all data
+                this.password = HexCodingTools.bytesToHex(passwordHash);
+                this.userSecret = HexCodingTools.bytesToHex(passwordHashForEncryption);
+                this.setEncEmail(_email);
+                this.setEncRegistrationIP(_getRegistrationIP);
+                this.setEncProfileGender(_getProfileGender);
+                this.setEncProfileFirstName(_getProfileFirstName);
+                this.setEncProfileLastName(_getProfileLastName);
+                this.setEncProfilePhone(_getProfilePhone);
+                this.setEncProfileAddress(_getProfileAddress);
+                this.setEncProfileCity(_getProfileCity);
+                this.setEncProfileZipCode(_getProfileZipCode);
+                this.setEncProfileCountry(_getProfileCountry);
+                this.setEncProfileCustomFields(_getProfileCustomFields);
+                this.setEncBillingGender(_getBillingGender);
+                this.setEncBillingFirstName(_getBillingFirstName);
+                this.setEncBillingLastName(_getBillingLastName);
+                this.setEncBillingPhone(_getBillingPhone);
+                this.setEncBillingAddress(_getBillingAddress);
+                this.setEncBillingCity(_getBillingCity);
+                this.setEncBillingZipCode(_getBillingZipCode);
+                this.setEncBillingCountry(_getBillingCountry);
+                this.setEncBillingCustomFields(_getBillingCustomFields);
+                this.setEncBillingCompanyName(_getBillingCompanyName);
+                this.setEncBillingCountryCode(_getBillingCountryCode);
+                this.setEncBillingVatNumber(_getBillingVatNumber);
 
+            } else {
+                // Save the change
+                this.password = HexCodingTools.bytesToHex(passwordHash);
+                this.userSecret = HexCodingTools.bytesToHex(passwordHashForEncryption);
             }
-
-
-            // Save the change
-            this.password = HexCodingTools.bytesToHex(passwordHash);
-            this.userSecret = HexCodingTools.bytesToHex(passwordHashForEncryption);
-
         } catch (NoSuchAlgorithmException e) {
             log.error("[users] Error while hashing password", e);
             throw new ITParseException("Unsupported hashing algorithm");

@@ -133,7 +133,7 @@ public class UserTests {
         given(commonConfig.getApplicationKey()).willReturn("a84c2d1f7b9e063d5f1a2e9c3b7d408e");
 
         given(encryptionHelper.encrypt(Mockito.anyString(),Mockito.anyString(),Mockito.anyString())).willCallRealMethod();
-       // given(encryptionHelper.decrypt(Mockito.anyString(),Mockito.anyString(),Mockito.anyString())).willCallRealMethod();
+        given(encryptionHelper.decrypt(Mockito.anyString(),Mockito.anyString(),Mockito.anyString())).willCallRealMethod();
 
 
         log.info("[users] create a full user");
@@ -149,6 +149,7 @@ public class UserTests {
             assertNotEquals(user.getLogin(),"john.doe@foo.bar");
             user.setEncEmail("john.doe@foo.bar");
             assertNotEquals(user.getEmail(),"john.doe@foo.bar");
+            assertNotNull(user.getEmail());
             user.setLastLogin(regDate);
             user.setCountLogin(0);
             user.setRegistrationDate(regDate+10);
@@ -263,8 +264,34 @@ public class UserTests {
             assertNotEquals(user.getProfile().getLastName(), encLastName);
 
             log.info("[users] Verify rekeying");
-            assertEquals(user.getEncEmail(),"john.doe@foo.bar");
-            assertEquals(user.getEncRegistrationIP(),"1.1.1.1");
+            assertEquals("john.doe@foo.bar", user.getEncEmail());
+            assertEquals("1.1.1.1", user.getEncRegistrationIP());
+            assertEquals(user.getVersion(), 1);
+            assertEquals("Mr", user.getEncProfileGender());
+            assertEquals("John", user.getEncProfileFirstName());
+            assertEquals("Doe", user.getEncProfileLastName());
+            assertEquals("1 rue de la paix", user.getEncProfileAddress());
+            assertEquals("75001", user.getEncProfileZipCode());
+            assertEquals("Paris", user.getEncProfileCity());
+            assertEquals("France", user.getEncProfileCountry());
+            assertEquals("0123456789", user.getEncProfilePhone());
+            assertEquals(1,user.getProfile().getCustomFields().size());
+            assertEquals("mobile", user.getEncProfileCustomFields().get(0).getName());
+            assertEquals("0203040506", user.getEncProfileCustomFields().get(0).getValue());
+            assertEquals("Mr", user.getEncBillingGender());
+            assertEquals("John", user.getEncBillingFirstName());
+            assertEquals("Doe", user.getEncBillingLastName());
+            assertEquals("1 rue de la paix", user.getEncBillingAddress());
+            assertEquals("75001", user.getEncBillingZipCode());
+            assertEquals("Paris", user.getEncBillingCity());
+            assertEquals("France", user.getEncBillingCountry());
+            assertEquals("0123456789", user.getEncBillingPhone());
+            assertEquals("Acme Corp", user.getEncBillingCompanyName());
+            assertEquals("FR", user.getEncBillingCountryCode());
+            assertEquals("FR123456789", user.getEncBillingVatNumber());
+            assertEquals(1,user.getBillingProfile().getCustomFields().size());
+            assertEquals("mobile", user.getEncBillingCustomFields().get(0).getName());
+            assertEquals("0203040506", user.getEncBillingCustomFields().get(0).getValue());
         });
 
     }

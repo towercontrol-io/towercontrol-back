@@ -5,15 +5,18 @@ import com.disk91.common.tools.CustomField;
 import com.disk91.common.tools.EncryptionHelper;
 import com.disk91.common.tools.HexCodingTools;
 import com.disk91.common.tools.Now;
+import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
-import com.disk91.users.config.UsersConfig;
-import com.disk91.users.mdb.entities.Role;
 import com.disk91.users.mdb.entities.User;
+import com.disk91.users.mdb.entities.UserPending;
 import com.disk91.users.mdb.entities.sub.UserAcl;
 import com.disk91.users.mdb.entities.sub.UserAlertPreference;
 import com.disk91.users.mdb.entities.sub.UserBillingProfile;
 import com.disk91.users.mdb.entities.sub.UserProfile;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -21,8 +24,6 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.PropertySource;
 
 import java.util.ArrayList;
@@ -32,6 +33,7 @@ import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 @PropertySource(value = {"file:configuration/common-test.properties"}, ignoreResourceNotFound = true)
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class UserTests {
 
     private final Logger log = LoggerFactory.getLogger(this.getClass());
@@ -49,15 +51,23 @@ public class UserTests {
     private User user;
 
     @Test
+    @Order(1)
     public void testUserCreationBasicFunction() {
         log.info("[users][test] Verify the underlaying function");
         User user = new User();
 
+        given(commonConfig.getEncryptionKey()).willReturn("d5b504d560363cfe33890c4f5343f387");
+        given(commonConfig.getApplicationKey()).willReturn("a84c2d1f7b9e063d5f1a2e9c3b7d408e");
+
+        given(encryptionHelper.encrypt(Mockito.anyString(),Mockito.anyString(),Mockito.anyString())).willCallRealMethod();
+        given(encryptionHelper.decrypt(Mockito.anyString(),Mockito.anyString(),Mockito.anyString())).willCallRealMethod();
+
+
         assertDoesNotThrow(() -> {
             user.changePassword("test", true);
-            log.info("[users] salt: " + HexCodingTools.bytesToHex(user.getSalt()));
-            log.info("[users] password (SHA-256): " + user.getPassword());
-            log.info("[users] secret (PBKDF2): " + user.getUserSecret());
+            log.info("[users][test] salt: " + HexCodingTools.bytesToHex(user.getSalt()));
+            log.info("[users][test] password (SHA-256): " + user.getPassword());
+            log.info("[users][test] secret (PBKDF2): " + user.getUserSecret());
             assertNotNull(user.getSalt());
             assertNotNull(user.getPassword());
             assertNotNull(user.getUserSecret());
@@ -67,18 +77,19 @@ public class UserTests {
         });
 
         // verify the key generation stability over time
-        user2.setSalt(HexCodingTools.getByteArrayFromHexString("BC286F817E11B76ADC7DDCB4634B6350"));
+        user2.setSalt(HexCodingTools.getByteArrayFromHexString("21AFD07BF82F5F9139942BCB3910619E"));
+        user2.setSecret("ED8075DF985E20F80F3248DCCC11FEFD");
         assertDoesNotThrow(() -> {
             user2.changePassword("test", false);
-            log.info("[users] salt: " + HexCodingTools.bytesToHex(user2.getSalt()));
-            log.info("[users] password (SHA-256): " + user2.getPassword());
-            log.info("[users] secret (PBKDF2): " + user2.getUserSecret());
+            log.info("[users][test] salt: " + HexCodingTools.bytesToHex(user2.getSalt()));
+            log.info("[users][test] password (SHA-256): " + user2.getPassword());
+            log.info("[users][test] secret (PBKDF2): " + user2.getUserSecret());
             assertNotNull(user2.getSalt());
             assertNotNull(user2.getPassword());
             assertNotNull(user2.getUserSecret());
-            assertEquals(HexCodingTools.bytesToHex(user2.getSalt()),"BC286F817E11B76ADC7DDCB4634B6350");
-            assertEquals(user2.getPassword(), "173B7CEDB8897F431652989A3A93CD6FA7738AAB230608304538912B5828565D"); // 32 Bytes
-            assertEquals(user2.getUserSecret(),"A464D41E7EAD794F4BFA5761561A757D"); // 16 Bytes
+            assertEquals(HexCodingTools.bytesToHex(user2.getSalt()),"21AFD07BF82F5F9139942BCB3910619E");
+            assertEquals(user2.getPassword(), "8C9830810DD36F82E1AD24762ADD3477BF64378ECA36CD5D61772BC76B865930"); // 32 Bytes
+            assertEquals(user2.getUserSecret(),"ED8075DF985E20F80F3248DCCC11FEFD"); // 16 Bytes
         });
 
         // make sure salt is working
@@ -87,29 +98,23 @@ public class UserTests {
         // make sure we don't generate the same hash with two different methods
         assertNotEquals(user.getPassword(), user.getUserSecret());
 
-        given(commonConfig.getEncryptionKey()).willReturn("d5b504d560363cfe33890c4f5343f387");
-        given(commonConfig.getApplicationKey()).willReturn("a84c2d1f7b9e063d5f1a2e9c3b7d408e");
-
-        given(encryptionHelper.encrypt(Mockito.anyString(),Mockito.anyString(),Mockito.anyString())).willCallRealMethod();
-        given(encryptionHelper.decrypt(Mockito.anyString(),Mockito.anyString(),Mockito.anyString())).willCallRealMethod();
-
         // encrypt the email
         assertDoesNotThrow(() -> {
             user2.setEncEmail("test@foo.bar");
-            log.info("[users] email: " + user2.getEmail());
-            assertEquals(user2.getEmail(), "ML4RUO65gZj8x+My+IkpRA==");
+            log.info("[users][test] email: " + user2.getEmail());
+            assertEquals("7dZ4AZCzdis6/5jUr+7LeA==",user2.getEmail());
 
             user2.setEncRegistrationIP("1.1.1.1");
-            log.info("[users] registration IP: " + user2.getRegistrationIP());
-            assertEquals(user2.getRegistrationIP(), "8c+GRvJJ3e94R1prhJ3okg==");
+            log.info("[users][test] registration IP: " + user2.getRegistrationIP());
+            assertEquals("C0e5mJe2s9hQg2QVQI9VVg==",user2.getRegistrationIP());
         });
 
         // decrypt the email
         assertDoesNotThrow(() -> {
-            log.info("[users] email: " + user2.getEncEmail());
+            log.info("[users][test] email: " + user2.getEncEmail());
             assertEquals(user2.getEncEmail(), "test@foo.bar");
 
-            log.info("[users] registration IP: " + user2.getEncRegistrationIP());
+            log.info("[users][test] registration IP: " + user2.getEncRegistrationIP());
             assertEquals(user2.getEncRegistrationIP(),"1.1.1.1");
         });
 
@@ -123,9 +128,9 @@ public class UserTests {
 
 
     @Test
+    @Order(2)
     public void testNewUserCreation() {
         log.info("[users][test] Create new User");
-        String regId = HexCodingTools.getRandomHexString(128);
         String presetId = HexCodingTools.getRandomHexString(128);
         long regDate = Now.NowUtcMs();
 
@@ -136,7 +141,7 @@ public class UserTests {
         given(encryptionHelper.decrypt(Mockito.anyString(),Mockito.anyString(),Mockito.anyString())).willCallRealMethod();
 
 
-        log.info("[users] create a full user");
+        log.info("[users][test] create a full user");
         assertDoesNotThrow(() -> {
             user.changePassword("test", true);
             assertNotNull(user.getSalt());
@@ -156,7 +161,6 @@ public class UserTests {
             user.setEncRegistrationIP("1.1.1.1");
             assertNotEquals(user.getLogin(),"1.1.1.1");
             user.setModificationDate(regDate+20);
-            user.setValidationId(regId);
             user.setPasswordResetId(presetId);
             user.setPasswordResetExp(regDate+1000);
             user.setActive(true);
@@ -219,7 +223,7 @@ public class UserTests {
         });
 
         // Verify the user is well created
-        log.info("[users] Verify the user is well created and encryption made");
+        log.info("[users][test] Verify the user is well created and encryption made");
         assertEquals(user.getVersion(), 1);
         assertNotEquals(user.getLogin(),"john.doe@foo.bar");
         assertNotEquals(user.getEmail(), "john.doe@foo.bar");
@@ -255,7 +259,7 @@ public class UserTests {
         String encLastName = user.getBillingProfile().getLastName();
         String encVat = user.getBillingProfile().getVatNumber();
 
-        log.info("[users] Rekeying the user");
+        log.info("[users][test] Rekeying the user");
         assertDoesNotThrow(() -> {
             user.changePassword("newTest", false);
             assertNotEquals(user.getBillingProfile().getVatNumber(), encVat);
@@ -263,7 +267,7 @@ public class UserTests {
             assertNotEquals(user.getEmail(), encEmail);
             assertNotEquals(user.getProfile().getLastName(), encLastName);
 
-            log.info("[users] Verify rekeying");
+            log.info("[users][test]  Verify rekeying");
             assertEquals("john.doe@foo.bar", user.getEncEmail());
             assertEquals("1.1.1.1", user.getEncRegistrationIP());
             assertEquals(user.getVersion(), 1);
@@ -292,6 +296,56 @@ public class UserTests {
             assertEquals(1,user.getBillingProfile().getCustomFields().size());
             assertEquals("mobile", user.getEncBillingCustomFields().get(0).getName());
             assertEquals("0203040506", user.getEncBillingCustomFields().get(0).getValue());
+        });
+    }
+
+
+    @InjectMocks
+    private UserPending userPending;
+
+    @InjectMocks
+    private UserPending userPending2;
+
+    @Test
+    @Order(3)
+    public void testUserPending() {
+        log.info("[users][test] Manage User Pending Creation");
+        String presetId = HexCodingTools.getRandomHexString(128);
+        long regDate = Now.NowUtcMs();
+
+        given(commonConfig.getEncryptionKey()).willReturn("d5b504d560363cfe33890c4f5343f387");
+
+        given(encryptionHelper.encrypt(Mockito.anyString(),Mockito.anyString(),Mockito.anyString())).willCallRealMethod();
+        given(encryptionHelper.decrypt(Mockito.anyString(),Mockito.anyString(),Mockito.anyString())).willCallRealMethod();
+
+        assertDoesNotThrow(() -> {
+            userPending.init("john.doe@foo.bar", 1000);
+            userPending2.init("john.doe@foo.bar", 2000);
+            assertNotNull(userPending.getEmail());
+            assertNotEquals("john.doe@foo.bar", userPending.getEmail());
+            assertNotNull(userPending.getValidationId());
+            assertEquals(128, userPending.getValidationId().length());
+            assertNotNull(userPending2.getEmail());
+            assertNotEquals("john.doe@foo.bar", userPending2.getEmail());
+            assertNotNull(userPending2.getValidationId());
+            assertEquals(128, userPending2.getValidationId().length());
+            assertEquals(userPending.getEmail(), userPending2.getEmail());
+            assertNotEquals(userPending.getValidationId(), userPending2.getValidationId());
+
+            assertTrue(userPending.getCreationDate()-Now.NowUtcMs() < 1000);
+            assertTrue(userPending.getExpirationDate()-userPending.getCreationDate() == 1000);
+        });
+
+        log.info("[users][test] Manage User Pending Verify");
+        assertThrows(ITNotFoundException.class, () -> {
+            Thread.sleep(1000); // this may expire the userPending
+            userPending.verify(userPending.getValidationId());
+        });
+        assertDoesNotThrow(() -> {
+            userPending2.verify(userPending2.getValidationId());
+        });
+        assertThrows(ITNotFoundException.class, () -> {
+            userPending.verify("1234567890123456789012345678901234567890123456789012345678901234");
         });
 
     }

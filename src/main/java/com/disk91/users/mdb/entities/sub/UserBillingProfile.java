@@ -46,7 +46,7 @@ public class UserBillingProfile extends UserProfile {
     // === CLONE ===
 
     public UserBillingProfile clone() {
-        UserBillingProfile u = (UserBillingProfile) super.clone();
+        UserBillingProfile u = new UserBillingProfile();
         u.setCompanyName(this.companyName);
         u.setCountryCode(this.countryCode);
         u.setVatNumber(this.vatNumber);

@@ -98,9 +98,6 @@ public class User implements CloneableObject<User> {
     // Last profile modification date in Ms since epoch
     protected long modificationDate;
 
-    // Validation String used during registration process
-    protected String validationId;
-
     // Password Reset String used to validate the password reset process
     protected String passwordResetId;
 
@@ -161,6 +158,7 @@ public class User implements CloneableObject<User> {
     @Autowired
     protected CommonConfig commonConfig;
 
+
     /**
      * Generate the encryption key used for the personal or confidential data encryption
      * This key is based on different element to maximize the security. It required the
@@ -201,6 +199,13 @@ public class User implements CloneableObject<User> {
     public void changePassword(String password, boolean create)
     throws ITParseException
     {
+        // Make sure structure is complete
+        if ( this.roles == null ) this.roles = new ArrayList<>();
+        if ( this.acls == null ) this.acls = new ArrayList<>();
+        if ( this.profile == null ) this.profile = new UserProfile();
+        if ( this.billingProfile == null ) this.billingProfile = new UserBillingProfile();
+        if ( this.alertPreference == null ) this.alertPreference = new UserAlertPreference();
+
         // If creation we need to generate a new salt
         if ( create ) {
             this.salt = new byte[16];
@@ -226,56 +231,56 @@ public class User implements CloneableObject<User> {
             if ( ! create ) {
                 // We need to rekey all the encrypted data
                 // Decode all Data ...
-                String _email = this.getEncEmail();
-                String _getRegistrationIP = this.getEncRegistrationIP();
-                String _getProfileGender = this.getEncProfileGender();
-                String _getProfileFirstName = this.getEncProfileFirstName();
-                String _getProfileLastName = this.getEncProfileLastName();
-                String _getProfilePhone = this.getEncProfilePhone();
-                String _getProfileAddress = this.getEncProfileAddress();
-                String _getProfileCity = this.getEncProfileCity();
-                String _getProfileZipCode = this.getEncProfileZipCode();
-                String _getProfileCountry = this.getEncProfileCountry();
-                ArrayList<CustomField> _getProfileCustomFields = this.getEncProfileCustomFields();
-                String _getBillingGender = this.getEncBillingGender();
-                String _getBillingFirstName = this.getEncBillingFirstName();
-                String _getBillingLastName = this.getEncBillingLastName();
-                String _getBillingPhone = this.getEncBillingPhone();
-                String _getBillingAddress = this.getEncBillingAddress();
-                String _getBillingCity = this.getEncBillingCity();
-                String _getBillingZipCode = this.getEncBillingZipCode();
-                String _getBillingCountry = this.getEncBillingCountry();
-                ArrayList<CustomField> _getBillingCustomFields = this.getEncBillingCustomFields();
-                String _getBillingCompanyName = this.getEncBillingCompanyName();
-                String _getBillingCountryCode = this.getEncBillingCountryCode();
-                String _getBillingVatNumber = this.getEncBillingVatNumber();
+                String _email = ( this.email != null ) ? this.getEncEmail() : null;
+                String _getRegistrationIP = ( this.registrationIP != null ) ? this.getEncRegistrationIP() : null;
+                String _getProfileGender = (this.profile.getGender() != null )? this.getEncProfileGender() : null;
+                String _getProfileFirstName = (this.profile.getFirstName() != null )? this.getEncProfileFirstName() :null;
+                String _getProfileLastName = (this.profile.getLastName() != null )?this.getEncProfileLastName() :null;
+                String _getProfilePhone = (this.profile.getPhoneNumber() != null )?this.getEncProfilePhone():null;
+                String _getProfileAddress = (this.profile.getAddress() != null )?this.getEncProfileAddress() : null;
+                String _getProfileCity = (this.profile.getCity() != null )?this.getEncProfileCity():null;
+                String _getProfileZipCode = (this.profile.getZipCode() != null )?this.getEncProfileZipCode():null;
+                String _getProfileCountry = (this.profile.getCountry() != null )?this.getEncProfileCountry():null;
+                ArrayList<CustomField> _getProfileCustomFields = (this.profile.getCustomFields() != null )?this.getEncProfileCustomFields():null;
+                String _getBillingGender = (this.billingProfile.getGender() != null )?this.getEncBillingGender():null;
+                String _getBillingFirstName = (this.billingProfile.getFirstName() != null )?this.getEncBillingFirstName():null;
+                String _getBillingLastName = (this.billingProfile.getLastName() != null )?this.getEncBillingLastName():null;
+                String _getBillingPhone = (this.billingProfile.getPhoneNumber() != null )?this.getEncBillingPhone():null;
+                String _getBillingAddress = (this.billingProfile.getAddress() != null )?this.getEncBillingAddress():null;
+                String _getBillingCity = (this.billingProfile.getCity() != null )?this.getEncBillingCity():null;
+                String _getBillingZipCode = (this.billingProfile.getZipCode() != null )?this.getEncBillingZipCode():null;
+                String _getBillingCountry = (this.billingProfile.getCountry() != null )?this.getEncBillingCountry():null;
+                ArrayList<CustomField> _getBillingCustomFields = (this.billingProfile.getCustomFields() != null )?this.getEncBillingCustomFields():null;
+                String _getBillingCompanyName = (this.billingProfile.getCompanyName() != null )?this.getEncBillingCompanyName():null;
+                String _getBillingCountryCode = (this.billingProfile.getCountryCode()!= null )?this.getEncBillingCountryCode():null;
+                String _getBillingVatNumber = (this.billingProfile.getVatNumber() != null )?this.getEncBillingVatNumber():null;
 
                 // Re-encrypt all data
                 this.password = HexCodingTools.bytesToHex(passwordHash);
                 this.userSecret = HexCodingTools.bytesToHex(passwordHashForEncryption);
-                this.setEncEmail(_email);
-                this.setEncRegistrationIP(_getRegistrationIP);
-                this.setEncProfileGender(_getProfileGender);
-                this.setEncProfileFirstName(_getProfileFirstName);
-                this.setEncProfileLastName(_getProfileLastName);
-                this.setEncProfilePhone(_getProfilePhone);
-                this.setEncProfileAddress(_getProfileAddress);
-                this.setEncProfileCity(_getProfileCity);
-                this.setEncProfileZipCode(_getProfileZipCode);
-                this.setEncProfileCountry(_getProfileCountry);
-                this.setEncProfileCustomFields(_getProfileCustomFields);
-                this.setEncBillingGender(_getBillingGender);
-                this.setEncBillingFirstName(_getBillingFirstName);
-                this.setEncBillingLastName(_getBillingLastName);
-                this.setEncBillingPhone(_getBillingPhone);
-                this.setEncBillingAddress(_getBillingAddress);
-                this.setEncBillingCity(_getBillingCity);
-                this.setEncBillingZipCode(_getBillingZipCode);
-                this.setEncBillingCountry(_getBillingCountry);
-                this.setEncBillingCustomFields(_getBillingCustomFields);
-                this.setEncBillingCompanyName(_getBillingCompanyName);
-                this.setEncBillingCountryCode(_getBillingCountryCode);
-                this.setEncBillingVatNumber(_getBillingVatNumber);
+                if ( _email != null) this.setEncEmail(_email);
+                if ( _getRegistrationIP != null) this.setEncRegistrationIP(_getRegistrationIP);
+                if ( _getProfileGender != null) this.setEncProfileGender(_getProfileGender);
+                if ( _getProfileFirstName != null) this.setEncProfileFirstName(_getProfileFirstName);
+                if ( _getProfileLastName != null) this.setEncProfileLastName(_getProfileLastName);
+                if ( _getProfilePhone != null) this.setEncProfilePhone(_getProfilePhone);
+                if ( _getProfileAddress != null) this.setEncProfileAddress(_getProfileAddress);
+                if ( _getProfileCity != null) this.setEncProfileCity(_getProfileCity);
+                if ( _getProfileZipCode != null) this.setEncProfileZipCode(_getProfileZipCode);
+                if ( _getProfileCountry != null) this.setEncProfileCountry(_getProfileCountry);
+                if ( _getProfileCustomFields != null) this.setEncProfileCustomFields(_getProfileCustomFields);
+                if ( _getBillingGender != null) this.setEncBillingGender(_getBillingGender);
+                if ( _getBillingFirstName != null) this.setEncBillingFirstName(_getBillingFirstName);
+                if ( _getBillingLastName != null) this.setEncBillingLastName(_getBillingLastName);
+                if ( _getBillingPhone != null) this.setEncBillingPhone(_getBillingPhone);
+                if ( _getBillingAddress != null) this.setEncBillingAddress(_getBillingAddress);
+                if ( _getBillingCity != null) this.setEncBillingCity(_getBillingCity);
+                if ( _getBillingZipCode != null) this.setEncBillingZipCode(_getBillingZipCode);
+                if ( _getBillingCountry != null) this.setEncBillingCountry(_getBillingCountry);
+                if ( _getBillingCustomFields != null) this.setEncBillingCustomFields(_getBillingCustomFields);
+                if ( _getBillingCompanyName != null) this.setEncBillingCompanyName(_getBillingCompanyName);
+                if ( _getBillingCountryCode != null) this.setEncBillingCountryCode(_getBillingCountryCode);
+                if ( _getBillingVatNumber != null) this.setEncBillingVatNumber(_getBillingVatNumber);
 
             } else {
                 // Save the change
@@ -606,7 +611,6 @@ public class User implements CloneableObject<User> {
         u.setRegistrationDate(this.registrationDate);
         u.setRegistrationIP(this.registrationIP);
         u.setModificationDate(this.modificationDate);
-        u.setValidationId(this.validationId);
         u.setPasswordResetId(this.passwordResetId);
         u.setPasswordResetExp(this.passwordResetExp);
         u.setActive(this.active);
@@ -743,14 +747,6 @@ public class User implements CloneableObject<User> {
 
     public void setModificationDate(long modificationDate) {
         this.modificationDate = modificationDate;
-    }
-
-    public String getValidationId() {
-        return validationId;
-    }
-
-    public void setValidationId(String validationId) {
-        this.validationId = validationId;
     }
 
     public String getPasswordResetId() {

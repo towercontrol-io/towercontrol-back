@@ -8,7 +8,7 @@ import com.disk91.common.tools.Now;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.users.mdb.entities.User;
-import com.disk91.users.mdb.entities.UserPending;
+import com.disk91.users.mdb.entities.UserRegistration;
 import com.disk91.users.mdb.entities.sub.UserAcl;
 import com.disk91.users.mdb.entities.sub.UserAlertPreference;
 import com.disk91.users.mdb.entities.sub.UserBillingProfile;
@@ -65,6 +65,8 @@ public class UserTests {
 
         assertDoesNotThrow(() -> {
             user.changePassword("test", true);
+            user.setEncLogin("john.doe@foo.bar");
+            log.info("[users][test] login: " + user.getLogin());
             log.info("[users][test] salt: " + HexCodingTools.bytesToHex(user.getSalt()));
             log.info("[users][test] password (SHA-256): " + user.getPassword());
             log.info("[users][test] secret (PBKDF2): " + user.getUserSecret());
@@ -258,10 +260,12 @@ public class UserTests {
         String encFirstName = user.getProfile().getFirstName();
         String encLastName = user.getBillingProfile().getLastName();
         String encVat = user.getBillingProfile().getVatNumber();
+        String encLogin = user.getLogin();
 
         log.info("[users][test] Rekeying the user");
         assertDoesNotThrow(() -> {
             user.changePassword("newTest", false);
+            assertEquals(encLogin, user.getLogin());
             assertNotEquals(user.getBillingProfile().getVatNumber(), encVat);
             assertNotEquals(user.getProfile().getFirstName(), encFirstName);
             assertNotEquals(user.getEmail(), encEmail);
@@ -301,10 +305,10 @@ public class UserTests {
 
 
     @InjectMocks
-    private UserPending userPending;
+    private UserRegistration userRegistration;
 
     @InjectMocks
-    private UserPending userPending2;
+    private UserRegistration userRegistration2;
 
     @Test
     @Order(3)
@@ -319,33 +323,33 @@ public class UserTests {
         given(encryptionHelper.decrypt(Mockito.anyString(),Mockito.anyString(),Mockito.anyString())).willCallRealMethod();
 
         assertDoesNotThrow(() -> {
-            userPending.init("john.doe@foo.bar", 1000);
-            userPending2.init("john.doe@foo.bar", 2000);
-            assertNotNull(userPending.getEmail());
-            assertNotEquals("john.doe@foo.bar", userPending.getEmail());
-            assertNotNull(userPending.getValidationId());
-            assertEquals(128, userPending.getValidationId().length());
-            assertNotNull(userPending2.getEmail());
-            assertNotEquals("john.doe@foo.bar", userPending2.getEmail());
-            assertNotNull(userPending2.getValidationId());
-            assertEquals(128, userPending2.getValidationId().length());
-            assertEquals(userPending.getEmail(), userPending2.getEmail());
-            assertNotEquals(userPending.getValidationId(), userPending2.getValidationId());
+            userRegistration.init("john.doe@foo.bar", "1.1.1.1",1000);
+            userRegistration2.init("john.doe@foo.bar", "1.1.1.1", 2000);
+            assertNotNull(userRegistration.getEmail());
+            assertNotEquals("john.doe@foo.bar", userRegistration.getEmail());
+            assertNotNull(userRegistration.getValidationId());
+            assertEquals(128, userRegistration.getValidationId().length());
+            assertNotNull(userRegistration2.getEmail());
+            assertNotEquals("john.doe@foo.bar", userRegistration2.getEmail());
+            assertNotNull(userRegistration2.getValidationId());
+            assertEquals(128, userRegistration2.getValidationId().length());
+            assertEquals(userRegistration.getEmail(), userRegistration2.getEmail());
+            assertNotEquals(userRegistration.getValidationId(), userRegistration2.getValidationId());
 
-            assertTrue(userPending.getCreationDate()-Now.NowUtcMs() < 1000);
-            assertTrue(userPending.getExpirationDate()-userPending.getCreationDate() == 1000);
+            assertTrue(userRegistration.getCreationDate()-Now.NowUtcMs() < 1000);
+            assertTrue(userRegistration.getExpirationDate()- userRegistration.getCreationDate() == 1000);
         });
 
         log.info("[users][test] Manage User Pending Verify");
         assertThrows(ITNotFoundException.class, () -> {
             Thread.sleep(1000); // this may expire the userPending
-            userPending.verify(userPending.getValidationId());
+            userRegistration.verify(userRegistration.getValidationId());
         });
         assertDoesNotThrow(() -> {
-            userPending2.verify(userPending2.getValidationId());
+            userRegistration2.verify(userRegistration2.getValidationId());
         });
         assertThrows(ITNotFoundException.class, () -> {
-            userPending.verify("1234567890123456789012345678901234567890123456789012345678901234");
+            userRegistration.verify("1234567890123456789012345678901234567890123456789012345678901234");
         });
 
     }

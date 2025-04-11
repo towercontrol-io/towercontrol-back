@@ -27,14 +27,62 @@ public class IntracomMessage {
     @Id
     protected String id = null;
 
-    // Creation Timestamp in ms
+    // Creation Timestamp in ms ; Id is used as a reference as ID contains Time stamp
     protected long creationMs;
 
+    // Name of the sender, the list is dynamic and come from the property file
+    // default setup in the Config files, constant listed in service
+    protected String sender;
 
+    // Name of the action, the list is dynamic and comes from every service configuration
+    // properties and Config files
+    protected String action;
+
+    // Generic object used as parameter of the action
+    protected Object parameter;
 
 
     // ================================================================================================================
     // Getters / Setters
 
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public long getCreationMs() {
+        return creationMs;
+    }
+
+    public void setCreationMs(long creationMs) {
+        this.creationMs = creationMs;
+    }
+
+    public String getSender() {
+        return sender;
+    }
+
+    public void setSender(String sender) {
+        this.sender = sender;
+    }
+
+    public String getAction() {
+        return action;
+    }
+
+    public void setAction(String action) {
+        this.action = action;
+    }
+
+    public Object getParameter() {
+        return parameter;
+    }
+
+    public void setParameter(Object parameter) {
+        this.parameter = parameter;
+    }
 }
 

@@ -139,6 +139,13 @@ public class Now {
         } catch ( InterruptedException x ) {};
     }
 
+    public static void randomSleep(long min, long max) {
+        long ms = min + (long)(Math.random() * (max - min));
+        try {
+            Thread.sleep(ms);
+        } catch ( InterruptedException x ) {};
+    }
+
     public static long ONE_FULL_DAY = 24*3600*1000;
     public static long ONE_HOUR = 3600 * 1000;
 

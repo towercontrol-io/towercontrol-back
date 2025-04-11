@@ -44,7 +44,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @CompoundIndexes({
         @CompoundIndex(name = "activation_key", def = "{'activation': 'hashed'}"),
 })
-public class UserPending {
+public class UserRegistration {
 
     @Transient
     private final Logger log = LoggerFactory.getLogger(this.getClass());
@@ -55,6 +55,9 @@ public class UserPending {
     // Encrypted email to be verified
     protected String email;
 
+    // Requestor IP
+    protected String requestorIP;
+
     // Random String for validation
     protected String validationId;
 
@@ -63,6 +66,9 @@ public class UserPending {
 
     // Entry Expiration date
     protected long expirationDate;
+
+    // Registration code - not mandatory - to trace the request on device creation
+    protected String registrationCode;
 
     // ===========================
 
@@ -84,10 +90,16 @@ public class UserPending {
      * @param expirationMs
      * @throws ITParseException
      */
-    public void init(String _email, long expirationMs)  throws ITParseException {
+    public void init(String _email, String _ip, long expirationMs)  throws ITParseException {
+
         this.email = encryptionHelper.encrypt(_email, __iv, commonConfig.getEncryptionKey());
-        if ( this.email == null ) {
-            log.error("[users] Error while encrypting email");
+
+        if ( _ip == null || _ip.length() == 0 ) {
+            _ip = "0.0.0.0";
+        }
+        this.requestorIP = encryptionHelper.encrypt(_ip, __iv, commonConfig.getEncryptionKey());
+        if ( this.email == null || this.requestorIP == null ) {
+            log.error("[users] Error while encrypting email/IP");
             throw new ITParseException("Email encryption failed");
         }
         this.validationId = HexCodingTools.getRandomHexString(128);
@@ -155,5 +167,21 @@ public class UserPending {
 
     public void setExpirationDate(long expirationDate) {
         this.expirationDate = expirationDate;
+    }
+
+    public String getRequestorIP() {
+        return requestorIP;
+    }
+
+    public void setRequestorIP(String requestorIP) {
+        this.requestorIP = requestorIP;
+    }
+
+    public String getRegistrationCode() {
+        return registrationCode;
+    }
+
+    public void setRegistrationCode(String registrationCode) {
+        this.registrationCode = registrationCode;
     }
 }

@@ -38,15 +38,62 @@ public class UsersConfig {
 
     // Service Id used for multi-instance environment, must be different for every instances
     @Value("${common.service.id:83DZqvwbXzmtllVq}")
-    private String commonServiceId;
+    protected String commonServiceId;
     public String getCommonServiceId() {
         return (commonServiceId.isEmpty())?"83DZqvwbXzmtllVq":commonServiceId;
     }
 
     // Select the medium to be used for the intracom service communication
     @Value("${users.intracom.medium:db}")
-    private String usersIntracomMedium;
+    protected String usersIntracomMedium;
     public String getUsersIntracomMedium() {
         return usersIntracomMedium;
     }
+
+    // ----------------------------------------------
+    // Users setup
+    // ----------------------------------------------
+
+    @Value("${users.registration.self:false}")
+    protected boolean usersRegistrationSelf;
+    public boolean isUsersRegistrationSelf() {
+        return usersRegistrationSelf;
+    }
+
+    @Value("${users.registration.email.maxlength:128}")
+    protected int usersRegistrationEmailMaxLength;
+    public int getUsersRegistrationEmailMaxLength() {
+        return usersRegistrationEmailMaxLength;
+    }
+
+    @Value("${users.registration.with.invitecode:fales}")
+    protected boolean usersRegistrationWithInviteCode;
+    public boolean isUsersRegistrationWithInviteCode() {
+        return usersRegistrationWithInviteCode;
+    }
+
+    @Value("${users.registration.email.filters:}")
+    protected String usersRegistrationEmailFilters;
+    public String getUsersRegistrationEmailFilters() {
+        return usersRegistrationEmailFilters;
+    }
+
+    @Value("${users.registration.link.expiration:3600}")
+    protected long usersRegistrationLinkExpiration;
+    public long getUsersRegistrationLinkExpiration() {
+        return usersRegistrationLinkExpiration;
+    }
+
+    @Value("${user.registration.link.byemail:true}")
+    protected boolean userRegistrationLinkByEmail;
+    public boolean isUserRegistrationLinkByEmail() {
+        return userRegistrationLinkByEmail;
+    }
+
+    @Value("${user.registration.path:registration/!0!/confirm}")
+    protected String userRegistrationPath;
+    public String getUserRegistrationPath() {
+        return userRegistrationPath;
+    }
+
 }

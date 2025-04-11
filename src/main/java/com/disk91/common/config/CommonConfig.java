@@ -47,6 +47,78 @@ public class CommonConfig {
         return applicationKey;
     }
 
+    @Value("${common.mail.sender:contact@foo.bar}")
+    protected String commonMailSender;
+    public String getCommonMailSender() {
+        return commonMailSender;
+    }
+
+    @Value("${common.service.name:ITC}")
+    protected String commonServiceName;
+    public String getCommonServiceName() {
+        return commonServiceName;
+    }
+
+    @Value("${common.service.back.domain:api.foo.bar}")
+    protected String commonServiceBackDomain;
+    public String getCommonServiceBackDomain() {
+        return commonServiceBackDomain;
+    }
+    @Value("${common.service.front.domain:itc.foo.bar}")
+    protected String commonServiceFrontDomain;
+    public String getCommonServiceFrontDomain() {
+        return commonServiceFrontDomain;
+    }
+
+
+    @Value("${common.service.back.baseurl:https://api.foo.bar}")
+    protected String commonServiceBackBaseUrl;
+    public String getCommonServiceBackBaseUrl() {
+        return commonServiceBackBaseUrl;
+    }
+    @Value("${common.service.front.baseurl:https://itc.foo.bar}")
+    protected String commonServiceFrontBaseUrl;
+    public String getCommonServiceFrontBaseUrl() {
+        return commonServiceFrontBaseUrl;
+    }
+
+    // Port as a num
+    @Value("${common.service.back.port:-1}")
+    protected int commonServiceBackPort;
+    public int getCommonServiceBackPort() {
+        return commonServiceBackPort;
+    }
+    @Value("${common.service.front.port:-1}")
+    protected int commonServiceFrontPort;
+    public int getCommonServiceFrontPort() {
+        return commonServiceFrontPort;
+    }
+
+    // Compose and url for a given path
+    public String getCommonServiceUrl(String path, boolean isFront) {
+        if (path.startsWith("/")) {
+            path = path.substring(1);
+        }
+        if ( isFront ) {
+            if ( this.getCommonServiceBackPort() > 0 ) {
+                return commonServiceBackBaseUrl + ":" + commonServiceBackPort + "/" + path;
+            } else {
+                return commonServiceBackBaseUrl + "/" + path;
+            }
+        } else {
+            if ( this.getCommonServiceFrontPort() > 0 ) {
+                return commonServiceFrontBaseUrl + ":" + commonServiceFrontPort + "/" + path;
+            } else {
+                return commonServiceFrontBaseUrl + "/" + path;
+            }
+        }
+    }
+
+    @Value("${common.lang.default:en}")
+    protected String commonLangDefault;
+    public String getCommonLangDefault() {
+        return commonLangDefault;
+    }
 
     // ----------------------------------------------
     // Database setup

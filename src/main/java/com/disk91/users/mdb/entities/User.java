@@ -305,22 +305,29 @@ public class User implements CloneableObject<User> {
     protected EncryptionHelper encryptionHelper;
 
 
+    @Transient
+    private static String LOGINSALT_STR = "8c7b5e6d3f2a1b4c9d0e7f3a6c5b2d1e";
     /**
      * Set the login of the user, this is the login used to authenticate the user
-     * We use a Hash of the login to avoid storing the login in clear text
+     * We use a Hash of the login to avoid storing the login in clear text.
+     * Login use a global slat and is global function
      * @return
      */
-    public void setEncLogin(String login) throws ITParseException {
-        if ( this.salt == null || this.salt.length != 16 ) {
-            log.error("[users] Salt is not set or not 16 bytes long");
-            throw new ITParseException("Invalid Salt");
-        }
+    public static String encodeLogin(String login) throws ITParseException {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            digest.update(this.salt);
-            byte[] loginHash = digest.digest(password.getBytes(StandardCharsets.UTF_8));
-            this.login = HexCodingTools.bytesToHex(loginHash);
+            digest.update(HexCodingTools.getByteArrayFromHexString(LOGINSALT_STR));
+            byte[] loginHash = digest.digest(login.getBytes(StandardCharsets.UTF_8));
+            return HexCodingTools.bytesToHex(loginHash);
         } catch (NoSuchAlgorithmException e) {
+            throw new ITParseException("Unsupported hashing algorithm");
+        }
+    }
+
+    public void setEncLogin(String login) throws ITParseException {
+        try {
+            this.login = encodeLogin(login);
+        } catch (ITParseException e) {
             log.error("[users] Error while hashing login", e);
             throw new ITParseException("Unsupported hashing algorithm");
         }

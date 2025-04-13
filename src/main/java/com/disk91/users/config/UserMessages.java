@@ -32,9 +32,10 @@ public class UserMessages {
     @Bean
     public MessageSource  messageSource() {
         ReloadableResourceBundleMessageSource messageSource = new ReloadableResourceBundleMessageSource();
-        messageSource.setBasename("file:configuration/users.messages.properties");
+        messageSource.setBasename("file:configuration/users.messages");
         messageSource.setDefaultLocale(Locale.ENGLISH);
         messageSource.setDefaultEncoding("UTF-8");
+        messageSource.setUseCodeAsDefaultMessage(true);
         return messageSource;
     }
 }

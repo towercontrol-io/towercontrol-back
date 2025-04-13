@@ -181,7 +181,7 @@ public class UserRegistrationService {
                 ModuleCatalog.Modules.USERS,
                 ActionCatalog.getActionName(ActionCatalog.Actions.REGISTRATION),
                 User.encodeLogin(body.getEmail())+" registered with email {0} from IP {1}",
-                new String[]{body.getEmail(), (req != null) ? req.getHeader("x-real-ip") : ""}
+                new String[]{body.getEmail(), (req != null && req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
         );
 
     }

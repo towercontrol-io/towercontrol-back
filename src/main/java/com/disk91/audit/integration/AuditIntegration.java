@@ -66,7 +66,11 @@ public class AuditIntegration {
         a.setParams(new ArrayList<String>());
         if ( params != null ) {
             for (String param : params) {
-                a.getParams().add(EncryptionHelper.encrypt(param, IV, commonConfig.getEncryptionKey()));
+                if ( param != null ) {
+                    a.getParams().add(EncryptionHelper.encrypt(param, IV, commonConfig.getEncryptionKey()));
+                } else {
+                    a.getParams().add(EncryptionHelper.encrypt("Unknown", IV, commonConfig.getEncryptionKey()));
+                }
             }
         }
         return a;
@@ -116,7 +120,7 @@ public class AuditIntegration {
      * @param service
      */
     public void auditLog(AuditMessage message, ModuleCatalog.Modules service) {
-        log.debug("[audit] Audit log: {}", message);
+        log.debug("[audit] Audit log: {}", this.toString(message));
 
         InterfaceQuery query = new InterfaceQuery(service);
         query.setServiceNameDest(ModuleCatalog.Modules.AUDIT);
@@ -128,7 +132,7 @@ public class AuditIntegration {
     }
 
     public void auditLogIntegration(InterfaceQuery query) {
-        log.debug("Audit log integration: {}", (String)query.getQuery());
+        log.debug("Audit log integration: {}", query.getQueryId());
         integrationService.processQuery(query);
     }
 

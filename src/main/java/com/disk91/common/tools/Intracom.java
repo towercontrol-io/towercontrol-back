@@ -1,5 +1,5 @@
 /*
- * Copyright (c) - Paul Pinault (aka disk91) - 2024.
+ * Copyright (c) - Paul Pinault (aka disk91) - 2025.
  *
  *    Permission is hereby granted, free of charge, to any person obtaining a copy of this software
  *    and associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -17,24 +17,25 @@
  *    WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  *    IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package com.disk91.users.config;
+package com.disk91.common.tools;
 
 
-import org.springframework.context.MessageSource;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.support.ReloadableResourceBundleMessageSource;
+/**
+ * This class is a generic class that will serve as the foundation for the Intracom services to offer common services
+ * and abstract the underlying communication mechanism. The general principle is to have a class that allows the emission
+ * of messages on a bus (here, a database) and for the different services to poll the sent messages. This bus does not
+ * expect responses from the services processing the messages back to the message sender. One possible implementation
+ * could later be an MQTT broker.
+ */
+public class Intracom {
 
-import java.util.Locale;
+    // Common public services and actions
+    public static final String INTRACOM_SERVICE_COMMON  = "common";
+    public static final String INTRACOM_COMMON_xxxx = "xxxxx";
 
-@Configuration
-public class UserMessages {
-    @Bean
-    public MessageSource  messageSource() {
-        ReloadableResourceBundleMessageSource messageSource = new ReloadableResourceBundleMessageSource();
-        messageSource.setBasename("file:configuration/users.messages.properties");
-        messageSource.setDefaultLocale(Locale.ENGLISH);
-        messageSource.setDefaultEncoding("UTF-8");
-        return messageSource;
-    }
+    public static final String INTRACOM_SERVICE_USERS  = "users";
+
+
+
+
 }

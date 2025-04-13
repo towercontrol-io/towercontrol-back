@@ -1,20 +1,21 @@
 package com.disk91.iot.users;
 
+import com.disk91.audit.integration.AuditIntegration;
 import com.disk91.common.config.CommonConfig;
+import com.disk91.common.tools.EmailTools;
 import com.disk91.common.tools.EncryptionHelper;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITTooManyException;
-import com.disk91.users.api.interfaces.UserAccountCreationBody;
+import com.disk91.users.api.interfaces.UserAccountRegistrationBody;
+import com.disk91.users.config.UserMessages;
 import com.disk91.users.config.UsersConfig;
 import com.disk91.users.mdb.entities.User;
 import com.disk91.users.mdb.entities.UserRegistration;
 import com.disk91.users.mdb.repositories.UserRegistrationRepository;
 import com.disk91.users.mdb.repositories.UserRepository;
 import com.disk91.users.services.UserRegistrationService;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
+import io.micrometer.core.instrument.MeterRegistry;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -31,20 +32,20 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 
+@ExtendWith(MockitoExtension.class)
 @PropertySource(value = {"file:configuration/common-test.properties"}, ignoreResourceNotFound = true)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class UserRegistrationServiceTests {
 
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
-    @Mock
-    private CommonConfig commonConfig;
 
+    // All the @Autowired are required here...
     @Mock
     private UsersConfig usersConfig;
 
     @Mock
-    private EncryptionHelper encryptionHelper;
+    private CommonConfig commonConfig;
 
     @Mock
     private UserRepository userRepository;
@@ -52,16 +53,33 @@ public class UserRegistrationServiceTests {
     @Mock
     private UserRegistrationRepository userRegistrationRepository;
 
+    @Mock
+    private EmailTools emailTools;
+
+    @Mock
+    private UserMessages userMessages;
+
+    @Mock
+    private EncryptionHelper encryptionHelper;
+
+    // Don't forget the MeterRegistry
+    @Mock
+    private MeterRegistry meterRegistry;
+
+    @Mock
+    private AuditIntegration auditIntegration;
+
     @InjectMocks
     private UserRegistrationService userRegistrationService;
 
+
+
     @Test
     @Order(1)
-    @ExtendWith(MockitoExtension.class)
     public void testUserRegistration() {
         log.info("[users][Registration][test] email structure validation");
 
-        UserAccountCreationBody body = new UserAccountCreationBody();
+        UserAccountRegistrationBody body = new UserAccountRegistrationBody();
         body.setEmail("john.doe@foo.bar");
         body.setRegistrationCode("1234567890");
 
@@ -122,7 +140,7 @@ public class UserRegistrationServiceTests {
             try  ( MockedConstruction<UserRegistration> mockedConstruction = Mockito.mockConstruction(UserRegistration.class,
                     (mock, context) -> {
                         // We don't care about the init method
-                        doNothing().when(mock).init(anyString(),anyString(),anyLong());
+                        doNothing().when(mock).init(anyString(),anyString(),anyLong(),anyString());
 
                         // Bypass the protected status for the fields to inject
                         //Field encryptionHelperField = mock.getClass().getDeclaredField("encryptionHelper");
@@ -148,6 +166,7 @@ public class UserRegistrationServiceTests {
 
                 log.info("[users][Registration][test] Registration is possible");
                 given(userRegistrationRepository.findOneUserRegistrationByEmail(any())).willReturn(null);
+                doNothing().when(auditIntegration).auditLog(any(), any(), any(), any());
                 assertDoesNotThrow(() -> {
                     userRegistrationService.requestAccountCreation(body, null);
                 });

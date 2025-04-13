@@ -23,9 +23,14 @@ package com.disk91.users.mdb.repositories;
 import com.disk91.users.mdb.entities.User;
 import com.disk91.users.mdb.entities.UserRegistration;
 import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public interface UserRegistrationRepository extends MongoRepository<UserRegistration,String> {
         public UserRegistration findOneUserRegistrationByEmail(String email);
+
+        @Query(value = "{ 'expirationDate': { $lt: ?0 } }", delete = true)
+        public void deleteByExpirationDateLowerThan(long expirationDate);
+
 }

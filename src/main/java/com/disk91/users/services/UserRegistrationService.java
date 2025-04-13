@@ -19,14 +19,17 @@
  */
 package com.disk91.users.services;
 
+import com.disk91.audit.integration.AuditIntegration;
 import com.disk91.common.config.CommonConfig;
+import com.disk91.common.config.ModuleCatalog;
 import com.disk91.common.tools.EmailTools;
 import com.disk91.common.tools.Now;
 import com.disk91.common.tools.Tools;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITRightException;
 import com.disk91.common.tools.exceptions.ITTooManyException;
-import com.disk91.users.api.interfaces.UserAccountCreationBody;
+import com.disk91.users.api.interfaces.UserAccountRegistrationBody;
+import com.disk91.users.config.ActionCatalog;
 import com.disk91.users.config.UserMessages;
 import com.disk91.users.config.UsersConfig;
 import com.disk91.users.mdb.entities.User;
@@ -40,6 +43,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.Locale;
@@ -77,6 +81,9 @@ public class UserRegistrationService {
     @Autowired
     protected UserMessages userMessages;
 
+    @Autowired
+    protected AuditIntegration auditIntegration;
+
     /**
      * Create a UserPending entry when the user request format is valid, emil not filtered and do nos already exists
      * The function will att delay to limit the ability to understand the underlaying behavior and even if reports
@@ -85,7 +92,7 @@ public class UserRegistrationService {
      * @throws ITParseException
      * @throws ITTooManyException
      */
-    public void requestAccountCreation(UserAccountCreationBody body, HttpServletRequest req)
+    public void requestAccountCreation(UserAccountRegistrationBody body, HttpServletRequest req)
         throws ITParseException, ITTooManyException, ITRightException {
 
         this.incRegistrationAttempt();
@@ -136,7 +143,12 @@ public class UserRegistrationService {
 
         // Make sure we don't have another pending request for the same email
         UserRegistration ur = new UserRegistration();
-        ur.init(body.getEmail(), (req != null) ? req.getHeader("x-real-ip") : "", usersConfig.getUsersRegistrationLinkExpiration() * 1000);
+        ur.init(
+                body.getEmail(),
+                (req != null) ? req.getHeader("x-real-ip") : "",
+                usersConfig.getUsersRegistrationLinkExpiration() * 1000,
+                commonConfig.getEncryptionKey()
+        );
 
         // search with encrypted email
         UserRegistration exists = userRegistrationRepository.findOneUserRegistrationByEmail(ur.getEmail());
@@ -162,38 +174,50 @@ public class UserRegistrationService {
             emailTools.send(body.getEmail(), _body, _subject, commonConfig.getCommonMailSender());
         }
         Now.randomSleep(50, 250);
+
+        // Update stats & add traces
         this.incRegistrationSuccess();
+        auditIntegration.auditLog(
+                ModuleCatalog.Modules.USERS,
+                ActionCatalog.getActionName(ActionCatalog.Actions.REGISTRATION),
+                User.encodeLogin(body.getEmail())+" registered with email {0} from IP {1}",
+                new String[]{body.getEmail(), (req != null) ? req.getHeader("x-real-ip") : ""}
+        );
+
     }
 
     /*
      * The function will check the expiration date. When the Registration is expired, the function will delete the entry
-     * in the database.
+     * in the database. Scanned on every 60 seconds
      */
+    @Scheduled(fixedRate = 60000)
+    void processExpiredRegistrations() {
+        // remove all the expired registrations
+        long now = Now.NowUtcMs();
+        userRegistrationRepository.deleteByExpirationDateLowerThan(Now.NowUtcMs());
+    }
 
 
     // ==========================================================================
     // Metrics
     // ==========================================================================
 
-    public UserRegistrationService(MeterRegistry registry) {
-        this.registry = registry;
-    }
-    private final MeterRegistry registry;
+    @Autowired
+    protected MeterRegistry meterRegistry;
 
     @PostConstruct
     private void initUserRegistrationService() {
         log.info("[users][registration] User registration service initialized");
         Gauge.builder("users.registration.attempt", this.getRegistrationsAttempts())
                 .description("Number of registration attempts")
-                .register(registry);
+                .register(meterRegistry);
         Gauge.builder("users.registration.failed", this.getRegistrationsFailed())
                 .description("Number of registration failures")
-                .register(registry);
+                .register(meterRegistry);
         Gauge.builder("users.registration.success", this.getRegistrationsFailed())
                 .description("Number of registration success (waiting for email confirmation)")
-                .register(registry);
+                .register(meterRegistry);
     }
-
 
     private long registrationsAttempts = 0;
     private long registrationsFailed = 0;

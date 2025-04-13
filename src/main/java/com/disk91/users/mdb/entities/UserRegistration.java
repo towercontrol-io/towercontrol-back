@@ -25,7 +25,6 @@
 
 package com.disk91.users.mdb.entities;
 
-import com.disk91.common.config.CommonConfig;
 import com.disk91.common.tools.EncryptionHelper;
 import com.disk91.common.tools.HexCodingTools;
 import com.disk91.common.tools.Now;
@@ -33,7 +32,6 @@ import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
@@ -72,16 +70,9 @@ public class UserRegistration {
 
     // ===========================
 
-    @Transient
-    @Autowired
-    protected EncryptionHelper encryptionHelper;
 
     @Transient
     private String __iv = "4fee88822bce7d331d6db0d69d978492";
-
-    @Transient
-    @Autowired
-    protected CommonConfig commonConfig;
 
     /**
      * Init the UserPending Structure with the given email ; protect it with encryption and setup the expiration
@@ -90,14 +81,14 @@ public class UserRegistration {
      * @param expirationMs
      * @throws ITParseException
      */
-    public void init(String _email, String _ip, long expirationMs)  throws ITParseException {
+    public void init(String _email, String _ip, long expirationMs, String encryptionKey)  throws ITParseException {
 
-        this.email = encryptionHelper.encrypt(_email, __iv, commonConfig.getEncryptionKey());
+        this.email = EncryptionHelper.encrypt(_email, __iv, encryptionKey);
 
         if ( _ip == null || _ip.length() == 0 ) {
             _ip = "0.0.0.0";
         }
-        this.requestorIP = encryptionHelper.encrypt(_ip, __iv, commonConfig.getEncryptionKey());
+        this.requestorIP = EncryptionHelper.encrypt(_ip, __iv, encryptionKey);
         if ( this.email == null || this.requestorIP == null ) {
             log.error("[users] Error while encrypting email/IP");
             throw new ITParseException("Email encryption failed");
@@ -114,9 +105,9 @@ public class UserRegistration {
      * @throws ITParseException
      * @throws ITNotFoundException
      */
-    public String verify(String _validationId) throws ITParseException, ITNotFoundException {
+    public String verify(String _validationId, String encryptionKey) throws ITParseException, ITNotFoundException {
         if ( expirationDate > Now.NowUtcMs() && this.validationId.equals(_validationId) ) {
-            String decryptedEmail = encryptionHelper.decrypt(this.email, __iv, commonConfig.getEncryptionKey());
+            String decryptedEmail = EncryptionHelper.decrypt(this.email, __iv, encryptionKey);
             if (decryptedEmail == null) {
                 log.error("[users] Error while decrypting email");
                 throw new ITParseException("Email decryption failed");

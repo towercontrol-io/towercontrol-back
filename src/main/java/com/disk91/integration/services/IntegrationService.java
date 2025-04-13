@@ -19,29 +19,88 @@
  */
 package com.disk91.integration.services;
 
+import com.disk91.common.config.ModuleCatalog;
 import com.disk91.common.tools.Now;
+import com.disk91.common.tools.exceptions.ITNotFoundException;
+import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.integration.api.interfaces.InterfaceQuery;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
+@Service
 public class IntegrationService {
 
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
-    private HashMap<String, InterfaceQuery> _queries = new HashMap<>();
-
-    private long maxQueryDuration;
+    /*
+     * For every service, we have a ConcurrentLinkedQueue to store all the pending
+     * Queries, so a service que request all the pending messages addressed to it
+     * one by one. This is used for the in-memory integration. In memory integration
+     * works only for a single instance with all the services running in the same.
+     */
+    private ConcurrentHashMap<String, ConcurrentLinkedQueue<InterfaceQuery>>  _queries = new ConcurrentHashMap<>();
 
     @PostConstruct
     public void initIntegration() {
         log.debug("[integration] Init");
-        // max query lue depuis le fichier de conf
     }
+
+
+    /**
+     * Process the query depending on the mode and the route, not sure about the right
+     * way to make it currently.... let see later, fire& forget is easy, it is just async
+     * without any later consideration
+     * @param query
+     * @return
+     */
+    public InterfaceQuery processQuery(InterfaceQuery query) {
+        log.debug("[integration] Process query {}", query.getQueryId());
+
+        switch ( query.getType() ) {
+            case TYPE_FIRE_AND_FORGET -> {
+                // process depends on route
+                switch (query.getRoute()) {
+                    case ROUTE_MEMORY -> {
+                        // in memory integration
+                        // add the query to the queue of the service
+                        if (this._queries.get(ModuleCatalog.getServiceName(query.getServiceNameDest())) == null) {
+                            this._queries.put(ModuleCatalog.getServiceName(query.getServiceNameDest()), new ConcurrentLinkedQueue<>());
+                        }
+                        this._queries.get(ModuleCatalog.getServiceName(query.getServiceNameDest())).add(query);
+                    }
+                    case ROUTE_DB, ROUTE_MQTT -> log.error("[integration] Unknown route {} not yet implemented", query.getRoute());
+                }
+            }
+        }
+        return query;
+    }
+
+
+    public InterfaceQuery getQuery(ModuleCatalog.Modules service, InterfaceQuery.QueryRoute route)
+    throws ITNotFoundException, ITParseException {
+        switch ( route ) {
+            case ROUTE_MEMORY -> {
+                // get on pending query from the given service
+                ConcurrentLinkedQueue<InterfaceQuery> q = this._queries.get(ModuleCatalog.getServiceName(service));
+                if (q == null || q.isEmpty()) throw new ITNotFoundException("No pending query");
+
+                // get the first query
+                return q.poll();
+            }
+        }
+        throw new ITParseException("Unsupported route type");
+    }
+
+
+    /*
 
     public InterfaceQuery requestSync(InterfaceQuery query) {
         log.debug("[integration] Query");
@@ -70,20 +129,29 @@ public class IntegrationService {
         }
         this._queries.remove(query.getQueryId());
     }
+    */
 
+
+    /**
+     * Clean the outdated pending queries every second
+     */
     @Scheduled(fixedRate = 1000)
     void garbage() {
         // remove all the queries that are too old
         long now = Now.NowUtcMs();
-        ArrayList<String> toRemove = new ArrayList<>();
         this._queries.forEach((k,v) -> {
-            if ( now - v.getQuery_ms() > this.maxQueryDuration ) {
-                log.debug("[integration] Query {} timeout", v.getQueryId());
-                v.setStateError();
-                toRemove.add(k);
+            // scan the linked list
+            ArrayList<String> toRemove = new ArrayList<>();
+            for (InterfaceQuery q : v) {
+                if ( now - (q.getQuery_ms()+q.getTimeout_ms()) > 0 ) {
+                    log.debug("[integration] Query {} timeout", q.getQueryId());
+                    q.setStateError();
+                    toRemove.add(k);
+                }
             }
+            // remove the queries that are too old
+            toRemove.forEach(v::remove);
         });
-        toRemove.forEach(k -> this._queries.remove(k));
     }
 
 

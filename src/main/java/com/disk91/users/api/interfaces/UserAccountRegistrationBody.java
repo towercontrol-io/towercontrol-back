@@ -23,7 +23,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @Tag(name = "User Account Creation", description = "Request User Account Creation")
-public class UserAccountCreationBody {
+public class UserAccountRegistrationBody {
     @Schema(
             description = "Email for the account creation",
             example = "john.doe@foo.bar",

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) - Paul Pinault (aka disk91) - 2024.
+ * Copyright (c) - Paul Pinault (aka disk91) - 2025.
  *
  *    Permission is hereby granted, free of charge, to any person obtaining a copy of this software
  *    and associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -17,24 +17,34 @@
  *    WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  *    IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package com.disk91.users.config;
+package com.disk91.users.api.security;
 
-
-import org.springframework.context.MessageSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.support.ReloadableResourceBundleMessageSource;
-
-import java.util.Locale;
+import org.springframework.core.annotation.Order;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
-public class UserMessages {
+public class UsersSecurityProfile {
+    private final Logger log = LoggerFactory.getLogger(this.getClass());
+
+    @Order(1)
     @Bean
-    public MessageSource  messageSource() {
-        ReloadableResourceBundleMessageSource messageSource = new ReloadableResourceBundleMessageSource();
-        messageSource.setBasename("file:configuration/users.messages.properties");
-        messageSource.setDefaultLocale(Locale.ENGLISH);
-        messageSource.setDefaultEncoding("UTF-8");
-        return messageSource;
+    public SecurityFilterChain usersFilterChain(HttpSecurity http) throws Exception {
+        http
+                .securityMatcher("/users/**")
+                .csrf(AbstractHttpConfigurer::disable)
+                .cors(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests((authz) -> authz
+                        // Allows device uplinks
+                        .requestMatchers("/users/1.0/registration/register").permitAll()
+                        // Others
+                        .anyRequest().authenticated()
+                );
+        return http.build();
     }
 }

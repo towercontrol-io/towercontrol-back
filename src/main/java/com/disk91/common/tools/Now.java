@@ -129,6 +129,13 @@ public class Now {
         return formatter.format(instant);
     }
 
+    public static String formatToYYYYMMDDHHMMSSUtc(long t) {
+        Instant instant = Instant.ofEpochMilli(t);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+                .withZone(ZoneId.of("UTC"));
+        return formatter.format(instant);
+    }
+
     /**
      * Sleep for ms
      * @param ms

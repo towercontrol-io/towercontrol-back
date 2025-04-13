@@ -20,7 +20,6 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,9 +40,6 @@ public class UserTests {
     @Mock
     private CommonConfig commonConfig;
 
-    @Mock
-    private EncryptionHelper encryptionHelper;
-
     @InjectMocks
     private User user2;
 
@@ -58,10 +54,7 @@ public class UserTests {
 
         given(commonConfig.getEncryptionKey()).willReturn("d5b504d560363cfe33890c4f5343f387");
         given(commonConfig.getApplicationKey()).willReturn("a84c2d1f7b9e063d5f1a2e9c3b7d408e");
-
-        given(encryptionHelper.encrypt(Mockito.anyString(),Mockito.anyString(),Mockito.anyString())).willCallRealMethod();
-        given(encryptionHelper.decrypt(Mockito.anyString(),Mockito.anyString(),Mockito.anyString())).willCallRealMethod();
-
+        user.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
 
         assertDoesNotThrow(() -> {
             user.changePassword("test", true);
@@ -79,8 +72,9 @@ public class UserTests {
         });
 
         // verify the key generation stability over time
+        user2.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
         user2.setSalt(HexCodingTools.getByteArrayFromHexString("21AFD07BF82F5F9139942BCB3910619E"));
-        user2.setSecret("ED8075DF985E20F80F3248DCCC11FEFD");
+        user2.setSessionSecret("ED8075DF985E20F80F3248DCCC11FEFD");
         assertDoesNotThrow(() -> {
             user2.changePassword("test", false);
             log.info("[users][test] salt: " + HexCodingTools.bytesToHex(user2.getSalt()));
@@ -123,6 +117,7 @@ public class UserTests {
         // Ensure a user w/o a password can't be configured
         assertThrows(ITParseException.class, () -> {
             User user3 = new User();
+            user3.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
             user3.setEncEmail("john.doe@foo.bar");
         });
 
@@ -138,16 +133,14 @@ public class UserTests {
 
         given(commonConfig.getEncryptionKey()).willReturn("d5b504d560363cfe33890c4f5343f387");
         given(commonConfig.getApplicationKey()).willReturn("a84c2d1f7b9e063d5f1a2e9c3b7d408e");
-
-        given(encryptionHelper.encrypt(Mockito.anyString(),Mockito.anyString(),Mockito.anyString())).willCallRealMethod();
-        given(encryptionHelper.decrypt(Mockito.anyString(),Mockito.anyString(),Mockito.anyString())).willCallRealMethod();
+        user.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
 
 
         log.info("[users][test] create a full user");
         assertDoesNotThrow(() -> {
             user.changePassword("test", true);
             assertNotNull(user.getSalt());
-            assertNotNull(user.getSecret());
+            assertNotNull(user.getSessionSecret());
             assertNotEquals(user.getUserSecret(),"");
             assertNotEquals(user.getSalt().length,0);
 
@@ -319,12 +312,9 @@ public class UserTests {
 
         given(commonConfig.getEncryptionKey()).willReturn("d5b504d560363cfe33890c4f5343f387");
 
-        given(encryptionHelper.encrypt(Mockito.anyString(),Mockito.anyString(),Mockito.anyString())).willCallRealMethod();
-        given(encryptionHelper.decrypt(Mockito.anyString(),Mockito.anyString(),Mockito.anyString())).willCallRealMethod();
-
         assertDoesNotThrow(() -> {
-            userRegistration.init("john.doe@foo.bar", "1.1.1.1",1000);
-            userRegistration2.init("john.doe@foo.bar", "1.1.1.1", 2000);
+            userRegistration.init("john.doe@foo.bar", "1.1.1.1",1000, commonConfig.getEncryptionKey());
+            userRegistration2.init("john.doe@foo.bar", "1.1.1.1", 2000, commonConfig.getEncryptionKey());
             assertNotNull(userRegistration.getEmail());
             assertNotEquals("john.doe@foo.bar", userRegistration.getEmail());
             assertNotNull(userRegistration.getValidationId());
@@ -343,13 +333,13 @@ public class UserTests {
         log.info("[users][test] Manage User Pending Verify");
         assertThrows(ITNotFoundException.class, () -> {
             Thread.sleep(1000); // this may expire the userPending
-            userRegistration.verify(userRegistration.getValidationId());
+            userRegistration.verify(userRegistration.getValidationId(), commonConfig.getEncryptionKey());
         });
         assertDoesNotThrow(() -> {
-            userRegistration2.verify(userRegistration2.getValidationId());
+            userRegistration2.verify(userRegistration2.getValidationId(), commonConfig.getEncryptionKey());
         });
         assertThrows(ITNotFoundException.class, () -> {
-            userRegistration.verify("1234567890123456789012345678901234567890123456789012345678901234");
+            userRegistration.verify("1234567890123456789012345678901234567890123456789012345678901234", commonConfig.getEncryptionKey());
         });
 
     }

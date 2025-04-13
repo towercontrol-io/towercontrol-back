@@ -40,29 +40,10 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
-@Component
 public class EncryptionHelper {
 
-    private final Logger log = LoggerFactory.getLogger(this.getClass());
+    private static final Logger log = LoggerFactory.getLogger(EncryptionHelper.class);
 
-    @Autowired
-    protected CommonConfig commonConfig;
-
-    private String __iv = "4fee88822bce7d331d6db0d69d978492";
-
-    /**
-     * Encryt the given string with the configuration key store in the configuration file
-     * @param tobeEncrypted
-     * @return
-     */
-    public String encryptStringWithServerKey(String tobeEncrypted) {
-        return encrypt(tobeEncrypted, __iv, commonConfig.getEncryptionKey());
-    }
-
-
-    public String decryptStringWithServerKey(String tobeDecrypted) {
-        return decrypt(tobeDecrypted, __iv, commonConfig.getEncryptionKey());
-    }
 
 
     /**
@@ -76,7 +57,7 @@ public class EncryptionHelper {
      * @param encKey
      * @return
      */
-    public String encrypt(String tobeEncrypted, String iv, String encKey ) {
+    public static String encrypt(String tobeEncrypted, String iv, String encKey ) {
 
         byte [] byteToEncrytp;
         try {
@@ -126,7 +107,7 @@ public class EncryptionHelper {
      * @param encKey
      * @return
      */
-    public String decrypt(String tobeDecrypted, String iv, String encKey) {
+    public static String decrypt(String tobeDecrypted, String iv, String encKey) {
 
         byte[] _iv = HexCodingTools.getBytesFromInt(HexCodingTools.getIntArrayFromHexString(iv));
         try {

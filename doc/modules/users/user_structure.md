@@ -15,7 +15,7 @@ The user data structure is defined as follows:
     { "group": "string", "roles" : [ "string"] }   // user acl collection, acl are based on groups and dynamic
   ],
   "salt": [ "numbers" ],          // encryption salt 
-  "secret" :  "string",           // session signature salt for token repudiation
+  "sessionSecret" :  "string",    // session signature salt for token repudiation
   "userSecret" : "string",        // secret key computed from password allowing to deactivate user data without removing user
   "lastLogin": "date",            // last login date in MS since epoch
   "countLogin": "number",         // login count
@@ -23,7 +23,6 @@ The user data structure is defined as follows:
   "registrationIP": "string",     // IP address of the registration [Base64(encrypted)]
 
   "modificationDate": "date",     // last user modification date in MS since epoch
-  "validationId": "string",       // randomly generated secret key for validation
   "passwordResetId" : "string",   // randomly generated secret key for password reset
   "passwordResetExp" : "number",  // Expiration for password reset in MS since epoch
   
@@ -65,7 +64,7 @@ The user data structure is defined as follows:
         "city": "string",             // user city [Base64(encrypted)]
         "zip": "string",              // user zip code [Base64(encrypted)]
         "country": "string",          // user country [Base64(encrypted)]
-        "countryCode": "string",      // user 2 digit standard country code
+        "countryCode": "string",      // user 2 digit standard country code [Base64(encrypted)]
         "vatNumber": "string",        // user VAT number [Base64(encrypted)]
         "customFields": [{            // user custom fields
           "name": "string",           // custom field key [clear]
@@ -110,26 +109,7 @@ still have a specific right on a particular group. By default, a virtual group w
 needing to be explicitly listed; this represents the user's personal group. These personal groups are prefixed with `$user_`, 
 which is therefore not allowed for standard group names. This group can be shared via ACLs as well.
 
-### User life cycle
-A user can be created manually by an administrator or after a self registration. User creation have different steps depending on the selected path:
-- self registration:
-    - User is registering with an email, until the email has been confirmed, the user does not exist in the system.
-    - A confirmation email is sent to the user with a secret to validate and create the user. 
-    - Following the confirmation email will create the user structure and assign the `ROLE_PENDING_USER` role.
-    - User can be redirected to profile configuration or will do it later on its own base on boolean parameter `user.pending.forceprofile`
-    - The user can then be validated by an administrator to assign the `ROLE_REGISTERED_USER` role or automatically moved to that status depending on the configuration boolean parameter `user.pending.autovalidation`
-- Administrator registration:
-    - User is created by an administrator with a `ROLE_PENDING_USER` role.
-    - On first login, user will have to change its password.
-    - User can be redirected to profile configuration or will do it later on its own base on boolean parameter `user.pending.forceprofile`
-    - The user can then be validated by an administrator to assign the `ROLE_REGISTERED_USER` role or automatically moved to that status depending on the configuration boolean parameter `user.pending.autovalidation` 
 
-User can delete his account, also after a given period of inactivity, the user account will be frozen by removing the `userSecret` value. This value is used for encrypting user information,
-as a consequence, without a new login of the user with the right password, the data will stay encrypted and not accessible, even for the platform administrator.  The frozen period is decided by the `user.max.inactivity` parameter.
-
-* User signout updates the `secret` value for token repudiation.
-* API accounts have a long life JWT token, the expiration is set to 1 year by default, but can be configured by the `user.api.token.exp` parameter.
-  ROLE_USER_ADMIN can create apiAccount and generate JWT for them with an API endpoint. 
 
 ### Data encryption
 Data are AES encrypted, the encryption key is composed by
@@ -140,32 +120,14 @@ Data are AES encrypted, the encryption key is composed by
 The key is 16 Bytes long (128bits) composed by the 3 keys listed above, all 16 Bytes long and Xored. The userSecret is
 generated from the password with PBKDF2 with salt.
 
-
 ### JWT signature
 JWT signature depends on
 - a Server key from parameter `user.server.key` from configuration file, randomly generated
-- a User key from the `secret` field, ramdomly generated at user creation and modified after every user signout.
+- a User key from the `secret` field, randomly generated at user creation and modified after every user signout.
 
 ### Password change
 On password change, the data encryption need to be recreated as the `userSecret` will be different.
 
-### traceability
-Event on user service are logged into an audit table. It includes
-- login event
-- logout events
-- password change
-- email sent (not content, just event)
-- authorization addition and removal
-- group association and removal
-- profile modification date
-- rekeying event
-- dekeying event
-- condition validation history
-- communication message seen
 
-The event table is stored in the database and can only be accessible with a 
-technical access in a first time. In the future it can be available with a UI.
-A purge system is in place to remove old events, the retention period is defined 
-by the `user.audit.retention.days` parameter.
 
 ### API

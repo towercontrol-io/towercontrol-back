@@ -32,7 +32,6 @@ import com.disk91.users.mdb.entities.sub.UserBillingProfile;
 import com.disk91.users.mdb.entities.sub.UserProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
@@ -76,7 +75,7 @@ public class User implements CloneableObject<User> {
     protected byte[] salt;
 
     // session signature salt for the JWT allowing to invalidate the session on logout or repudiation
-    protected String secret;
+    protected String sessionSecret;
 
     // long term secret used for user profile encryption, derivative from password, so we can remove this key
     // after a certain period of time to make encrypted data unreadable and later user login can reactivate an account and
@@ -155,9 +154,15 @@ public class User implements CloneableObject<User> {
     private static final String IV = "0123456789abcdef0123456789abcdef"; // 16 bytes IV for AES encryption
 
     @Transient
-    @Autowired
-    protected CommonConfig commonConfig;
+    private String serverKey = null;
 
+    @Transient
+    private String applicationKey = null;
+
+    public void setKeys(String serverKey, String applicationKey) {
+        this.serverKey = serverKey;
+        this.applicationKey = applicationKey;
+    }
 
     /**
      * Generate the encryption key used for the personal or confidential data encryption
@@ -170,8 +175,8 @@ public class User implements CloneableObject<User> {
      */
     protected byte[] getEncryptionKey() throws ITParseException {
         if ( userSecret == null || userSecret.length() < 32 ) throw new ITParseException("User secret not set");
-        byte[] serverKey = HexCodingTools.getByteArrayFromHexString(commonConfig.getEncryptionKey());
-        byte[] applicationKey = HexCodingTools.getByteArrayFromHexString(commonConfig.getApplicationKey());
+        byte[] serverKey = HexCodingTools.getByteArrayFromHexString(this.serverKey);
+        byte[] applicationKey = HexCodingTools.getByteArrayFromHexString(this.applicationKey);
         byte[] userKey = HexCodingTools.getByteArrayFromHexString(this.userSecret);
         if ( serverKey.length != 16 || applicationKey.length != 16 || userKey.length != 16 ) {
             log.error("[users] Encryption key is not 16 bytes long");
@@ -182,11 +187,6 @@ public class User implements CloneableObject<User> {
             encryptionKey[i] = (byte) (serverKey[i] ^ applicationKey[i] ^ userKey[i]);
         }
         return encryptionKey;
-    }
-
-
-    public String encrypt(String data) {
-        return null;
     }
 
 
@@ -211,7 +211,7 @@ public class User implements CloneableObject<User> {
             this.salt = new byte[16];
             SecureRandom random = new SecureRandom();
             random.nextBytes(this.salt);
-            this.secret = HexCodingTools.getRandomHexString(32);
+            this.sessionSecret = HexCodingTools.getRandomHexString(32);
         }
 
         try {
@@ -300,9 +300,6 @@ public class User implements CloneableObject<User> {
     // ===================================================
     // Encrypted Setters / Getters
 
-    @Transient
-    @Autowired
-    protected EncryptionHelper encryptionHelper;
 
 
     @Transient
@@ -340,7 +337,7 @@ public class User implements CloneableObject<User> {
      * @return
      */
     public String getEncEmail() throws ITParseException {
-        String _email = encryptionHelper.decrypt(this.email, IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+        String _email = EncryptionHelper.decrypt(this.email, IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
         return _email;
     }
 
@@ -349,7 +346,7 @@ public class User implements CloneableObject<User> {
      * @param _email - clear text email
      */
     public void setEncEmail(String _email)  throws ITParseException {
-        this.email = encryptionHelper.encrypt(_email, IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+        this.email = EncryptionHelper.encrypt(_email, IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
     }
 
     // --- Registration IP
@@ -358,7 +355,7 @@ public class User implements CloneableObject<User> {
      * Encrypt the registration IP from the clear text value
      */
     public String getEncRegistrationIP() throws ITParseException {
-        return encryptionHelper.decrypt(this.registrationIP, IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+        return EncryptionHelper.decrypt(this.registrationIP, IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
     }
 
     /**
@@ -366,41 +363,41 @@ public class User implements CloneableObject<User> {
      * @param _registrationIP - clear text registration IP
      */
     public void setEncRegistrationIP(String _registrationIP)  throws ITParseException {
-        this.registrationIP = encryptionHelper.encrypt(_registrationIP, IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+        this.registrationIP = EncryptionHelper.encrypt(_registrationIP, IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
     }
 
     // --------------------
     // Profile
     public String getEncProfileGender() throws ITParseException {
-        return encryptionHelper.decrypt(this.profile.getGender(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+        return EncryptionHelper.decrypt(this.profile.getGender(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
     }
 
     public String getEncProfileFirstName() throws ITParseException {
-        return encryptionHelper.decrypt(this.profile.getFirstName(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+        return EncryptionHelper.decrypt(this.profile.getFirstName(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
     }
 
     public String getEncProfileLastName() throws ITParseException {
-        return encryptionHelper.decrypt(this.profile.getLastName(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+        return EncryptionHelper.decrypt(this.profile.getLastName(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
     }
 
     public String getEncProfilePhone() throws ITParseException {
-        return encryptionHelper.decrypt(this.profile.getPhoneNumber(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+        return EncryptionHelper.decrypt(this.profile.getPhoneNumber(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
     }
 
     public String getEncProfileAddress() throws ITParseException {
-        return encryptionHelper.decrypt(this.profile.getAddress(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+        return EncryptionHelper.decrypt(this.profile.getAddress(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
     }
 
     public String getEncProfileCity() throws ITParseException {
-        return encryptionHelper.decrypt(this.profile.getCity(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+        return EncryptionHelper.decrypt(this.profile.getCity(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
     }
 
     public String getEncProfileZipCode() throws ITParseException {
-        return encryptionHelper.decrypt(this.profile.getZipCode(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+        return EncryptionHelper.decrypt(this.profile.getZipCode(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
     }
 
     public String getEncProfileCountry() throws ITParseException {
-        return encryptionHelper.decrypt(this.profile.getCountry(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+        return EncryptionHelper.decrypt(this.profile.getCountry(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
     }
 
     public ArrayList<CustomField> getEncProfileCustomFields() throws ITParseException {
@@ -408,7 +405,7 @@ public class User implements CloneableObject<User> {
         for ( CustomField cf : this.profile.getCustomFields() ) {
             CustomField _cf = new CustomField();
             _cf.setName(cf.getName());
-            _cf.setValue(encryptionHelper.decrypt(cf.getValue(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+            _cf.setValue(EncryptionHelper.decrypt(cf.getValue(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
             customFields.add(_cf);
         }
         return customFields;
@@ -416,42 +413,42 @@ public class User implements CloneableObject<User> {
 
     public void setEncProfileGender(String _value)  throws ITParseException {
         if (this.profile == null) throw new ITParseException("Profile not set");
-        this.profile.setGender(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+        this.profile.setGender(EncryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
     }
 
     public void setEncProfileFirstName(String _value)  throws ITParseException {
         if (this.profile == null) throw new ITParseException("Profile not set");
-        this.profile.setFirstName(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+        this.profile.setFirstName(EncryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
     }
 
     public void setEncProfileLastName(String _value)  throws ITParseException {
         if (this.profile == null) throw new ITParseException("Profile not set");
-        this.profile.setLastName(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+        this.profile.setLastName(EncryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
     }
 
     public void setEncProfilePhone(String _value)  throws ITParseException {
         if (this.profile == null) throw new ITParseException("Profile not set");
-        this.profile.setPhoneNumber(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+        this.profile.setPhoneNumber(EncryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
     }
 
     public void setEncProfileAddress(String _value)  throws ITParseException {
         if (this.profile == null) throw new ITParseException("Profile not set");
-        this.profile.setAddress(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+        this.profile.setAddress(EncryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
     }
 
     public void setEncProfileCity(String _value)  throws ITParseException {
         if (this.profile == null) throw new ITParseException("Profile not set");
-        this.profile.setCity(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+        this.profile.setCity(EncryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
     }
 
     public void setEncProfileZipCode(String _value)  throws ITParseException {
         if (this.profile == null) throw new ITParseException("Profile not set");
-        this.profile.setZipCode(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+        this.profile.setZipCode(EncryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
     }
 
     public void setEncProfileCountry(String _value)  throws ITParseException {
         if (this.profile == null) throw new ITParseException("Profile not set");
-        this.profile.setCountry(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+        this.profile.setCountry(EncryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
     }
 
     public void setEncProfileCustomFields(ArrayList<CustomField> _value)  throws ITParseException {
@@ -460,7 +457,7 @@ public class User implements CloneableObject<User> {
         for ( CustomField cf : _value ) {
             CustomField _cf = new CustomField();
             _cf.setName(cf.getName());
-            _cf.setValue(encryptionHelper.encrypt(cf.getValue(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+            _cf.setValue(EncryptionHelper.encrypt(cf.getValue(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
             customFields.add(_cf);
         }
         this.profile.setCustomFields(customFields);
@@ -471,35 +468,35 @@ public class User implements CloneableObject<User> {
     // Billing Profile
 
     public String getEncBillingGender() throws ITParseException {
-        return encryptionHelper.decrypt(this.billingProfile.getGender(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+        return EncryptionHelper.decrypt(this.billingProfile.getGender(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
     }
 
     public String getEncBillingFirstName() throws ITParseException {
-        return encryptionHelper.decrypt(this.billingProfile.getFirstName(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+        return EncryptionHelper.decrypt(this.billingProfile.getFirstName(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
     }
 
     public String getEncBillingLastName() throws ITParseException {
-        return encryptionHelper.decrypt(this.billingProfile.getLastName(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+        return EncryptionHelper.decrypt(this.billingProfile.getLastName(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
     }
 
     public String getEncBillingPhone() throws ITParseException {
-        return encryptionHelper.decrypt(this.billingProfile.getPhoneNumber(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+        return EncryptionHelper.decrypt(this.billingProfile.getPhoneNumber(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
     }
 
     public String getEncBillingAddress() throws ITParseException {
-        return encryptionHelper.decrypt(this.billingProfile.getAddress(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+        return EncryptionHelper.decrypt(this.billingProfile.getAddress(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
     }
 
     public String getEncBillingCity() throws ITParseException {
-        return encryptionHelper.decrypt(this.billingProfile.getCity(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+        return EncryptionHelper.decrypt(this.billingProfile.getCity(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
     }
 
     public String getEncBillingZipCode() throws ITParseException {
-        return encryptionHelper.decrypt(this.billingProfile.getZipCode(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+        return EncryptionHelper.decrypt(this.billingProfile.getZipCode(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
     }
 
     public String getEncBillingCountry() throws ITParseException {
-        return encryptionHelper.decrypt(this.billingProfile.getCountry(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+        return EncryptionHelper.decrypt(this.billingProfile.getCountry(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
     }
 
     public ArrayList<CustomField> getEncBillingCustomFields() throws ITParseException {
@@ -507,64 +504,64 @@ public class User implements CloneableObject<User> {
         for ( CustomField cf : this.billingProfile.getCustomFields() ) {
             CustomField _cf = new CustomField();
             _cf.setName(cf.getName());
-            _cf.setValue(encryptionHelper.decrypt(cf.getValue(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+            _cf.setValue(EncryptionHelper.decrypt(cf.getValue(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
             customFields.add(_cf);
         }
         return customFields;
     }
 
     public String getEncBillingCompanyName() throws ITParseException {
-        return encryptionHelper.decrypt(this.billingProfile.getCompanyName(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+        return EncryptionHelper.decrypt(this.billingProfile.getCompanyName(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
     }
 
     public String getEncBillingCountryCode() throws ITParseException {
-        return encryptionHelper.decrypt(this.billingProfile.getCountryCode(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+        return EncryptionHelper.decrypt(this.billingProfile.getCountryCode(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
     }
 
     public String getEncBillingVatNumber() throws ITParseException {
-        return encryptionHelper.decrypt(this.billingProfile.getVatNumber(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+        return EncryptionHelper.decrypt(this.billingProfile.getVatNumber(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
     }
 
     // ----
 
     public void setEncBillingGender(String _value)  throws ITParseException {
         if (this.billingProfile == null) throw new ITParseException("Profile not set");
-        this.billingProfile.setGender(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+        this.billingProfile.setGender(EncryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
     }
 
     public void setEncBillingFirstName(String _value)  throws ITParseException {
         if (this.billingProfile == null) throw new ITParseException("Profile not set");
-        this.billingProfile.setFirstName(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+        this.billingProfile.setFirstName(EncryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
     }
 
     public void setEncBillingLastName(String _value)  throws ITParseException {
         if (this.billingProfile == null) throw new ITParseException("Profile not set");
-        this.billingProfile.setLastName(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+        this.billingProfile.setLastName(EncryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
     }
 
     public void setEncBillingPhone(String _value)  throws ITParseException {
         if (this.billingProfile == null) throw new ITParseException("Profile not set");
-        this.billingProfile.setPhoneNumber(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+        this.billingProfile.setPhoneNumber(EncryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
     }
 
     public void setEncBillingAddress(String _value)  throws ITParseException {
         if (this.billingProfile == null) throw new ITParseException("Profile not set");
-        this.billingProfile.setAddress(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+        this.billingProfile.setAddress(EncryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
     }
 
     public void setEncBillingCity(String _value)  throws ITParseException {
         if (this.billingProfile == null) throw new ITParseException("Profile not set");
-        this.billingProfile.setCity(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+        this.billingProfile.setCity(EncryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
     }
 
     public void setEncBillingZipCode(String _value)  throws ITParseException {
         if (this.billingProfile == null) throw new ITParseException("Profile not set");
-        this.billingProfile.setZipCode(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+        this.billingProfile.setZipCode(EncryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
     }
 
     public void setEncBillingCountry(String _value)  throws ITParseException {
         if (this.billingProfile == null) throw new ITParseException("Profile not set");
-        this.billingProfile.setCountry(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+        this.billingProfile.setCountry(EncryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
     }
 
     public void setEncBillingCustomFields(ArrayList<CustomField> _value)  throws ITParseException {
@@ -573,7 +570,7 @@ public class User implements CloneableObject<User> {
         for ( CustomField cf : _value ) {
             CustomField _cf = new CustomField();
             _cf.setName(cf.getName());
-            _cf.setValue(encryptionHelper.encrypt(cf.getValue(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+            _cf.setValue(EncryptionHelper.encrypt(cf.getValue(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
             customFields.add(_cf);
         }
         this.billingProfile.setCustomFields(customFields);
@@ -581,17 +578,17 @@ public class User implements CloneableObject<User> {
 
     public void setEncBillingCompanyName(String _value)  throws ITParseException {
         if (this.billingProfile == null) throw new ITParseException("Profile not set");
-        this.billingProfile.setCompanyName(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+        this.billingProfile.setCompanyName(EncryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
     }
 
     public void setEncBillingCountryCode(String _value)  throws ITParseException {
         if (this.billingProfile == null) throw new ITParseException("Profile not set");
-        this.billingProfile.setCountryCode(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+        this.billingProfile.setCountryCode(EncryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
     }
 
     public void setEncBillingVatNumber(String _value)  throws ITParseException {
         if (this.billingProfile == null) throw new ITParseException("Profile not set");
-        this.billingProfile.setVatNumber(encryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+        this.billingProfile.setVatNumber(EncryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
     }
 
 
@@ -611,7 +608,7 @@ public class User implements CloneableObject<User> {
             _salt[i] = this.salt[i];
         }
         u.setSalt(_salt);
-        u.setSecret(this.secret);
+        u.setSessionSecret(this.sessionSecret);
         u.setUserSecret(this.userSecret);
         u.setLastLogin(this.lastLogin);
         u.setCountLogin(this.countLogin);
@@ -700,12 +697,12 @@ public class User implements CloneableObject<User> {
         this.salt = salt;
     }
 
-    public String getSecret() {
-        return secret;
+    public String getSessionSecret() {
+        return sessionSecret;
     }
 
-    public void setSecret(String secret) {
-        this.secret = secret;
+    public void setSessionSecret(String sessionSecret) {
+        this.sessionSecret = sessionSecret;
     }
 
     public String getUserSecret() {

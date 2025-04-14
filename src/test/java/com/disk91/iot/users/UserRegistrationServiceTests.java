@@ -166,7 +166,7 @@ public class UserRegistrationServiceTests {
 
                 log.info("[users][Registration][test] Registration is possible");
                 given(userRegistrationRepository.findOneUserRegistrationByEmail(any())).willReturn(null);
-                doNothing().when(auditIntegration).auditLog(any(), any(), any(), any());
+                doNothing().when(auditIntegration).auditLog(any(), any(), any(), any(), any());
                 assertDoesNotThrow(() -> {
                     userRegistrationService.requestAccountCreation(body, null);
                 });

@@ -33,6 +33,8 @@ public class AuditMessage {
     protected String action;
     // Action timestamp
     protected long actionMs;
+    // Owner of the log - login hash for search by user
+    protected String owner;
     // Text with parameters {x} describing the log
     protected String logStr;
     // List of parameters to be used in the log, this is for encrypted parameters (sensitives information)
@@ -80,5 +82,13 @@ public class AuditMessage {
 
     public void setParams(List<String> params) {
         this.params = params;
+    }
+
+    public String getOwner() {
+        return owner;
+    }
+
+    public void setOwner(String owner) {
+        this.owner = owner;
     }
 }

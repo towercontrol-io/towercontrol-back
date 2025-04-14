@@ -57,11 +57,12 @@ public class AuditIntegration {
      * @param logStr - the log message with {x} for parameters
      * @param params - the parameters to encrypt
      */
-    public AuditMessage creatNewAuditMessage(ModuleCatalog.Modules service, String action, String logStr, String[] params) {
+    public AuditMessage creatNewAuditMessage(ModuleCatalog.Modules service, String action, String owner, String logStr, String[] params) {
         AuditMessage a = new AuditMessage();
         a.setService(ModuleCatalog.getServiceName(service));
         a.setAction(action);
         a.setActionMs(Now.NowUtcMs());
+        a.setOwner(owner);
         a.setLogStr(logStr);
         a.setParams(new ArrayList<String>());
         if ( params != null ) {
@@ -85,7 +86,7 @@ public class AuditIntegration {
         StringBuffer l = new StringBuffer();
         l.append(Now.formatToYYYYMMDDHHMMSSUtc(a.getActionMs()));
         l.append(" [").append(a.getService()).append("] ");
-        l.append("[").append(a.getAction()).append("] ");
+        l.append("[").append(a.getAction()).append("] From").append(a.getOwner()).append(" - ");
         ArrayList<String> _params = new ArrayList<>(a.getParams());
         if ( auditConfig.isAuditLogsDecryptionEnabled() ) {
             for ( int i = 0; i < _params.size(); i++ ) {
@@ -108,8 +109,8 @@ public class AuditIntegration {
      * @param logStr
      * @param params
      */
-    public void auditLog(ModuleCatalog.Modules service, String action, String logStr, String[] params) {
-        AuditMessage message = this.creatNewAuditMessage(service, action, logStr, params);
+    public void auditLog(ModuleCatalog.Modules service, String action, String owner, String logStr, String[] params) {
+        AuditMessage message = this.creatNewAuditMessage(service, action, owner, logStr, params);
         this.auditLog(message, service);
     }
 

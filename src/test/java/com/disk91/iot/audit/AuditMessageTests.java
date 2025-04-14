@@ -62,74 +62,79 @@ public class AuditMessageTests {
         AuditMessage auditMessage = auditIntegration.creatNewAuditMessage(
                 ModuleCatalog.Modules.USERS,
                 ActionCatalog.getActionName(ActionCatalog.Actions.REGISTRATION),
-                "user1 {0} registered from IP {1}",
+                "user1",
+                "{0} registered from IP {1}",
                 new String[]{"john.doe@goo.bar", "1.1.1.1"}
         );
 
         log.info("[audit][Encryption][test] verify encryption");
         given(auditConfig.isAuditLogsDecryptionEnabled()).willReturn(false);
-        assertEquals(Now.formatToYYYYMMDDHHMMSSUtc(auditMessage.getActionMs())+" [users] [registration] user1 Cr81tEYU94nW6EUwAg8fRw== registered from IP vP52cpib5C6uiv22dZu3UA==",auditIntegration.toString(auditMessage));
+        assertEquals(Now.formatToYYYYMMDDHHMMSSUtc(auditMessage.getActionMs())+" [users] [registration] From user1 - Cr81tEYU94nW6EUwAg8fRw== registered from IP vP52cpib5C6uiv22dZu3UA==",auditIntegration.toString(auditMessage));
 
         log.info("[audit][Encryption][test] verify decryption");
         given(auditConfig.isAuditLogsDecryptionEnabled()).willReturn(true);
         given(encryptionHelper.decrypt(anyString(), anyString(), anyString())).willCallRealMethod();
-        assertEquals(Now.formatToYYYYMMDDHHMMSSUtc(auditMessage.getActionMs())+" [users] [registration] user1 john.doe@goo.bar registered from IP 1.1.1.1",auditIntegration.toString(auditMessage));
+        assertEquals(Now.formatToYYYYMMDDHHMMSSUtc(auditMessage.getActionMs())+" [users] [registration] From user1 - john.doe@goo.bar registered from IP 1.1.1.1",auditIntegration.toString(auditMessage));
 
         log.info("[audit][Encryption][test] test null params");
         auditMessage = auditIntegration.creatNewAuditMessage(
                 ModuleCatalog.Modules.USERS,
                 ActionCatalog.getActionName(ActionCatalog.Actions.REGISTRATION),
-                "user1 registered from IP",
+                "user1",
+                "registered from IP",
                 null
         );
 
         given(auditConfig.isAuditLogsDecryptionEnabled()).willReturn(false);
-        assertEquals(Now.formatToYYYYMMDDHHMMSSUtc(auditMessage.getActionMs())+" [users] [registration] user1 registered from IP",auditIntegration.toString(auditMessage));
+        assertEquals(Now.formatToYYYYMMDDHHMMSSUtc(auditMessage.getActionMs())+" [users] [registration] From user1 - registered from IP",auditIntegration.toString(auditMessage));
 
         given(auditConfig.isAuditLogsDecryptionEnabled()).willReturn(true);
-        assertEquals(Now.formatToYYYYMMDDHHMMSSUtc(auditMessage.getActionMs())+" [users] [registration] user1 registered from IP",auditIntegration.toString(auditMessage));
+        assertEquals(Now.formatToYYYYMMDDHHMMSSUtc(auditMessage.getActionMs())+" [users] [registration] From user1 - registered from IP",auditIntegration.toString(auditMessage));
 
         log.info("[audit][Encryption][test] test no params");
         auditMessage = auditIntegration.creatNewAuditMessage(
                 ModuleCatalog.Modules.USERS,
                 ActionCatalog.getActionName(ActionCatalog.Actions.REGISTRATION),
-                "user1 registered from IP",
+                "user1",
+                "registered from IP",
                 new String[0]
         );
 
         given(auditConfig.isAuditLogsDecryptionEnabled()).willReturn(false);
-        assertEquals(Now.formatToYYYYMMDDHHMMSSUtc(auditMessage.getActionMs())+" [users] [registration] user1 registered from IP",auditIntegration.toString(auditMessage));
+        assertEquals(Now.formatToYYYYMMDDHHMMSSUtc(auditMessage.getActionMs())+" [users] [registration] From user1 - registered from IP",auditIntegration.toString(auditMessage));
 
         given(auditConfig.isAuditLogsDecryptionEnabled()).willReturn(true);
-        assertEquals(Now.formatToYYYYMMDDHHMMSSUtc(auditMessage.getActionMs())+" [users] [registration] user1 registered from IP",auditIntegration.toString(auditMessage));
+        assertEquals(Now.formatToYYYYMMDDHHMMSSUtc(auditMessage.getActionMs())+" [users] [registration] From user1 - registered from IP",auditIntegration.toString(auditMessage));
 
         log.info("[audit][Encryption][test] unused param");
         auditMessage = auditIntegration.creatNewAuditMessage(
                 ModuleCatalog.Modules.USERS,
                 ActionCatalog.getActionName(ActionCatalog.Actions.REGISTRATION),
-                "user1 {0} registered from IP {1}",
+                "user1",
+                "{0} registered from IP {1}",
                 new String[]{"john.doe@goo.bar", "1.1.1.1", "unused"}
         );
 
         given(auditConfig.isAuditLogsDecryptionEnabled()).willReturn(false);
-        assertEquals(Now.formatToYYYYMMDDHHMMSSUtc(auditMessage.getActionMs())+" [users] [registration] user1 Cr81tEYU94nW6EUwAg8fRw== registered from IP vP52cpib5C6uiv22dZu3UA==",auditIntegration.toString(auditMessage));
+        assertEquals(Now.formatToYYYYMMDDHHMMSSUtc(auditMessage.getActionMs())+" [users] [registration] From user1 - Cr81tEYU94nW6EUwAg8fRw== registered from IP vP52cpib5C6uiv22dZu3UA==",auditIntegration.toString(auditMessage));
 
         given(auditConfig.isAuditLogsDecryptionEnabled()).willReturn(true);
-        assertEquals(Now.formatToYYYYMMDDHHMMSSUtc(auditMessage.getActionMs())+" [users] [registration] user1 john.doe@goo.bar registered from IP 1.1.1.1",auditIntegration.toString(auditMessage));
+        assertEquals(Now.formatToYYYYMMDDHHMMSSUtc(auditMessage.getActionMs())+" [users] [registration] From user1 - john.doe@goo.bar registered from IP 1.1.1.1",auditIntegration.toString(auditMessage));
 
         log.info("[audit][Encryption][test] missing param");
         auditMessage = auditIntegration.creatNewAuditMessage(
                 ModuleCatalog.Modules.USERS,
                 ActionCatalog.getActionName(ActionCatalog.Actions.REGISTRATION),
-                "user1 {0} registered from IP {3}",
+                "user1",
+                "{0} registered from IP {3}",
                 new String[]{"john.doe@goo.bar", "1.1.1.1", "unused"}
         );
 
         given(auditConfig.isAuditLogsDecryptionEnabled()).willReturn(false);
-        assertEquals(Now.formatToYYYYMMDDHHMMSSUtc(auditMessage.getActionMs())+" [users] [registration] user1 Cr81tEYU94nW6EUwAg8fRw== registered from IP {3}",auditIntegration.toString(auditMessage));
+        assertEquals(Now.formatToYYYYMMDDHHMMSSUtc(auditMessage.getActionMs())+" [users] [registration] From user1 - Cr81tEYU94nW6EUwAg8fRw== registered from IP {3}",auditIntegration.toString(auditMessage));
 
         given(auditConfig.isAuditLogsDecryptionEnabled()).willReturn(true);
-        assertEquals(Now.formatToYYYYMMDDHHMMSSUtc(auditMessage.getActionMs())+" [users] [registration] user1 john.doe@goo.bar registered from IP {3}",auditIntegration.toString(auditMessage));
+        assertEquals(Now.formatToYYYYMMDDHHMMSSUtc(auditMessage.getActionMs())+" [users] [registration] From user1 - john.doe@goo.bar registered from IP {3}",auditIntegration.toString(auditMessage));
 
     }
 

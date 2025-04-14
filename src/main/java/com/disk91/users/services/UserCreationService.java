@@ -17,43 +17,36 @@
  *    WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  *    IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package com.disk91.users.api.interfaces;
+package com.disk91.users.services;
 
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import com.disk91.common.tools.exceptions.ITParseException;
+import com.disk91.common.tools.exceptions.ITRightException;
+import com.disk91.common.tools.exceptions.ITTooManyException;
+import com.disk91.users.api.interfaces.UserAccountCreationBody;
+import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
-@Tag(name = "User Account Registration Req", description = "Request User Account Registration, pre-creation")
-public class UserAccountRegistrationBody {
-    @Schema(
-            description = "Email for the account creation",
-            example = "john.doe@foo.bar",
-            requiredMode = Schema.RequiredMode.REQUIRED
-    )
-    protected String email;
+@Service
+public class UserCreationService {
 
-    @Schema(
-            description = "Invitation code, for system with invitation required",
-            example = "A7C67FB256221...",
-            requiredMode = Schema.RequiredMode.NOT_REQUIRED
-    )
-    protected String registrationCode;
+    private final Logger log = LoggerFactory.getLogger(this.getClass());
 
+    /**
+     * User creation can be done either in self-service mode,
+     * where the user receives a code allowing them to create their account, or by
+     * an administrator who has the right to create user accounts. Depending on
+     * the configuration, the user must either be validated by an admin or is
+     * directly validated. When created by an administrator, the password
+     * must be changed at the next login.
+     */
 
-    // ==========================
+    protected void createUser_unsecured(
+        UserAccountCreationBody body,
+        HttpServletRequest req
+    ) throws ITRightException, ITParseException, ITTooManyException {
 
-    public String getEmail() {
-        return email;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getRegistrationCode() {
-        return registrationCode;
-    }
-
-    public void setRegistrationCode(String registrationCode) {
-        this.registrationCode = registrationCode;
-    }
 }

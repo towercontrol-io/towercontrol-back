@@ -15,6 +15,7 @@ readability and searchability. The format is as follows:
     "service" : String,                     // Service name where the audit logs has been generated
     "action" : String,                      // Action, depends on the service
     "actionMs" : number,                    // Action start time ref, structure creation in ms
+    "owner" : String,                       // Owner related, login hash
     "log": String,                          // Log information
     "params" : [ Strings ]                  // One encrypted parameter if != "" will take place in log between {}
 }
@@ -25,16 +26,16 @@ handled anonymously. It will also be possible to decrypt them if needed.
 
 Log example :
 ```json
-{ "service" : "users", "action" : "registration", "actionMs" : 1697030400000, "log": "for xxxxx with email {0} from ip {1}", "param" : ["eyJ1c2VyIjoiam9obmRvZSIsInBhc3N3b3JkIjoiMTIzNDU2In0=", "eyJ1c2VyIjoiam9obmRvZSIsInBhc3N3b3JkIjoiMTIzNDU2In0="] }
+{ "service" : "users", "action" : "registration", "actionMs" : 1697030400000, "owner" : "xxxxxx", "log": "email {0} from ip {1}", "param" : ["eyJ1c2VyIjoiam9obmRvZSIsInBhc3N3b3JkIjoiMTIzNDU2In0=", "eyJ1c2VyIjoiam9obmRvZSIsInBhc3N3b3JkIjoiMTIzNDU2In0="] }
 ```
 
 Encrypted print example:
 ```text
-2023-10-11 12:00:00.000 [users] [registration] for xxxxx with email eyJ1c2VyIjoiam9obmRvZSIsInBhc3N3b3JkIjoiMTIzNDU2In0= from ip eyJ1c2VyIjoiam9obmRvZSIsInBhc3N3b3JkIjoiMTIzNDU2In0=
+2023-10-11 12:00:00.000 [users] [registration] From xxxxx - email eyJ1c2VyIjoiam9obmRvZSIsInBhc3N3b3JkIjoiMTIzNDU2In0= from ip eyJ1c2VyIjoiam9obmRvZSIsInBhc3N3b3JkIjoiMTIzNDU2In0=
 ```
 
 Decrypted print example:
 ```text
-2023-10-11 12:00:00.000 [users] [registration] for xxxxx with email john.doe@foo.bar from ip 1.1.1.1
+2023-10-11 12:00:00.000 [users] [registration] From xxxxx - email john.doe@foo.bar from ip 1.1.1.1
 ```
 

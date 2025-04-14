@@ -180,7 +180,8 @@ public class UserRegistrationService {
         auditIntegration.auditLog(
                 ModuleCatalog.Modules.USERS,
                 ActionCatalog.getActionName(ActionCatalog.Actions.REGISTRATION),
-                User.encodeLogin(body.getEmail())+" registered with email {0} from IP {1}",
+                User.encodeLogin(body.getEmail()),
+                "{0} registration from IP {1}",
                 new String[]{body.getEmail(), (req != null && req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
         );
 
@@ -196,6 +197,7 @@ public class UserRegistrationService {
         long now = Now.NowUtcMs();
         userRegistrationRepository.deleteByExpirationDateLowerThan(Now.NowUtcMs());
     }
+
 
 
     // ==========================================================================

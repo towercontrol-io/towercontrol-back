@@ -20,7 +20,6 @@
 
 package com.disk91.users.mdb.entities;
 
-import com.disk91.common.config.CommonConfig;
 import com.disk91.common.tools.CloneableObject;
 import com.disk91.common.tools.CustomField;
 import com.disk91.common.tools.EncryptionHelper;
@@ -55,6 +54,9 @@ public class User implements CloneableObject<User> {
 
    @Transient
    private final Logger log = LoggerFactory.getLogger(this.getClass());
+
+   @Transient
+   private static final int USER_VERSION = 1;
 
     @Id
     protected String id;
@@ -110,7 +112,7 @@ public class User implements CloneableObject<User> {
     protected boolean locked;
 
     // Password has expired and user need to change it on the next login
-    protected boolean expiredPassword;
+    protected long expiredPassword;
 
     // This Account is an API account and not a human account, it can't login but we can have existing JWT
     protected boolean apiAccount;
@@ -164,6 +166,11 @@ public class User implements CloneableObject<User> {
         this.applicationKey = applicationKey;
     }
 
+    public void cleanKeys() {
+        this.serverKey = null;
+        this.applicationKey = null;
+    }
+
     /**
      * Generate the encryption key used for the personal or confidential data encryption
      * This key is based on different element to maximize the security. It required the
@@ -212,6 +219,7 @@ public class User implements CloneableObject<User> {
             SecureRandom random = new SecureRandom();
             random.nextBytes(this.salt);
             this.sessionSecret = HexCodingTools.getRandomHexString(32);
+            this.version = USER_VERSION;
         }
 
         try {
@@ -785,11 +793,11 @@ public class User implements CloneableObject<User> {
         this.locked = locked;
     }
 
-    public boolean isExpiredPassword() {
+    public long getExpiredPassword() {
         return expiredPassword;
     }
 
-    public void setExpiredPassword(boolean expiredPassword) {
+    public void setExpiredPassword(long expiredPassword) {
         this.expiredPassword = expiredPassword;
     }
 

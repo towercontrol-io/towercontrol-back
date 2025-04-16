@@ -66,7 +66,7 @@ public class UserRegistration {
     protected long expirationDate;
 
     // Registration code - not mandatory - to trace the request on device creation
-    protected String registrationCode;
+    //protected String registrationCode;
 
     // ===========================
 
@@ -85,7 +85,7 @@ public class UserRegistration {
 
         this.email = EncryptionHelper.encrypt(_email, __iv, encryptionKey);
 
-        if ( _ip == null || _ip.length() == 0 ) {
+        if ( _ip == null || _ip.isEmpty()) {
             _ip = "0.0.0.0";
         }
         this.requestorIP = EncryptionHelper.encrypt(_ip, __iv, encryptionKey);
@@ -114,6 +114,17 @@ public class UserRegistration {
             }
             return decryptedEmail;
         } else throw new ITNotFoundException("Validation ID is not valid");
+    }
+
+    /**
+     * Same just to get the email ...
+     * @param encryptionKey
+     * @return
+     * @throws ITParseException
+     * @throws ITNotFoundException
+     */
+    public String getEncEmail(String encryptionKey) throws ITParseException, ITNotFoundException {
+        return verify(this.validationId, encryptionKey);
     }
 
 
@@ -168,11 +179,11 @@ public class UserRegistration {
         this.requestorIP = requestorIP;
     }
 
-    public String getRegistrationCode() {
-        return registrationCode;
-    }
+    //public String getRegistrationCode() {
+    //    return registrationCode;
+    //}
 
-    public void setRegistrationCode(String registrationCode) {
-        this.registrationCode = registrationCode;
-    }
+    //public void setRegistrationCode(String registrationCode) {
+    //    this.registrationCode = registrationCode;
+    //}
 }

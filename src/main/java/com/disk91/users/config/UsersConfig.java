@@ -51,7 +51,7 @@ public class UsersConfig {
     }
 
     // ----------------------------------------------
-    // Users setup
+    // Users registration
     // ----------------------------------------------
 
     @Value("${users.registration.self:false}")
@@ -94,6 +94,22 @@ public class UsersConfig {
     protected String userRegistrationPath;
     public String getUserRegistrationPath() {
         return userRegistrationPath;
+    }
+
+    // --------------------------------------------
+    // User Creation
+    // --------------------------------------------
+
+    @Value("${users.pending.autovalidation:true}")
+    protected boolean usersPendingAutoValidation;
+    public boolean isUsersPendingAutoValidation() {
+        return usersPendingAutoValidation;
+    }
+
+    @Value("${users.password.expiration.days:0}")
+    protected int usersPasswordExpirationDays;
+    public int getUsersPasswordExpirationDays() {
+        return usersPasswordExpirationDays;
     }
 
 }

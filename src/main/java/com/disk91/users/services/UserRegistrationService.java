@@ -103,6 +103,12 @@ public class UserRegistrationService {
             throw new ITParseException("Account self creation is not allowed");
         }
 
+        if ( req == null ) {
+            Now.randomSleep(50, 350);
+            this.incRegistrationFailed();
+            throw new ITParseException("Request is missing");
+        }
+
         // Is having a valid invite code ?
         if (usersConfig.isUsersRegistrationWithInviteCode()) {
             // @TODO - Manage the Invite code verification until going further
@@ -113,7 +119,7 @@ public class UserRegistrationService {
         // @TODO - Check the IP is not already used for pending requests ( not sure it's a good idea - class room) - see what about request rate ?
 
         // Check the email format
-        if (body.getEmail() == null || body.getEmail().length() == 0 || body.getEmail().length() > usersConfig.getUsersRegistrationEmailMaxLength()) {
+        if (body.getEmail() == null || body.getEmail().isEmpty() || body.getEmail().length() > usersConfig.getUsersRegistrationEmailMaxLength()) {
             Now.randomSleep(50, 350);
             this.incRegistrationFailed();
             throw new ITParseException("Email is missing or too long");
@@ -145,7 +151,7 @@ public class UserRegistrationService {
         UserRegistration ur = new UserRegistration();
         ur.init(
                 body.getEmail(),
-                (req != null) ? req.getHeader("x-real-ip") : "",
+                (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown",
                 usersConfig.getUsersRegistrationLinkExpiration() * 1000,
                 commonConfig.getEncryptionKey()
         );
@@ -182,7 +188,7 @@ public class UserRegistrationService {
                 ActionCatalog.getActionName(ActionCatalog.Actions.REGISTRATION),
                 User.encodeLogin(body.getEmail()),
                 "{0} registration from IP {1}",
-                new String[]{body.getEmail(), (req != null && req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+                new String[]{body.getEmail(), (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
         );
 
     }

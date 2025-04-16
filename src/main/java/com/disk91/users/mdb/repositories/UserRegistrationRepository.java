@@ -30,6 +30,8 @@ import org.springframework.stereotype.Repository;
 public interface UserRegistrationRepository extends MongoRepository<UserRegistration,String> {
         public UserRegistration findOneUserRegistrationByEmail(String email);
 
+        public UserRegistration findOneUserRegistrationByRegistrationCode(String registrationCode);
+
         @Query(value = "{ 'expirationDate': { $lt: ?0 } }", delete = true)
         public void deleteByExpirationDateLowerThan(long expirationDate);
 

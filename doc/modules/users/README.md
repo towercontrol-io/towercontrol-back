@@ -20,11 +20,11 @@ A user can be created manually by an administrator or after a self registration.
       an invite code to register. The email address is verified and filtered (see user creation security)
     - when `user.registration.link.byemail` is true, a confirmation email is sent to the user with a secret to validate and create the user. The expiration time for the invitation code
       is defined by `users.registration.link.expiration` parameter in seconds.
-    - Following the confirmation email, the user sets the other information (passwords...), to create the user structure and assign
-      the `ROLE_PENDING_USER` role.
+    - Following the confirmation email, the user sets the minimal information (passwords, condition validation eventually), to create the user structure and assign
+      the `ROLE_PENDING_USER` role. The user condition is set with the parameter (db) `users.condition.version` when existing and set in body.
     - User can be redirected to profile configuration or will do it later on its own base on boolean parameter `user.pending.forceprofile`
     - The user can then be validated by an administrator to assign the `ROLE_REGISTERED_USER` role or automatically moved to that status
-      depending on the configuration boolean parameter `user.pending.autovalidation`
+      depending on the configuration boolean parameter `users.pending.autovalidation`
 - Administrator registration:
     - User is created by an administrator with a `ROLE_PENDING_USER` role.
     - On first login, user will have to change its password.

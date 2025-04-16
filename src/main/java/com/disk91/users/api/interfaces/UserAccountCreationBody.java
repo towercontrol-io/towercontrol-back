@@ -28,6 +28,15 @@ public class UserAccountCreationBody {
     )
     protected boolean conditionValidation;
 
+    @Schema(
+            description = "Validation ID received by user on registration link",
+            example = "true",
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED
+    )
+    protected String validationID;
+
+
+
     // ==========================
     // Getters & Setters
 
@@ -54,5 +63,13 @@ public class UserAccountCreationBody {
 
     public void setConditionValidation(boolean conditionValidation) {
         this.conditionValidation = conditionValidation;
+    }
+
+    public String getValidationID() {
+        return validationID;
+    }
+
+    public void setValidationID(String validationID) {
+        this.validationID = validationID;
     }
 }

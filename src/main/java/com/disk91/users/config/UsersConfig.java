@@ -97,7 +97,7 @@ public class UsersConfig {
     }
 
     // --------------------------------------------
-    // User Creation
+    // User Creation & Password rules
     // --------------------------------------------
 
     @Value("${users.pending.autovalidation:true}")
@@ -111,5 +111,37 @@ public class UsersConfig {
     public int getUsersPasswordExpirationDays() {
         return usersPasswordExpirationDays;
     }
+
+    @Value("${users.password.min.size:8}")
+    protected int usersPasswordMinSize;
+    public int getUsersPasswordMinSize() {
+        return usersPasswordMinSize;
+    }
+
+    @Value("${users.password.min.uppercase:0}")
+    protected int usersPasswordMinUppercase;
+    public int getUsersPasswordMinUppercase() {
+        return usersPasswordMinUppercase;
+    }
+
+    @Value("${users.password.min.lowercase:0}")
+    protected int usersPasswordMinLowercase;
+    public int getUsersPasswordMinLowercase() {
+        return usersPasswordMinLowercase;
+    }
+
+    @Value("${users.password.min.numbers:0}")
+    protected int usersPasswordMinNumbers;
+    public int getUsersPasswordMinNumbers() {
+        return usersPasswordMinNumbers;
+    }
+
+    @Value("${users.password.min.symbols:0}")
+    protected int usersPasswordMinSymbols;
+    public int getUsersPasswordMinSymbols() {
+        return usersPasswordMinSymbols;
+    }
+
+
 
 }

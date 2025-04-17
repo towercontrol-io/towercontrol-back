@@ -3,6 +3,7 @@ package com.disk91.users.config;
 public class ActionCatalog {
     public enum Actions {
         REGISTRATION,
+        CREATION,
         UNKNOWN,
     }
 
@@ -10,6 +11,8 @@ public class ActionCatalog {
         switch (action) {
             case REGISTRATION:
                 return "registration";
+            case CREATION:
+                return "creation";
             case UNKNOWN:
             default:
                 return "unknown";

@@ -15,6 +15,7 @@ import com.disk91.users.mdb.repositories.UserRegistrationRepository;
 import com.disk91.users.mdb.repositories.UserRepository;
 import com.disk91.users.services.UserRegistrationService;
 import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -83,11 +84,15 @@ public class UserRegistrationServiceTests {
         body.setEmail("john.doe@foo.bar");
         body.setRegistrationCode("1234567890");
 
+        HttpServletRequest req = Mockito.mock(HttpServletRequest.class);
+        given(req.getHeader(anyString())).willReturn("1.1.1.1");
+
+
         // The registration is closed
         log.info("[users][Registration][test] Closed registration test");
         given(usersConfig.isUsersRegistrationSelf()).willReturn(false);
         assertThrows(ITParseException.class, () -> {
-            userRegistrationService.requestAccountCreation(body, null);
+            userRegistrationService.requestAccountCreation(body, req);
         });
 
         // The registration is open
@@ -97,36 +102,36 @@ public class UserRegistrationServiceTests {
         given(usersConfig.getUsersRegistrationEmailFilters()).willReturn("");
         body.setEmail(null);
         assertThrows(ITParseException.class, () -> {
-            userRegistrationService.requestAccountCreation(body, null);
+            userRegistrationService.requestAccountCreation(body, req);
         });
         body.setEmail("");
         assertThrows(ITParseException.class, () -> {
-            userRegistrationService.requestAccountCreation(body, null);
+            userRegistrationService.requestAccountCreation(body, req);
         });
 
         log.info("[users][Registration][test] too long email test");
         given(usersConfig.getUsersRegistrationEmailMaxLength()).willReturn(10);
         body.setEmail("john.doe@foor.bar");
         assertThrows(ITParseException.class, () -> {
-            userRegistrationService.requestAccountCreation(body, null);
+            userRegistrationService.requestAccountCreation(body, req);
         });
 
         given(usersConfig.getUsersRegistrationEmailMaxLength()).willReturn(100);
         log.info("[users][Registration][test] Invalid email test");
         body.setEmail("john.doe");
         assertThrows(ITParseException.class, () -> {
-            userRegistrationService.requestAccountCreation(body, null);
+            userRegistrationService.requestAccountCreation(body, req);
         });
         body.setEmail("john.doe@domain");
         assertThrows(ITParseException.class, () -> {
-            userRegistrationService.requestAccountCreation(body, null);
+            userRegistrationService.requestAccountCreation(body, req);
         });
 
         log.info("[users][Registration][test] Already existing email");
         given(userRepository.findOneUserByLogin(anyString())).willReturn(new User());
         body.setEmail("john.doe@foo.bar");
         assertThrows(ITTooManyException.class, () -> {
-            userRegistrationService.requestAccountCreation(body, null);
+            userRegistrationService.requestAccountCreation(body, req);
         });
 
 
@@ -161,14 +166,14 @@ public class UserRegistrationServiceTests {
 
                 log.info("[users][Registration][test] Pending registration");
                 assertThrows(ITTooManyException.class, () -> {
-                    userRegistrationService.requestAccountCreation(body, null);
+                    userRegistrationService.requestAccountCreation(body, req);
                 });
 
                 log.info("[users][Registration][test] Registration is possible");
                 given(userRegistrationRepository.findOneUserRegistrationByEmail(any())).willReturn(null);
                 doNothing().when(auditIntegration).auditLog(any(), any(), any(), any(), any());
                 assertDoesNotThrow(() -> {
-                    userRegistrationService.requestAccountCreation(body, null);
+                    userRegistrationService.requestAccountCreation(body, req);
                 });
 
             }

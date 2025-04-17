@@ -83,9 +83,9 @@ public class UserTests {
             assertNotNull(user2.getSalt());
             assertNotNull(user2.getPassword());
             assertNotNull(user2.getUserSecret());
-            assertEquals(HexCodingTools.bytesToHex(user2.getSalt()),"21AFD07BF82F5F9139942BCB3910619E");
-            assertEquals(user2.getPassword(), "8C9830810DD36F82E1AD24762ADD3477BF64378ECA36CD5D61772BC76B865930"); // 32 Bytes
-            assertEquals(user2.getUserSecret(),"ED8075DF985E20F80F3248DCCC11FEFD"); // 16 Bytes
+            assertEquals("21AFD07BF82F5F9139942BCB3910619E", HexCodingTools.bytesToHex(user2.getSalt()));
+            assertEquals("8C9830810DD36F82E1AD24762ADD3477BF64378ECA36CD5D61772BC76B865930", user2.getPassword()); // 32 Bytes
+            assertEquals("ED8075DF985E20F80F3248DCCC11FEFD", user2.getUserSecret()); // 16 Bytes
         });
 
         // make sure salt is working
@@ -97,21 +97,21 @@ public class UserTests {
         // encrypt the email
         assertDoesNotThrow(() -> {
             user2.setEncEmail("test@foo.bar");
-            log.info("[users][test] email: " + user2.getEmail());
+            log.info("[users][test] email: {}", user2.getEmail());
             assertEquals("7dZ4AZCzdis6/5jUr+7LeA==",user2.getEmail());
 
             user2.setEncRegistrationIP("1.1.1.1");
-            log.info("[users][test] registration IP: " + user2.getRegistrationIP());
+            log.info("[users][test] registration IP: {}", user2.getRegistrationIP());
             assertEquals("C0e5mJe2s9hQg2QVQI9VVg==",user2.getRegistrationIP());
         });
 
         // decrypt the email
         assertDoesNotThrow(() -> {
             log.info("[users][test] email: " + user2.getEncEmail());
-            assertEquals(user2.getEncEmail(), "test@foo.bar");
+            assertEquals("test@foo.bar", user2.getEncEmail());
 
             log.info("[users][test] registration IP: " + user2.getEncRegistrationIP());
-            assertEquals(user2.getEncRegistrationIP(),"1.1.1.1");
+            assertEquals("1.1.1.1", user2.getEncRegistrationIP());
         });
 
         // Ensure a user w/o a password can't be configured
@@ -141,26 +141,26 @@ public class UserTests {
             user.changePassword("test", true);
             assertNotNull(user.getSalt());
             assertNotNull(user.getSessionSecret());
-            assertNotEquals(user.getUserSecret(),"");
-            assertNotEquals(user.getSalt().length,0);
+            assertNotEquals("", user.getUserSecret());
+            assertNotEquals(0, user.getSalt().length);
 
             user.setVersion(1);
             user.setEncLogin("john.doe@foo.bar");
-            assertNotEquals(user.getLogin(),"john.doe@foo.bar");
+            assertNotEquals("john.doe@foo.bar", user.getLogin());
             user.setEncEmail("john.doe@foo.bar");
-            assertNotEquals(user.getEmail(),"john.doe@foo.bar");
+            assertNotEquals("john.doe@foo.bar", user.getEmail());
             assertNotNull(user.getEmail());
             user.setLastLogin(regDate);
             user.setCountLogin(0);
             user.setRegistrationDate(regDate+10);
             user.setEncRegistrationIP("1.1.1.1");
-            assertNotEquals(user.getLogin(),"1.1.1.1");
+            assertNotEquals("1.1.1.1", user.getLogin());
             user.setModificationDate(regDate+20);
             user.setPasswordResetId(presetId);
             user.setPasswordResetExp(regDate+1000);
             user.setActive(true);
             user.setLocked(false);
-            user.setExpiredPassword(false);
+            user.setExpiredPassword(Now.NowUtcMs()+100_000);
             user.setApiAccount(false);
             user.setApiAccountOwner("");
             user.setLanguage("fr-fr");
@@ -219,35 +219,35 @@ public class UserTests {
 
         // Verify the user is well created
         log.info("[users][test] Verify the user is well created and encryption made");
-        assertEquals(user.getVersion(), 1);
-        assertNotEquals(user.getLogin(),"john.doe@foo.bar");
-        assertNotEquals(user.getEmail(), "john.doe@foo.bar");
-        assertNotEquals(user.getRegistrationIP(), "1.1.1.1");
-        assertNotEquals(user.getProfile().getGender(), "Mr");
-        assertNotEquals(user.getProfile().getFirstName(), "John");
-        assertNotEquals(user.getProfile().getLastName(), "Doe");
-        assertNotEquals(user.getProfile().getAddress(), "1 rue de la paix");
-        assertNotEquals(user.getProfile().getZipCode(), "75001");
-        assertNotEquals(user.getProfile().getCity(), "Paris");
-        assertNotEquals(user.getProfile().getCountry(), "France");
-        assertNotEquals(user.getProfile().getPhoneNumber(), "0123456789");
-        assertEquals(user.getProfile().getCustomFields().size(), 1);
-        assertEquals(user.getProfile().getCustomFields().get(0).getName(), "mobile");
-        assertNotEquals(user.getProfile().getCustomFields().get(0).getValue(), "0203040506");
-        assertNotEquals(user.getBillingProfile().getGender(), "Mr");
-        assertNotEquals(user.getBillingProfile().getFirstName(), "John");
-        assertNotEquals(user.getBillingProfile().getLastName(), "Doe");
-        assertNotEquals(user.getBillingProfile().getAddress(), "1 rue de la paix");
-        assertNotEquals(user.getBillingProfile().getZipCode(), "75001");
-        assertNotEquals(user.getBillingProfile().getCity(), "Paris");
-        assertNotEquals(user.getBillingProfile().getCountry(), "France");
-        assertNotEquals(user.getBillingProfile().getPhoneNumber(), "0123456789");
-        assertNotEquals(user.getBillingProfile().getCompanyName(), "Acme Corp");
-        assertNotEquals(user.getBillingProfile().getCountryCode(), "FR");
-        assertNotEquals(user.getBillingProfile().getVatNumber(), "FR123456789");
-        assertEquals(user.getBillingProfile().getCustomFields().size(), 1);
-        assertEquals(user.getBillingProfile().getCustomFields().get(0).getName(), "mobile");
-        assertNotEquals(user.getBillingProfile().getCustomFields().get(0).getValue(), "0203040506");
+        assertEquals(1, user.getVersion());
+        assertNotEquals("john.doe@foo.bar", user.getLogin());
+        assertNotEquals("john.doe@foo.bar", user.getEmail());
+        assertNotEquals("1.1.1.1", user.getRegistrationIP());
+        assertNotEquals("Mr", user.getProfile().getGender());
+        assertNotEquals("John", user.getProfile().getFirstName());
+        assertNotEquals("Doe", user.getProfile().getLastName());
+        assertNotEquals("1 rue de la paix", user.getProfile().getAddress());
+        assertNotEquals("75001", user.getProfile().getZipCode());
+        assertNotEquals("Paris", user.getProfile().getCity());
+        assertNotEquals("France", user.getProfile().getCountry());
+        assertNotEquals("0123456789", user.getProfile().getPhoneNumber());
+        assertEquals(1, user.getProfile().getCustomFields().size());
+        assertEquals("mobile", user.getProfile().getCustomFields().get(0).getName());
+        assertNotEquals("0203040506", user.getProfile().getCustomFields().get(0).getValue());
+        assertNotEquals("Mr", user.getBillingProfile().getGender());
+        assertNotEquals("John", user.getBillingProfile().getFirstName());
+        assertNotEquals("Doe", user.getBillingProfile().getLastName());
+        assertNotEquals("1 rue de la paix", user.getBillingProfile().getAddress());
+        assertNotEquals("75001", user.getBillingProfile().getZipCode());
+        assertNotEquals("Paris", user.getBillingProfile().getCity());
+        assertNotEquals("France", user.getBillingProfile().getCountry());
+        assertNotEquals("0123456789", user.getBillingProfile().getPhoneNumber());
+        assertNotEquals("Acme Corp", user.getBillingProfile().getCompanyName());
+        assertNotEquals("FR", user.getBillingProfile().getCountryCode());
+        assertNotEquals("FR123456789", user.getBillingProfile().getVatNumber());
+        assertEquals(1, user.getBillingProfile().getCustomFields().size());
+        assertEquals("mobile", user.getBillingProfile().getCustomFields().get(0).getName());
+        assertNotEquals("0203040506", user.getBillingProfile().getCustomFields().get(0).getValue());
 
         String encEmail = user.getEmail();
         String encFirstName = user.getProfile().getFirstName();
@@ -267,7 +267,7 @@ public class UserTests {
             log.info("[users][test]  Verify rekeying");
             assertEquals("john.doe@foo.bar", user.getEncEmail());
             assertEquals("1.1.1.1", user.getEncRegistrationIP());
-            assertEquals(user.getVersion(), 1);
+            assertEquals(1, user.getVersion());
             assertEquals("Mr", user.getEncProfileGender());
             assertEquals("John", user.getEncProfileFirstName());
             assertEquals("Doe", user.getEncProfileLastName());
@@ -327,7 +327,7 @@ public class UserTests {
             assertNotEquals(userRegistration.getValidationId(), userRegistration2.getValidationId());
 
             assertTrue(userRegistration.getCreationDate()-Now.NowUtcMs() < 1000);
-            assertTrue(userRegistration.getExpirationDate()- userRegistration.getCreationDate() == 1000);
+            assertEquals(1000, userRegistration.getExpirationDate() - userRegistration.getCreationDate());
         });
 
         log.info("[users][test] Manage User Pending Verify");

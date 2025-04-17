@@ -19,7 +19,9 @@
  */
 package com.disk91.users.services;
 
+import com.disk91.audit.integration.AuditIntegration;
 import com.disk91.common.config.CommonConfig;
+import com.disk91.common.config.ModuleCatalog;
 import com.disk91.common.pdb.entities.Param;
 import com.disk91.common.pdb.repositories.ParamRepository;
 import com.disk91.common.tools.Now;
@@ -28,16 +30,22 @@ import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITRightException;
 import com.disk91.common.tools.exceptions.ITTooManyException;
 import com.disk91.users.api.interfaces.UserAccountCreationBody;
+import com.disk91.users.config.ActionCatalog;
 import com.disk91.users.config.UsersConfig;
 import com.disk91.users.mdb.entities.User;
 import com.disk91.users.mdb.entities.UserRegistration;
 import com.disk91.users.mdb.repositories.UserRegistrationRepository;
 import com.disk91.users.mdb.repositories.UserRepository;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.function.Supplier;
 
 @Service
 public class UserCreationService {
@@ -69,6 +77,9 @@ public class UserCreationService {
 
     @Autowired
     protected ParamRepository paramRepository;
+
+    @Autowired
+    protected AuditIntegration auditIntegration;
 
     /**
      * Once the validity of the request has been verified, the user is created
@@ -196,7 +207,153 @@ public class UserCreationService {
         return u;
     }
 
+    /**
+     * Verify the password according to the configured rules
+     * @param password
+     * @return true when the password format is valid
+     */
+    public boolean verifyPassword(String password) {
+        if (password == null || password.length() < usersConfig.getUsersPasswordMinSize()) {
+            return false;
+        }
 
+        int uppercaseCount = 0;
+        int lowercaseCount = 0;
+        int numberCount = 0;
+        int symbolCount = 0;
+
+        for (char c : password.toCharArray()) {
+            if (Character.isUpperCase(c)) {
+                uppercaseCount++;
+            } else if (Character.isLowerCase(c)) {
+                lowercaseCount++;
+            } else if (Character.isDigit(c)) {
+                numberCount++;
+            } else {
+                symbolCount++;
+            }
+        }
+
+        return uppercaseCount >= usersConfig.getUsersPasswordMinUppercase() &&
+               lowercaseCount >= usersConfig.getUsersPasswordMinLowercase() &&
+               numberCount >= usersConfig.getUsersPasswordMinNumbers() &&
+               symbolCount >= usersConfig.getUsersPasswordMinSymbols();
+    }
+
+    
+    /**
+     * Create a user from a public API with a registration code
+     * @param body
+     * @param req
+     * @return
+     * @throws ITRightException
+     * @throws ITParseException
+     * @throws ITTooManyException
+     */
+    public void createUserSelf(
+            UserAccountCreationBody body,
+            HttpServletRequest req
+    ) throws ITRightException, ITParseException, ITTooManyException {
+
+        this.incCreationsAttempts();
+
+        // Make sure registration is open
+        if (!usersConfig.isUsersRegistrationSelf()) {
+            Now.randomSleep(50, 350);
+            this.incCreationsFailed();
+            throw new ITParseException("Account self creation is not allowed");
+        }
+
+        // Make sure the password is correctly set
+        if (body.getPassword() == null || body.getPassword().isEmpty()) {
+            Now.randomSleep(50, 350);
+            this.incCreationsFailed();
+            throw new ITParseException("Password is mandatory");
+        }
+
+        if ( !this.verifyPassword(body.getPassword()) ) {
+            Now.randomSleep(50, 350);
+            this.incCreationsFailed();
+            throw new ITParseException("Password does not match the rules");
+        }
+
+        // Check the acceptation if expected
+        if ( usersConfig.isUsersRegistrationAcceptation() && ! body.isConditionValidation() ) {
+            Now.randomSleep(50, 350);
+            this.incCreationsFailed();
+            throw new ITParseException("Acceptation of the conditions is mandatory");
+        }
+
+        // No need to check email, it will not be used
+
+        // Ok, we can create the user
+        User u = createUser_unsecured(
+                body,
+                req,
+                false
+        );
+
+        // Add Audit log with IP information...
+        u.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
+        auditIntegration.auditLog(
+                ModuleCatalog.Modules.USERS,
+                ActionCatalog.getActionName(ActionCatalog.Actions.CREATION),
+                u.getLogin(),
+                "{0} account creation from IP {1}",
+                new String[]{u.getEncEmail(), (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+        );
+        u.cleanKeys();
+        this.incCreationsSuccess();
+    }
+
+
+    // ==========================================================================
+    // Metrics
+    // ==========================================================================
+
+    @Autowired
+    protected MeterRegistry meterRegistry;
+
+    @PostConstruct
+    private void initUserRegistrationService() {
+        log.info("[users][creation] User creation service initialized");
+        Gauge.builder("users.creation.attempt", this.getCreationsAttempts())
+                .description("Number of account creation attempts")
+                .register(meterRegistry);
+        Gauge.builder("users.creation.failed", this.getCreationsFailed())
+                .description("Number of account creation failures")
+                .register(meterRegistry);
+        Gauge.builder("users.creation.success", this.getCreationsSuccess())
+                .description("Number of account creation success (waiting for email confirmation)")
+                .register(meterRegistry);
+    }
+
+    private long creationsAttempts = 0;
+    private long creationsFailed = 0;
+    private long creataionsSuccess = 0;
+
+    protected synchronized void incCreationsAttempts() {
+        creationsAttempts++;
+    }
+
+    protected synchronized void incCreationsFailed() {
+        creationsFailed++;
+    }
+
+    protected synchronized void incCreationsSuccess() {
+        creataionsSuccess++;
+    }
+
+    protected Supplier<Number> getCreationsAttempts() {
+        return ()->creationsAttempts;
+    }
+
+    protected Supplier<Number>  getCreationsFailed() {
+        return ()->creationsFailed;
+    }
+    protected Supplier<Number>  getCreationsSuccess() {
+        return ()->creataionsSuccess;
+    }
 
 
 

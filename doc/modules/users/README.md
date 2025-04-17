@@ -52,6 +52,16 @@ During the user creation phase, Email verification is performed based on differe
 - email format, should match email standard format
 - email structure, should not match any of the `users.registration.email.filters` regex patterns, separated by `,`
 
+#### Password creation rules
+
+The password creation & change must respect the rules defined in the configuration files and set by the following 
+variables (or the env var equivalent):
+- `users.password.min.size` : (USER_PASSWORD_MIN_SIZE) - minimum password size ; default 8
+- `users.password.min.uppercase` : (USER_PASSWORD_MIN_UPPERCASE) - minimum number of uppercase characters
+- `users.password.min.lowercase` : (USER_PASSWORD_MIN_LOWERCASE) - minimum number of lowercase characters
+- `users.password.min.numbers` : (USER_PASSWORD_MIN_NUMBERS) - minimum number of numbers
+- `users.password.min.symbols` : (USER_PASSWORD_MIN_SYMBOLS) - minimum number of symbols
+
 ### traceability
 Event on user service are logged into an audit table. It includes
 - login event

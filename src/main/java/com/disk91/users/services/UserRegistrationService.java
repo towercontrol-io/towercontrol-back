@@ -100,7 +100,7 @@ public class UserRegistrationService {
         if (!usersConfig.isUsersRegistrationSelf()) {
             Now.randomSleep(50, 350);
             this.incRegistrationFailed();
-            throw new ITParseException("Account self creation is not allowed");
+            throw new ITParseException("Account self registration is not allowed");
         }
 
         if ( req == null ) {
@@ -222,7 +222,7 @@ public class UserRegistrationService {
         Gauge.builder("users.registration.failed", this.getRegistrationsFailed())
                 .description("Number of registration failures")
                 .register(meterRegistry);
-        Gauge.builder("users.registration.success", this.getRegistrationsFailed())
+        Gauge.builder("users.registration.success", this.getRegistrationsSuccess())
                 .description("Number of registration success (waiting for email confirmation)")
                 .register(meterRegistry);
     }

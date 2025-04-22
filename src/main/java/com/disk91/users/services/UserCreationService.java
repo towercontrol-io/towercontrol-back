@@ -34,6 +34,7 @@ import com.disk91.users.config.ActionCatalog;
 import com.disk91.users.config.UsersConfig;
 import com.disk91.users.mdb.entities.User;
 import com.disk91.users.mdb.entities.UserRegistration;
+import com.disk91.users.mdb.entities.sub.TwoFATypes;
 import com.disk91.users.mdb.repositories.UserRegistrationRepository;
 import com.disk91.users.mdb.repositories.UserRepository;
 import io.micrometer.core.instrument.Gauge;
@@ -129,11 +130,14 @@ public class UserCreationService {
 
         long now = Now.NowUtcMs();
 
+        // Update Password with header & footer
+        String _password = usersConfig.getUsersPasswordHeader() + body.getPassword() + usersConfig.getUsersPasswordFooter();
+
         // Set user with minimal profile
         u = new User();
         u.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
         u.setEncLogin(body.getEmail());
-        u.changePassword(body.getPassword(),true);
+        u.changePassword(_password,true);
         u.setCountLogin(0);
         u.setRegistrationDate(now);
         u.setModificationDate(now);
@@ -191,12 +195,14 @@ public class UserCreationService {
         u.getAlertPreference().setEmailAlert(false);
         u.getAlertPreference().setPushAlert(false);
         u.getAlertPreference().setSmsAlert(false);
+        u.setTwoFAType(TwoFATypes.NONE);
+        u.setEncTwoFASecret("");
 
-        u.getRoles().add("ROLE_PENDING_USER");
+        u.getRoles().add(UsersRolesCache.StandardRoles.ROLE_PENDING_USER.getRoleName());
 
         // will depend on config / condition validation
         if ( usersConfig.isUsersPendingAutoValidation() ) {
-            u.getRoles().add("ROLE_REGISTERED_USER");
+            u.getRoles().add(UsersRolesCache.StandardRoles.ROLE_REGISTERED_USER.getRoleName());
             u.setActive(true);
         }
 

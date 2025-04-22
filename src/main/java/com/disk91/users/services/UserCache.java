@@ -21,6 +21,11 @@ package com.disk91.users.services;
 
 import com.disk91.audit.integration.AuditIntegration;
 import com.disk91.common.config.CommonConfig;
+import com.disk91.common.mdb.entities.WiFiMacLocation;
+import com.disk91.common.mdb.repositories.WiFiMacLocationRepository;
+import com.disk91.common.tools.Now;
+import com.disk91.common.tools.ObjectCache;
+import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITRightException;
 import com.disk91.users.api.interfaces.UserLoginBody;
@@ -30,12 +35,17 @@ import com.disk91.users.mdb.repositories.UserRepository;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Supplier;
 
 @Service
@@ -57,54 +67,104 @@ public class UserCache {
     @Autowired
     protected UserRepository userRepository;
 
-
-
-
-    // ==========================================================================
-    // Metrics
-    // ==========================================================================
-
     @Autowired
     protected MeterRegistry meterRegistry;
 
+
+    // ================================================================================================================
+    // CACHE SERVICE
+    // ================================================================================================================
+
+    private ObjectCache<String, User> userCache;
+
+    protected boolean serviceEnable = false;
+
     @PostConstruct
-    private void initUserRegistrationService() {
-        log.info("[users][service] User service initialized");
-        Gauge.builder("users.login.attempt", this.getLoginAttempts())
-                .description("Number of login attempts")
+    private void initUsersCache() {
+        log.info("[users] initUsersCache");
+        if ( usersConfig.getUsersCacheMaxSize() > 0 ) {
+            this.userCache = new ObjectCache<String, User>(
+                    "UserROCache",
+                    usersConfig.getUsersCacheMaxSize(),
+                    usersConfig.getUsersCacheExpiration()*1000
+            ) {
+                @Override
+                synchronized public void onCacheRemoval(String key, User obj, boolean batch, boolean last) {
+                    // read only cache, do nothing
+                }
+                @Override
+                public void bulkCacheUpdate(List<User> objects) {
+                    // read only cache, do nothing
+                }
+            };
+        }
+
+        this.serviceEnable = true;
+
+        Gauge.builder("common.service.users.cache_total_time", this.userCache.getTotalCacheTime())
+                .description("[Users] total time cache execution")
                 .register(meterRegistry);
-        Gauge.builder("users.login.failed", this.getLoginFailed())
-                .description("Number of login failures")
+        Gauge.builder("common.service.users.cache_total", this.userCache.getTotalCacheTry())
+                .description("[Users] total cache try")
                 .register(meterRegistry);
-        Gauge.builder("users.login.success", this.getCreationsSuccess())
-                .description("Number of login success")
+        Gauge.builder("common.service.users.cache_miss", this.userCache.getCacheMissStat())
+                .description("[Users] total cache miss")
                 .register(meterRegistry);
     }
 
-    private long loginAttempts = 0;
-    private long loginFailed = 0;
-    private long loginSuccess = 0;
-
-    protected synchronized void incLoginAttempts() {
-        loginAttempts++;
-    }
-    protected synchronized void incLoginFailed() {
-        loginFailed++;
-    }
-    protected synchronized void incLoginSuccess() {
-        loginSuccess++;
+    @PreDestroy
+    public void destroy() {
+        log.info("[users] UserCache stopping");
+        this.serviceEnable = false;
+        if ( commonConfig.getWifiMacCacheSize() > 0 ) {
+            userCache.deleteCache();
+        }
+        log.info("[users] UserCache stopped");
     }
 
-    protected Supplier<Number> getLoginAttempts() {
-        return ()-> loginAttempts;
-    }
-    protected Supplier<Number> getLoginFailed() {
-        return ()-> loginFailed;
-    }
-    protected Supplier<Number> getCreationsSuccess() {
-        return ()-> loginSuccess;
+    @Scheduled(fixedRateString = "${users.cache.log.period:PT24H}", initialDelay = 3600_000)
+    protected void wifiMacLocationCacheStatus() {
+        try {
+            Duration duration = Duration.parse(commonConfig.getWifiMacCacheLogPeriod());
+            if (duration.toMillis() >= Now.ONE_FULL_DAY ) return;
+        } catch (Exception ignored) {}
+        if ( ! this.serviceEnable || commonConfig.getWifiMacCacheSize() == 0 ) return;
+        this.userCache.log();
     }
 
+    // ================================================================================================================
+    // Cache access
+    // ================================================================================================================
 
+    public User getUser(String userLogin) throws ITNotFoundException {
+        if ( ! this.serviceEnable || usersConfig.getUsersCacheMaxSize() == 0 ) {
+            // direct acces from database
+            User u = userRepository.findOneUserByLogin(userLogin);
+            if ( u == null ) throw new ITNotFoundException("User not found");
+            return u;
+        } else {
+            User u = this.userCache.get(userLogin);
+            if ( u == null ) {
+                // not in cache, get it from the database
+                u = userRepository.findOneUserByLogin(userLogin);
+                if ( u == null ) throw new ITNotFoundException("User not found");
+                this.userCache.put(u, u.getLogin());
+            }
+            return u;
+        }
+    }
+
+    /**
+     * Remove a user from the local cache if exists (this is when the user has been updated somewhere else
+     * @param userLogin - user login to be removed
+     * @return
+     */
+    public void flushUser(String userLogin) {
+        if ( this.serviceEnable && usersConfig.getUsersCacheMaxSize() > 0 ) {
+            this.userCache.remove(userLogin,false);
+        }
+    }
+
+    // @TODO - manage the broadcast request for user flush and scan for flush trigger on each of the instances
 
 }

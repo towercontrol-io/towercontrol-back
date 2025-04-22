@@ -45,7 +45,6 @@ as a consequence, without a new login of the user with the right password, the d
 The user service is able to send email messages to users. The email content is defined in the configuration file and can be
 modified by the administrator. The email content is defined in the `users.messages_xx.properties` files.
 
-
 #### User creation security
 
 During the user creation phase, Email verification is performed based on different rules:
@@ -62,6 +61,15 @@ variables (or the env var equivalent):
 - `users.password.min.lowercase` : (USER_PASSWORD_MIN_LOWERCASE) - minimum number of lowercase characters
 - `users.password.min.numbers` : (USER_PASSWORD_MIN_NUMBERS) - minimum number of numbers
 - `users.password.min.symbols` : (USER_PASSWORD_MIN_SYMBOLS) - minimum number of symbols
+
+#### User login
+
+When a user logs in, their login and password will be verified, and it must be ensured that the account is active 
+and has at least the role `ROLE_REGISTERED_USER`. If the user has not logged in for a very long period, determined 
+by the `users.data.privacy.expiration.days` parameter, their personal data will no longer be decryptable. However, 
+logging in will resolve this situation by renewing the keys necessary for decryption, based on their plaintext 
+password, which only they know. The login process is also an opportunity to check if the password needs to be 
+renewed if it has expired.
 
 ### traceability
 Event on user service are logged into an audit table. It includes

@@ -28,7 +28,7 @@ The user data structure is defined as follows:
   
   "active": "boolean",            // user active flag
   "locked": "boolean",            // user locked flag
-  "expiredPassword": "boolean",   // flag to force password change
+  "expiredPassword": "long",      // password expriration date in MS since epoch
   "apiAccount" : "boolean",       // flag to indicate if user is an API account
   "apiAccountOwner" : "string",   // user login of the owner of the API account
   
@@ -74,6 +74,8 @@ The user data structure is defined as follows:
     "conditionValidation": "boolean",   // user condition validation flag
     "conditionValidationDate": "date",  // user condition validation date
     "conditionValidationVer": "string", // user condition version
+    "twoFAType": "enum",                // 2FA type (NONE, EMAIL, SMS, GAUTHENTICATOR)
+    "twoFASecret": "string",            // 2FA secret key [Base64(encrypted)]
  
     "lastComMessageSeen": "number"      // last communication message seen
 }
@@ -94,12 +96,14 @@ session token to avoid verifications on every call. As a consequence, the role r
 - `ROLE_DEVICE_ALERTING`: this role allows to receive device alerts
 - `ROLE_BACKEND_CAPTURE`: this role is dedicated to technical account allowed to report device data to the platform
 
-
 - `ROLE_PENDING_USER`: this role is assigned to a user not yet registered into the system
 - `ROLE_REGISTERED_USER`: this role is assigned to a user registered into the system (confirmed email)
+
+Following roles are dynamically added and should not be stored in the user profile.
 - `ROLE_LOGIN_1FA`: this role is assigned on login with 1st factor to allow access 2nd Factor API
 - `ROLE_LOGIN_2FA` : this role is assigned on 2nd factor login to indicate user has 2FA. Certain api can expect 2FA and user can apply 2FA as a second step.
-
+- `ROLE_LOGIN_COMPLETED`: this role is assigned when the login process is completed (it should not be stored in role list). It indicates that the user has passed all the needed factors and verifictions
+- 
 - Role can be added dynamically by some other modules to cover certain authorizations specific for them, see [dynamic role](dynrole_structure.md)
 
 ### User Acls
@@ -108,8 +112,6 @@ A user has access rights to groups corresponding to the Groups defined elsewhere
 still have a specific right on a particular group. By default, a virtual group with the same name as the user exists without 
 needing to be explicitly listed; this represents the user's personal group. These personal groups are prefixed with `$user_`, 
 which is therefore not allowed for standard group names. This group can be shared via ACLs as well.
-
-
 
 ### Data encryption
 Data are AES encrypted, the encryption key is composed by
@@ -128,6 +130,10 @@ JWT signature depends on
 ### Password change
 On password change, the data encryption need to be recreated as the `userSecret` will be different.
 
-
+### 2FA
+2FA is based on different systems, it can be email, sms or Google Authenticator application. 
+The user can choose to use 2FA or not. If the user chooses to use 2FA, during the login process, the access will be
+restricted to the second step FA with password. The `twoFASecret` field is used to store the secret key for the 2FA, 
+it can be the Authenticator secret or it can be the temporary code for the SMS or email.
 
 ### API

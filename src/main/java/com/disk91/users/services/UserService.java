@@ -21,12 +21,23 @@ package com.disk91.users.services;
 
 import com.disk91.audit.integration.AuditIntegration;
 import com.disk91.common.config.CommonConfig;
+import com.disk91.common.config.ModuleCatalog;
+import com.disk91.common.pdb.entities.Param;
+import com.disk91.common.pdb.repositories.ParamRepository;
+import com.disk91.common.tools.HexCodingTools;
+import com.disk91.common.tools.Now;
+import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITRightException;
 import com.disk91.users.api.interfaces.UserLoginBody;
+import com.disk91.users.config.ActionCatalog;
 import com.disk91.users.config.UsersConfig;
 import com.disk91.users.mdb.entities.User;
+import com.disk91.users.mdb.entities.sub.TwoFATypes;
 import com.disk91.users.mdb.repositories.UserRepository;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PostConstruct;
@@ -36,6 +47,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.security.Key;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.function.Supplier;
 
 @Service
@@ -57,10 +71,16 @@ public class UserService {
     protected UsersConfig usersConfig;
 
     @Autowired
+    protected UserCache userCache;
+
+    @Autowired
     protected UserRepository userRepository;
 
     @Autowired
     protected AuditIntegration auditIntegration;
+
+    @Autowired
+    protected ParamRepository paramRepository;
 
     /**
      * User Login verification, search for a corresponding user & email.
@@ -95,10 +115,150 @@ public class UserService {
         // Get the hash of the user login
         String loginHash = User.encodeLogin(body.getEmail());
 
-        User u = userRepository.findOneUserByLogin(loginHash);
+        try {
+            User u = userCache.getUser(loginHash);
+            // Check if authorized
+            if ( u.isLocked() || !u.isActive() ) {
+                log.info("[users][service] Inactive user {} attempted ot login", u.getLogin());
+                this.incLoginFailed();
+                throw new ITRightException("User is not authorized");
+            }
+
+            // Verify the user as the minimum role to login.
+            if ( ! u.isInRole(UsersRolesCache.StandardRoles.ROLE_REGISTERED_USER.getRoleName()) ) {
+                log.info("[users][service] User {} does not have the right role to login", u.getLogin());
+                this.incLoginFailed();
+                throw new ITRightException("User does not have the right role");
+            }
+
+            // check the password
+            u.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
+            String _password = usersConfig.getUsersPasswordHeader() + body.getPassword() + usersConfig.getUsersPasswordFooter();
+            if ( !u.isRightPassword(_password) ) {
+                this.incLoginFailed();
+                throw new ITRightException("Invalid password");
+            }
+
+            // The password is correct, check if we need to reactivate the encryption key
+            u.setLastLogin(Now.NowUtcMs());
+            u.setCountLogin(u.getCountLogin()+1);
+            boolean updateCaches = false;
+            if ( u.getUserSecret() == null || u.getUserSecret().isEmpty() ) {
+                log.info("[users][service] User {} reactivated", u.getLogin());
+                u.restoreUserSecret(body.getPassword());
+                u.setModificationDate(Now.NowUtcMs());
+                // add a trace of this action in the Audit Log
+                auditIntegration.auditLog(
+                        ModuleCatalog.Modules.USERS,
+                        ActionCatalog.getActionName(ActionCatalog.Actions.REACTIVATION),
+                        u.getLogin(),
+                        "{0} Reactivated account after a long period of inactivity",
+                        new String[]{body.getEmail()}
+                );
+                updateCaches = true;
+            }
+
+            // Write the user back to the database and request caches for flush (only if th key changed, if only the counters, keep wrong value in read-only cache)
+            userRepository.save(u);
+            if ( updateCaches ) {
+                userCache.flushUser(u.getLogin());
+            }
+
+            // get current conditions
+            Param p = paramRepository.findByParamKey("users.condition.version");
+
+
+            ArrayList<String> roles = new ArrayList<>();
+            roles.add(UsersRolesCache.StandardRoles.ROLE_LOGIN_1FA.getRoleName());
+            if ( u.getTwoFAType() != TwoFATypes.NONE ) {
+                // 2FA Mechanism is active, generate the token with a limited role 1FA
+                roles.add(UsersRolesCache.StandardRoles.ROLE_REGISTERED_USER.getRoleName());
+            } else {
+                // 2FA Mechanism is not active, generate the token with the full role list
+                // check the password expiration to route the user to the password change page - update it
+                if ( u.getExpiredPassword() > Now.NowUtcMs() && ( p == null || p.getStringValue().isEmpty() || u.getConditionValidationVer().compareTo(p.getStringValue()) == 0 ) ) {
+                    roles.addAll(u.getRoles());
+                    roles.add(UsersRolesCache.StandardRoles.ROLE_LOGIN_COMPLETE.getRoleName());
+                } else {
+                    // Reduce the role to the 1FA ROLE and ROLE_REGISTERED_USER to allow password change or condition validation but not more
+                    roles.add(UsersRolesCache.StandardRoles.ROLE_REGISTERED_USER.getRoleName());
+                }
+            }
+
+            // Create JWT @TODO - should be a function
+            long exp;
+            if ( u.isApiAccount() ) {
+                if ( usersConfig.getUsersSessionApiTimeoutSec() > 0 ) {
+                    exp = Now.NowUtcMs() + usersConfig.getUsersSessionApiTimeoutSec() * 1000;
+                } else {
+                    exp = Now.NowUtcMs() + 30*365*Now.ONE_FULL_DAY; // inifinite session is 30 Years
+                }
+            } else {
+                if ( usersConfig.getUsersSessionTimeoutSec() > 0 ) {
+                    exp = Now.NowUtcMs() + usersConfig.getUsersSessionTimeoutSec() * 1000;
+                } else {
+                    exp = Now.NowUtcMs() + 30*365*Now.ONE_FULL_DAY; // inifinite session is 30 Years
+                }
+            }
+            Claims claims = Jwts.claims()
+                    .subject(u.getLogin())
+                    .expiration(new Date(exp))
+                    .add("roles", roles)
+                    .build();
+
+            String token = Jwts.builder()
+                    .header().add("typ", "JWT")
+                    .add("sub", u.getLogin())
+                    .and()
+                    .claims().empty().add(claims)
+                    .and()
+                    .expiration(new Date(exp))
+                    .signWith(this.generateKeyForUser(u))
+                    .compact();
+
+            this.incLoginSuccess();
+
+            // @TODO Return a structure with the user login hashed, the jwt, the password, expiration, the 2FA expectation and type, the EULA validation
+            // so th front will be able to redirect the user to the right page
+            // also returns the user login for the front if needed
+            return "";
+
+        } catch (ITNotFoundException x ) {
+            this.incLoginFailed();
+            throw new ITRightException("User not found");
+        }
+
+    }
+
+    //@TODO : need a solution to increase the log level once the password change is made and the eula are ok
+
+    //@TODO : need to upgrade the session once the 2FA is completed
+
+    //@TODO : need a password change solution with  a valid session
 
 
 
+    /**
+     * Compute a key to sign the JWT token for the user
+     * This key is based on the user Session key, this one is renewed on user logout
+     * and the server session key. This one is statis but can be renewed to clear all the
+     * existing sessions
+     *
+     * @param u
+     * @return
+     */
+    public Key generateKeyForUser(User u) {
+        // Generate the key for the user
+        String srvKey = usersConfig.getUsersSessionKey();
+        String userSecret = u.getSessionSecret();
+        byte[] _srvKey = HexCodingTools.getByteArrayFromHexString(srvKey);          // 32 bytes
+        byte[] _userSecret = HexCodingTools.getByteArrayFromHexString(userSecret);  // 32 bytes
+        byte[] key = new byte[64];
+        for (int i = 0; i < 32; i++) {
+            key[i] = (byte)(_srvKey[i] ^ _userSecret[i]);
+            key[i+32] = (byte)(_srvKey[i] ^ _userSecret[i]);
+        }
+        return Keys.hmacShaKeyFor(key);
     }
 
 

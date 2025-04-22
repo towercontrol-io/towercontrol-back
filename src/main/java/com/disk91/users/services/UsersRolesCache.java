@@ -67,8 +67,36 @@ public class UsersRolesCache {
         "{'version':1, 'platform':true, 'name':'ROLE_PENDING_USER','description':'role-pending-user-desc', 'enDescription':'not yet registered user', 'creationBy':'system', 'creationMs':0}",
         "{'version':1, 'platform':true, 'name':'ROLE_REGISTERED_USER','description':'role-registered-user-desc', 'enDescription':'registered user', 'creationBy':'system','creationMs':0}",
         "{'version':1, 'platform':true, 'name':'ROLE_LOGIN_1FA','description':'role-login-1fa-desc', 'enDescription':'logged user with 1 factor authentication', 'creationBy':'system','creationMs':0}",
-        "{'version':1, 'platform':true, 'name':'ROLE_LOGIN_2FA','description':'role-login-2fa-desc', 'enDescription':'logged user with 2 factor authentication', 'creationBy':'system','creationMs':0}"
+        "{'version':1, 'platform':true, 'name':'ROLE_LOGIN_2FA','description':'role-login-2fa-desc', 'enDescription':'logged user with 2 factor authentication', 'creationBy':'system','creationMs':0}",
+        "{'version':1, 'platform':true, 'name':'ROLE_LOGIN_COMPLETE','description':'role-login-complete-desc', 'enDescription':'login completed', 'creationBy':'system','creationMs':0}"
     };
+
+    // Standard roles strings
+    public enum StandardRoles {
+        ROLE_GOD_ADMIN("ROLE_GOD_ADMIN"),
+        ROLE_USER_ADMIN("ROLE_USER_ADMIN"),
+        ROLE_GROUP_ADMIN("ROLE_GROUP_ADMIN"),
+        ROLE_GROUP_LADMIN("ROLE_GROUP_LADMIN"),
+        ROLE_DEVICE_ADMIN("ROLE_DEVICE_ADMIN"),
+        ROLE_DEVICE_READ("ROLE_DEVICE_READ"),
+        ROLE_DEVICE_WRITE("ROLE_DEVICE_WRITE"),
+        ROLE_DEVICE_CONFIG("ROLE_DEVICE_CONFIG"),
+        ROLE_DEVICE_ALERTING("ROLE_DEVICE_ALERTING"),
+        ROLE_BACKEND_CAPTURE("ROLE_BACKEND_CAPTURE"),
+        ROLE_PENDING_USER("ROLE_PENDING_USER"),
+        ROLE_REGISTERED_USER("ROLE_REGISTERED_USER"),
+        ROLE_LOGIN_1FA("ROLE_LOGIN_1FA"),
+        ROLE_LOGIN_2FA("ROLE_LOGIN_2FA"),
+        ROLE_LOGIN_COMPLETE("ROLE_LOGIN_COMPLETE");
+
+        private String roleName;
+        StandardRoles(String roleName) {
+            this.roleName = roleName;
+        }
+        public String getRoleName() {
+            return roleName;
+        }
+    }
 
     /**
      * Return the number of pfRoles expected in the cache from the initialization list above

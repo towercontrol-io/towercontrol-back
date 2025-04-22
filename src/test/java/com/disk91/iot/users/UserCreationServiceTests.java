@@ -123,6 +123,8 @@ public class UserCreationServiceTests {
             given(paramRepository.findByParamKey(anyString())).willReturn(p);
             given(usersConfig.isUsersPendingAutoValidation()).willReturn(true);
             given(usersConfig.getUsersPasswordExpirationDays()).willReturn(0);
+            given(usersConfig.getUsersPasswordHeader()).willReturn("1234");
+            given(usersConfig.getUsersPasswordFooter()).willReturn("5678");
             assertDoesNotThrow(() -> {
                 User us = (User) createUserMethod.invoke(userCreationService, body, req, false);
                 assertNotNull(us);
@@ -183,17 +185,31 @@ public class UserCreationServiceTests {
             } catch (InvocationTargetException | IllegalAccessException x) {
                 assertInstanceOf(ITRightException.class, x.getCause());
             }
+            given(userRegistrationRepository.findOneUserRegistrationByRegistrationCode(any())).willReturn(r);
 
             // ---------------------------------------
             log.info("[users][Creation][test] Existing User");
-            given(userRegistrationRepository.findOneUserRegistrationByRegistrationCode(any())).willReturn(r);
             given(userRepository.findOneUserByLogin(anyString())).willReturn(new User());
             try {
                 User us = (User) createUserMethod.invoke(userCreationService, body, req, true);
             } catch (InvocationTargetException | IllegalAccessException x) {
                 assertInstanceOf(ITTooManyException.class, x.getCause());
             }
+            given(userRepository.findOneUserByLogin(anyString())).willReturn(null);
 
+            // ---------------------------------------
+            log.info("[users][Creation][test] Change password header and footer");
+            given(usersConfig.getUsersPasswordHeader()).willReturn("abcd");
+            given(usersConfig.getUsersPasswordFooter()).willReturn("efgh");
+            try {
+                User us = (User) createUserMethod.invoke(userCreationService, body, req, true);
+                //given(usersConfig.getUsersPasswordHeader()).willReturn("1234");
+                //given(usersConfig.getUsersPasswordFooter()).willReturn("5678");
+                assertFalse(us.isRightPassword("1234"+body.getPassword()+"5678"));
+                assertTrue(us.isRightPassword("abcd"+body.getPassword()+"efgh"));
+            } catch (InvocationTargetException | IllegalAccessException x) {
+                assertInstanceOf(ITTooManyException.class, x.getCause());
+            }
 
         } catch (NoSuchMethodException x){
             fail("Failed to find the createUser_unsecured method: " + x.getMessage());

@@ -148,6 +148,59 @@ public class UsersConfig {
         return usersPasswordMinSymbols;
     }
 
+    @Value("${users.password.header:}")
+    protected String usersPasswordHeader;
+    public String getUsersPasswordHeader() {
+        return usersPasswordHeader;
+    }
+    @Value("${users.password.footer:}")
+    protected String usersPasswordFooter;
+    public String getUsersPasswordFooter() {
+        return usersPasswordFooter;
+    }
 
+    @Value("${users.data.privacy.expiration.days:730}")
+    protected int usersDataPrivacyExpirationDays;
+    public int getUsersDataPrivacyExpirationDays() {
+        return usersDataPrivacyExpirationDays;
+    }
+
+    // --------------------------------------------
+    // User Cache
+    // --------------------------------------------
+
+    @Value("${users.cache.max.size:1000}")
+    protected int usersCacheMaxSize;
+    public int getUsersCacheMaxSize() {
+        return usersCacheMaxSize;
+    }
+
+    @Value("${users.cache.expiration_s:0}")
+    protected int usersCacheExpiration;
+    public int getUsersCacheExpiration() {
+        return usersCacheExpiration;
+    }
+
+    // --------------------------------------------
+    // User Sessions
+    // --------------------------------------------
+
+    @Value("${users.session.timeout.sec:36000}")
+    protected long usersSessionTimeoutSec;
+    public long getUsersSessionTimeoutSec() {
+        return usersSessionTimeoutSec;
+    }
+
+    @Value("${users.session.api.timeout.sec:0}")
+    protected long usersSessionApiTimeoutSec;
+    public long getUsersSessionApiTimeoutSec() {
+        return usersSessionApiTimeoutSec;
+    }
+
+    @Value("${users.session.key:9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a}")
+    protected String usersSessionKey;
+    public String getUsersSessionKey() {
+        return usersSessionKey;
+    }
 
 }

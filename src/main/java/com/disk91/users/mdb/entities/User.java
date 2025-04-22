@@ -25,10 +25,7 @@ import com.disk91.common.tools.CustomField;
 import com.disk91.common.tools.EncryptionHelper;
 import com.disk91.common.tools.HexCodingTools;
 import com.disk91.common.tools.exceptions.ITParseException;
-import com.disk91.users.mdb.entities.sub.UserAcl;
-import com.disk91.users.mdb.entities.sub.UserAlertPreference;
-import com.disk91.users.mdb.entities.sub.UserBillingProfile;
-import com.disk91.users.mdb.entities.sub.UserProfile;
+import com.disk91.users.mdb.entities.sub.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.annotation.Id;
@@ -150,6 +147,10 @@ public class User implements CloneableObject<User> {
     // User Billing Profile information
     protected UserBillingProfile billingProfile;
 
+    // TWO FA information
+    protected String twoFASecret;
+    protected TwoFATypes twoFAType;
+
 
     // =========== Encryption Management ===========
     @Transient
@@ -206,12 +207,43 @@ public class User implements CloneableObject<User> {
             // Hash of the password with SHA256 ; this will be used to authenticate the user
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             digest.update(this.salt);
-            byte[] passwordHash = digest.digest(password.getBytes(StandardCharsets.UTF_8));
+            byte[] passwordHash = digest.digest(_password.getBytes(StandardCharsets.UTF_8));
             return (HexCodingTools.bytesToHex(passwordHash).compareTo(this.password) == 0);
         } catch (Exception e) {
             return false;
         }
+    }
 
+    /**
+     * Set the userSecret based on userPassword
+     * @param password
+     */
+    protected byte[] generateUserSecret(String password) throws ITParseException {
+        try {
+            // Hash the password for the encryption key (purpose is to be able to lock personal data without having to
+            // delete the user account and let the user to later reactivate its account by logging into the system
+            char[] passwordChars = password.toCharArray();
+            PBEKeySpec spec = new PBEKeySpec(passwordChars, this.salt, 65536, 128);
+            SecretKeyFactory skf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
+            return skf.generateSecret(spec).getEncoded();
+        } catch (NoSuchAlgorithmException e) {
+            log.error("[users] Error while hashing password", e);
+            throw new ITParseException("Unsupported hashing algorithm");
+        } catch (InvalidKeySpecException e) {
+            log.error("[users] Error while hashing password", e);
+            throw new ITParseException("Invalid key spec");
+        }
+    }
+
+    public void restoreUserSecret(String password) throws ITParseException {
+        this.userSecret = HexCodingTools.bytesToHex(this.generateUserSecret(password));
+    }
+
+    /**
+     * Clear the user secret, so the personal data can't be decrypted anymore (until next login)
+     */
+    public void clearUserSecret() {
+        this.userSecret = "";
     }
 
     /**
@@ -235,7 +267,7 @@ public class User implements CloneableObject<User> {
             this.salt = new byte[16];
             SecureRandom random = new SecureRandom();
             random.nextBytes(this.salt);
-            this.sessionSecret = HexCodingTools.getRandomHexString(32);
+            this.sessionSecret = HexCodingTools.getRandomHexString(64);
             this.version = USER_VERSION;
         }
 
@@ -245,13 +277,7 @@ public class User implements CloneableObject<User> {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             digest.update(this.salt);
             byte[] passwordHash = digest.digest(password.getBytes(StandardCharsets.UTF_8));
-
-            // Hash the password for the encryption key (purpose is to be able to lock personal data without having to
-            // delete the user account and let the user to later reactivate its account by logging into the system
-            char[] passwordChars = password.toCharArray();
-            PBEKeySpec spec = new PBEKeySpec(passwordChars, this.salt, 65536, 128);
-            SecretKeyFactory skf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
-            byte[] passwordHashForEncryption = skf.generateSecret(spec).getEncoded();
+            byte[] passwordHashForEncryption = this.generateUserSecret(password);
 
             if ( ! create ) {
                 // We need to rekey all the encrypted data
@@ -279,6 +305,7 @@ public class User implements CloneableObject<User> {
                 String _getBillingCompanyName = (this.billingProfile.getCompanyName() != null )?this.getEncBillingCompanyName():null;
                 String _getBillingCountryCode = (this.billingProfile.getCountryCode()!= null )?this.getEncBillingCountryCode():null;
                 String _getBillingVatNumber = (this.billingProfile.getVatNumber() != null )?this.getEncBillingVatNumber():null;
+                String _getTwoFASecret = (this.twoFASecret != null )?this.getEncTwoFASecret():null;
 
                 // Re-encrypt all data
                 this.password = HexCodingTools.bytesToHex(passwordHash);
@@ -306,6 +333,7 @@ public class User implements CloneableObject<User> {
                 if ( _getBillingCompanyName != null) this.setEncBillingCompanyName(_getBillingCompanyName);
                 if ( _getBillingCountryCode != null) this.setEncBillingCountryCode(_getBillingCountryCode);
                 if ( _getBillingVatNumber != null) this.setEncBillingVatNumber(_getBillingVatNumber);
+                if ( _getTwoFASecret != null) this.setEncTwoFASecret(_getTwoFASecret);
 
             } else {
                 // Save the change
@@ -315,7 +343,7 @@ public class User implements CloneableObject<User> {
         } catch (NoSuchAlgorithmException e) {
             log.error("[users] Error while hashing password", e);
             throw new ITParseException("Unsupported hashing algorithm");
-        } catch (InvalidKeySpecException e) {
+        } catch (ITParseException e) {
             log.error("[users] Error while hashing password", e);
             throw new ITParseException("Invalid key spec");
         }
@@ -324,8 +352,6 @@ public class User implements CloneableObject<User> {
 
     // ===================================================
     // Encrypted Setters / Getters
-
-
 
     @Transient
     private static String LOGINSALT_STR = "8c7b5e6d3f2a1b4c9d0e7f3a6c5b2d1e";
@@ -389,6 +415,21 @@ public class User implements CloneableObject<User> {
      */
     public void setEncRegistrationIP(String _registrationIP)  throws ITParseException {
         this.registrationIP = EncryptionHelper.encrypt(_registrationIP, IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+    }
+
+    /**
+     * Decrypt the 2FA secret information
+     */
+    public String getEncTwoFASecret() throws ITParseException {
+        return EncryptionHelper.decrypt(this.twoFASecret, IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+    }
+
+    /**
+     * Encrypt the 2FA secret information
+     * @param _twoFASecret - clear text 2FA secret
+     */
+    public void setEncTwoFASecret(String _twoFASecret)  throws ITParseException {
+        this.twoFASecret = EncryptionHelper.encrypt(_twoFASecret, IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
     }
 
     // --------------------
@@ -616,6 +657,21 @@ public class User implements CloneableObject<User> {
         this.billingProfile.setVatNumber(EncryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
     }
 
+    // ===================================================
+    // Roles Management
+
+    /**
+     * Check if a given role has been attributed to the user
+     * @param role
+     */
+    public boolean isInRole(String role) {
+        if ( this.roles == null ) return false;
+        for ( String r : this.roles ) {
+            if ( r.compareTo(role) == 0 ) return true;
+        }
+        return false;
+    }
+
 
     // ========== CLONEABLE INTERFACE ==========
 
@@ -652,6 +708,8 @@ public class User implements CloneableObject<User> {
         u.setConditionValidationDate(this.conditionValidationDate);
         u.setConditionValidationVer(this.conditionValidationVer);
         u.setLastComMessageSeen(this.lastComMessageSeen);
+        u.setTwoFAType(this.twoFAType);
+        u.setTwoFASecret(this.twoFASecret);
 
         // Create a copy of the roles list
         ArrayList<String> _roles = new ArrayList<String>(this.roles);
@@ -912,5 +970,21 @@ public class User implements CloneableObject<User> {
 
     public void setBillingProfile(UserBillingProfile billingProfile) {
         this.billingProfile = billingProfile;
+    }
+
+    public String getTwoFASecret() {
+        return twoFASecret;
+    }
+
+    public void setTwoFASecret(String twoFASecret) {
+        this.twoFASecret = twoFASecret;
+    }
+
+    public TwoFATypes getTwoFAType() {
+        return twoFAType;
+    }
+
+    public void setTwoFAType(TwoFATypes twoFAType) {
+        this.twoFAType = twoFAType;
     }
 }

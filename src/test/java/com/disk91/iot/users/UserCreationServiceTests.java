@@ -91,7 +91,7 @@ public class UserCreationServiceTests {
 
         HttpServletRequest req = Mockito.mock(HttpServletRequest.class);
         given(req.getHeader(anyString())).willReturn("1.1.1.1");
-
+        doNothing().when(auditIntegration).auditLog(any(),any(),any(), any(), any());
 
         // Creation comes from a self-service registration with a code
         try {
@@ -205,5 +205,108 @@ public class UserCreationServiceTests {
     }
 
 
+    @Test
+    @Order(2)
+    public void testUserCreateUserSelf() {
+        log.info("[users][Creation][test] Self Creation test");
+
+        UserAccountCreationBody body = new UserAccountCreationBody();
+        body.setPassword("123456");
+        body.setEmail("john.doe@foo.bar");
+        body.setConditionValidation(true);
+        body.setValidationID("1234567890");
+
+        HttpServletRequest req = Mockito.mock(HttpServletRequest.class);
+        given(req.getHeader(anyString())).willReturn("1.1.1.1");
+        doNothing().when(auditIntegration).auditLog(any(), any(), any(), any(), any());
+
+        try {
+            log.info("[users][Creation][test] Creation success");
+
+            UserRegistration r = Mockito.mock(UserRegistration.class);
+            given(r.getExpirationDate()).willReturn(Now.NowUtcMs() + 100_000);
+            given(r.getEncEmail(anyString())).willReturn("john.doe@foo.bar");
+            given(userRegistrationRepository.findOneUserRegistrationByRegistrationCode(any())).willReturn(r);
+            doNothing().when(r).setExpirationDate(anyLong());
+            given(userRegistrationRepository.save(any())).willAnswer(invocation -> invocation.getArgument(0));
+            given(userRepository.save(any())).willAnswer(invocation -> invocation.getArgument(0));
+            given(userRepository.findOneUserByLogin(anyString())).willReturn(null);
+            given(commonConfig.getEncryptionKey()).willReturn("d5b504d560363cfe33890c4f5343f387");
+            given(commonConfig.getApplicationKey()).willReturn("a84c2d1f7b9e063d5f1a2e9c3b7d408e");
+            given(usersConfig.isUsersRegistrationSelf()).willReturn(true);
+            Param p = new Param();
+            p.setParamKey("users.condition.version");
+            p.setStringValue("ABCD");
+            given(paramRepository.findByParamKey(anyString())).willReturn(p);
+            given(usersConfig.isUsersPendingAutoValidation()).willReturn(true);
+            given(usersConfig.getUsersPasswordExpirationDays()).willReturn(0);
+            given(usersConfig.getUsersPasswordMinSize()).willReturn(5);
+            given(usersConfig.getUsersPasswordMinUppercase()).willReturn(0);
+            given(usersConfig.getUsersPasswordMinLowercase()).willReturn(0);
+            given(usersConfig.getUsersPasswordMinNumbers()).willReturn(0);
+            given(usersConfig.getUsersPasswordMinSymbols()).willReturn(0);
+            assertDoesNotThrow(() -> {
+                userCreationService.createUserSelf(body, req);
+            });
+
+            log.info("[users][Creation][test] Creation error - registration closed");
+            given(usersConfig.isUsersRegistrationSelf()).willReturn(false);
+            assertThrows(ITParseException.class, () -> {
+                userCreationService.createUserSelf(body, req);
+            });
+            given(usersConfig.isUsersRegistrationSelf()).willReturn(true);
+
+            log.info("[users][Creation][test] Creation error - empty password");
+            body.setPassword("");
+            assertThrows(ITParseException.class, () -> {
+                userCreationService.createUserSelf(body, req);
+            });
+            body.setPassword(null);
+            assertThrows(ITParseException.class, () -> {
+                userCreationService.createUserSelf(body, req);
+            });
+
+            log.info("[users][Creation][test] Creation error - password rules");
+            given(usersConfig.getUsersPasswordMinSize()).willReturn(10);
+            given(usersConfig.getUsersPasswordMinUppercase()).willReturn(0);
+            given(usersConfig.getUsersPasswordMinLowercase()).willReturn(0);
+            given(usersConfig.getUsersPasswordMinNumbers()).willReturn(0);
+            given(usersConfig.getUsersPasswordMinSymbols()).willReturn(0);
+            body.setPassword("01abDE$%h");
+            assertThrows(ITParseException.class, () -> {
+                userCreationService.createUserSelf(body, req);
+            });
+            given(usersConfig.getUsersPasswordMinSize()).willReturn(9);
+            assertDoesNotThrow(()-> {
+                userCreationService.createUserSelf(body, req);
+            });
+            given(usersConfig.getUsersPasswordMinUppercase()).willReturn(3);
+            assertThrows(ITParseException.class, () -> {
+                userCreationService.createUserSelf(body, req);
+            });
+            given(usersConfig.getUsersPasswordMinUppercase()).willReturn(2);
+            given(usersConfig.getUsersPasswordMinLowercase()).willReturn(4);
+            assertThrows(ITParseException.class, () -> {
+                userCreationService.createUserSelf(body, req);
+            });
+            given(usersConfig.getUsersPasswordMinLowercase()).willReturn(3);
+            given(usersConfig.getUsersPasswordMinNumbers()).willReturn(3);
+            assertThrows(ITParseException.class, () -> {
+                userCreationService.createUserSelf(body, req);
+            });
+            given(usersConfig.getUsersPasswordMinNumbers()).willReturn(2);
+            given(usersConfig.getUsersPasswordMinSymbols()).willReturn(3);
+            assertThrows(ITParseException.class, () -> {
+                userCreationService.createUserSelf(body, req);
+            });
+            given(usersConfig.getUsersPasswordMinSymbols()).willReturn(2);
+            assertDoesNotThrow(() -> {
+                userCreationService.createUserSelf(body, req);
+            });
+
+        } catch (Exception e) {
+            log.error("[users][Creation][test] Failed with {}", e.getMessage());
+        }
+    }
 
 }

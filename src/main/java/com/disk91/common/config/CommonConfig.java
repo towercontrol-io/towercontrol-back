@@ -166,9 +166,4 @@ public class CommonConfig {
         return wifiMacCacheLogPeriod;
     }
 
-
-
-
-
-
 }

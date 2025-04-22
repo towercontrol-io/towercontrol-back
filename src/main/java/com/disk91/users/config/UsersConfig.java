@@ -106,6 +106,12 @@ public class UsersConfig {
         return usersPendingAutoValidation;
     }
 
+    @Value("${users.creation.need.eula}:false")
+    protected boolean usersCreationNeedEula;
+    public boolean isUsersCreationNeedEula() {
+        return usersCreationNeedEula;
+    }
+
     @Value("${users.password.expiration.days:0}")
     protected int usersPasswordExpirationDays;
     public int getUsersPasswordExpirationDays() {

@@ -147,6 +147,13 @@ public class UserCreationService {
             if ( p != null ) {
                 u.setConditionValidationVer(p.getStringValue());
                 u.setConditionValidationDate(now);
+                auditIntegration.auditLog(
+                        ModuleCatalog.Modules.USERS,
+                        ActionCatalog.getActionName(ActionCatalog.Actions.EULA_VALIDATION),
+                        u.getLogin(),
+                        "{0} Accepted the EULA version "+ p.getStringValue() +" from {1}",
+                        new String[]{body.getEmail(), (req!=null && req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+                );
             } else {
                 u.setConditionValidationVer("");
                 u.setConditionValidationDate(0);
@@ -201,6 +208,10 @@ public class UserCreationService {
             u.setExpiredPassword(0);
         }
 
+        // Registration Code management
+        // @TODO Registration code verification and management
+        // @TODO The registration code will give rights to the user to specific Groups or Create own group ... to be detailed
+
         // User is ready
         u.cleanKeys();
         u = userRepository.save(u);
@@ -240,7 +251,7 @@ public class UserCreationService {
                symbolCount >= usersConfig.getUsersPasswordMinSymbols();
     }
 
-    
+
     /**
      * Create a user from a public API with a registration code
      * @param body
@@ -278,32 +289,37 @@ public class UserCreationService {
         }
 
         // Check the acceptation if expected
-        if ( usersConfig.isUsersRegistrationAcceptation() && ! body.isConditionValidation() ) {
+        if ( usersConfig.isUsersCreationNeedEula() && ! body.isConditionValidation() ) {
             Now.randomSleep(50, 350);
             this.incCreationsFailed();
             throw new ITParseException("Acceptation of the conditions is mandatory");
         }
 
         // No need to check email, it will not be used
+        // Ok, we can create the user, exits with Exception if any problem
+        try {
+            User u = createUser_unsecured(
+                    body,
+                    req,
+                    false
+            );
+            u.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
+            // Add Audit log with IP information...
+            auditIntegration.auditLog(
+                    ModuleCatalog.Modules.USERS,
+                    ActionCatalog.getActionName(ActionCatalog.Actions.CREATION),
+                    u.getLogin(),
+                    "{0} account creation from IP {1}",
+                    new String[]{u.getEncEmail(), (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+            );
+            u.cleanKeys();
+            this.incCreationsSuccess();
+        } catch (Exception e) {
+            // count and report at higher level
+            this.incCreationsFailed();
+            throw e;
+        }
 
-        // Ok, we can create the user
-        User u = createUser_unsecured(
-                body,
-                req,
-                false
-        );
-
-        // Add Audit log with IP information...
-        u.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
-        auditIntegration.auditLog(
-                ModuleCatalog.Modules.USERS,
-                ActionCatalog.getActionName(ActionCatalog.Actions.CREATION),
-                u.getLogin(),
-                "{0} account creation from IP {1}",
-                new String[]{u.getEncEmail(), (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
-        );
-        u.cleanKeys();
-        this.incCreationsSuccess();
     }
 
 
@@ -330,7 +346,7 @@ public class UserCreationService {
 
     private long creationsAttempts = 0;
     private long creationsFailed = 0;
-    private long creataionsSuccess = 0;
+    private long creationsSuccess = 0;
 
     protected synchronized void incCreationsAttempts() {
         creationsAttempts++;
@@ -341,18 +357,18 @@ public class UserCreationService {
     }
 
     protected synchronized void incCreationsSuccess() {
-        creataionsSuccess++;
+        creationsSuccess++;
     }
 
     protected Supplier<Number> getCreationsAttempts() {
         return ()->creationsAttempts;
     }
 
-    protected Supplier<Number>  getCreationsFailed() {
+    protected Supplier<Number> getCreationsFailed() {
         return ()->creationsFailed;
     }
-    protected Supplier<Number>  getCreationsSuccess() {
-        return ()->creataionsSuccess;
+    protected Supplier<Number> getCreationsSuccess() {
+        return ()->creationsSuccess;
     }
 
 

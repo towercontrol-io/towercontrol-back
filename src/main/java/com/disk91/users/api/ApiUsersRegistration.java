@@ -47,7 +47,7 @@ public class ApiUsersRegistration {
             description = "A new user is requesting for registration, it provides an email address and eventually a registration code. An email with a link will be sent to the user for proceeding with the registration." +
                     "No error are returned on this endpoint. It always succeed, whatever happen.",
             responses = {
-                    @ApiResponse(responseCode = "200", description = "Welcome message received", content = @Content(schema = @Schema(implementation = ActionResult.class))),
+                    @ApiResponse(responseCode = "200", description = "Registration request received", content = @Content(schema = @Schema(implementation = ActionResult.class))),
             }
     )
     @RequestMapping(
@@ -57,7 +57,7 @@ public class ApiUsersRegistration {
             method = RequestMethod.POST
     )
     // ----------------------------------------------------------------------
-    public ResponseEntity<?> postSlefRegistration(
+    public ResponseEntity<?> postSelfRegistration(
             HttpServletRequest request,
             @RequestBody(required = true) UserAccountRegistrationBody body
     ) {

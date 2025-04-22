@@ -22,11 +22,11 @@ package com.disk91.users.api.interfaces;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-@Tag(name = "User Account Creation", description = "Request User Account Creation")
-public class UserAccountCreationBody {
+@Tag(name = "User Login", description = "Request User Login")
+public class UserLoginBody {
 
     @Schema(
-            description = "Email for the account creation",
+            description = "Email login",
             example = "john.doe@foo.bar",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED
     )
@@ -34,26 +34,11 @@ public class UserAccountCreationBody {
 
 
     @Schema(
-            description = "User Password, used for the account creation",
+            description = "User Password for login",
             example = "changeme",
             requiredMode = Schema.RequiredMode.REQUIRED
     )
     protected String password;
-
-    @Schema(
-            description = "User checked condition Validation, not mandatory on registration but will be requested later",
-            example = "true",
-            requiredMode = Schema.RequiredMode.NOT_REQUIRED
-    )
-    protected boolean conditionValidation;
-
-    @Schema(
-            description = "Validation ID received by user on registration link",
-            example = "true",
-            requiredMode = Schema.RequiredMode.NOT_REQUIRED
-    )
-    protected String validationID;
-
 
 
     // ==========================
@@ -76,19 +61,4 @@ public class UserAccountCreationBody {
         this.password = password;
     }
 
-    public boolean isConditionValidation() {
-        return conditionValidation;
-    }
-
-    public void setConditionValidation(boolean conditionValidation) {
-        this.conditionValidation = conditionValidation;
-    }
-
-    public String getValidationID() {
-        return validationID;
-    }
-
-    public void setValidationID(String validationID) {
-        this.validationID = validationID;
-    }
 }

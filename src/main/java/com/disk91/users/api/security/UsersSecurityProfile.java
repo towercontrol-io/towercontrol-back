@@ -42,6 +42,7 @@ public class UsersSecurityProfile {
                 .authorizeHttpRequests((authz) -> authz
                         // Allows device uplinks
                         .requestMatchers("/users/1.0/registration/register").permitAll()
+                        .requestMatchers("/users/1.0/creation/create").permitAll()
                         // Others
                         .anyRequest().authenticated()
                 );

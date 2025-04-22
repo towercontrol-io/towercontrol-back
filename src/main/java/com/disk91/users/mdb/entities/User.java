@@ -196,6 +196,23 @@ public class User implements CloneableObject<User> {
         return encryptionKey;
     }
 
+    /**
+     * Verify a given password for this user
+     * @param _password to be tested
+     * @return true when the password matches
+     */
+    public boolean isRightPassword(String _password) {
+        try {
+            // Hash of the password with SHA256 ; this will be used to authenticate the user
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            digest.update(this.salt);
+            byte[] passwordHash = digest.digest(password.getBytes(StandardCharsets.UTF_8));
+            return (HexCodingTools.bytesToHex(passwordHash).compareTo(this.password) == 0);
+        } catch (Exception e) {
+            return false;
+        }
+
+    }
 
     /**
      * When the password is changed, it is necessary to rekey all information, as the password is used as a key

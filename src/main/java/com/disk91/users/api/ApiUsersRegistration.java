@@ -63,9 +63,9 @@ public class ApiUsersRegistration {
     ) {
         try {
             userRegistrationService.requestAccountCreation(body,request);
-            return new ResponseEntity<>(ActionResult.OK("OK"), HttpStatus.OK);
+            return new ResponseEntity<>(ActionResult.OK("user-registration-received"), HttpStatus.OK);
         } catch (ITTooManyException | ITParseException | ITRightException e) {
-            return new ResponseEntity<>(ActionResult.OK("OK"), HttpStatus.OK);
+            return new ResponseEntity<>(ActionResult.OK("user-registration-received"), HttpStatus.OK);
         }
     }
 

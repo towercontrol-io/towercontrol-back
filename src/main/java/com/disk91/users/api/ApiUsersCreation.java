@@ -63,7 +63,7 @@ public class ApiUsersCreation {
     ) {
         try {
             userCreationService.createUserSelf(body,request);
-            return new ResponseEntity<>(ActionResult.OK("OK"), HttpStatus.OK);
+            return new ResponseEntity<>(ActionResult.OK("user-creation-created"), HttpStatus.OK);
         } catch (ITTooManyException | ITParseException | ITRightException e) {
             return new ResponseEntity<>(ActionResult.BADREQUEST(e.getMessage()), HttpStatus.BAD_REQUEST);
         }

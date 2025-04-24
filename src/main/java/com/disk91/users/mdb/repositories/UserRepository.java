@@ -23,10 +23,16 @@ package com.disk91.users.mdb.repositories;
 import com.disk91.users.mdb.entities.Role;
 import com.disk91.users.mdb.entities.User;
 import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
+
+import java.util.List;
 
 @Repository
 public interface UserRepository extends MongoRepository<User,String> {
         public User findOneUserByLogin(String login);
+
+        @Query(value = "{ 'lastLogin': { $lt: ?0 }, 'userSecret': { $ne: '', $ne: null }, 'apiAccount': { $ne: true } }")
+        public List<User> findExpiratedUsers(long lastLoginLimit);
 
 }

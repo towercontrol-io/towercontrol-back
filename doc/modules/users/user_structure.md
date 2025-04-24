@@ -124,8 +124,8 @@ generated from the password with PBKDF2 with salt.
 
 ### JWT signature
 JWT signature depends on
-- a Server key from parameter `user.server.key` from configuration file, randomly generated
-- a User key from the `secret` field, randomly generated at user creation and modified after every user signout.
+- a Server key from parameter `users.session.key` from configuration file, randomly generated
+- a User key from the `sessionSecret` field, randomly generated at user creation and modified after every user signout.
 
 ### Password change
 On password change, the data encryption need to be recreated as the `userSecret` will be different.
@@ -136,4 +136,4 @@ The user can choose to use 2FA or not. If the user chooses to use 2FA, during th
 restricted to the second step FA with password. The `twoFASecret` field is used to store the secret key for the 2FA, 
 it can be the Authenticator secret or it can be the temporary code for the SMS or email.
 
-### API
+

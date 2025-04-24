@@ -28,9 +28,9 @@ public class UserLoginBody {
     @Schema(
             description = "Email login",
             example = "john.doe@foo.bar",
-            requiredMode = Schema.RequiredMode.NOT_REQUIRED
+            requiredMode = Schema.RequiredMode.REQUIRED
     )
-    protected String email;     // Email is not required when the user uses a registration link, keep it empty or null
+    protected String email;
 
 
     @Schema(

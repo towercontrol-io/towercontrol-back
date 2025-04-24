@@ -30,6 +30,7 @@ import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITRightException;
 import com.disk91.users.api.interfaces.UserLoginBody;
+import com.disk91.users.api.interfaces.UserLoginResponse;
 import com.disk91.users.config.ActionCatalog;
 import com.disk91.users.config.UsersConfig;
 import com.disk91.users.mdb.entities.User;
@@ -45,11 +46,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.security.Key;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.function.Supplier;
 
 @Service
@@ -95,7 +98,7 @@ public class UserService {
      * @throws ITParseException
      * @throws ITRightException
      */
-    public String UserLogin(
+    public UserLoginResponse userLogin(
             UserLoginBody body,
             HttpServletRequest req
     ) throws ITParseException, ITRightException {
@@ -164,10 +167,15 @@ public class UserService {
                 userCache.flushUser(u.getLogin());
             }
 
-            // get current conditions
             Param p = paramRepository.findByParamKey("users.condition.version");
+            UserLoginResponse response = new UserLoginResponse();
+            response.setLogin(u.getLogin());
+            response.setEmail(body.getEmail());
+            response.setPasswordExpired( u.getExpiredPassword() > Now.NowUtcMs() );
+            response.setConditionToValidate(( p == null || p.getStringValue().isEmpty() || u.getConditionValidationVer().compareTo(p.getStringValue()) == 0 ));
+            response.setTwoFARequired( u.getTwoFAType() != TwoFATypes.NONE );
 
-
+            // Generate the Role list based on the user roles & status
             ArrayList<String> roles = new ArrayList<>();
             roles.add(UsersRolesCache.StandardRoles.ROLE_LOGIN_1FA.getRoleName());
             if ( u.getTwoFAType() != TwoFATypes.NONE ) {
@@ -176,7 +184,7 @@ public class UserService {
             } else {
                 // 2FA Mechanism is not active, generate the token with the full role list
                 // check the password expiration to route the user to the password change page - update it
-                if ( u.getExpiredPassword() > Now.NowUtcMs() && ( p == null || p.getStringValue().isEmpty() || u.getConditionValidationVer().compareTo(p.getStringValue()) == 0 ) ) {
+                if ( u.getExpiredPassword() > Now.NowUtcMs() || ( p == null || p.getStringValue().isEmpty() || u.getConditionValidationVer().compareTo(p.getStringValue()) == 0 ) ) {
                     roles.addAll(u.getRoles());
                     roles.add(UsersRolesCache.StandardRoles.ROLE_LOGIN_COMPLETE.getRoleName());
                 } else {
@@ -184,50 +192,14 @@ public class UserService {
                     roles.add(UsersRolesCache.StandardRoles.ROLE_REGISTERED_USER.getRoleName());
                 }
             }
-
-            // Create JWT @TODO - should be a function
-            long exp;
-            if ( u.isApiAccount() ) {
-                if ( usersConfig.getUsersSessionApiTimeoutSec() > 0 ) {
-                    exp = Now.NowUtcMs() + usersConfig.getUsersSessionApiTimeoutSec() * 1000;
-                } else {
-                    exp = Now.NowUtcMs() + 30*365*Now.ONE_FULL_DAY; // inifinite session is 30 Years
-                }
-            } else {
-                if ( usersConfig.getUsersSessionTimeoutSec() > 0 ) {
-                    exp = Now.NowUtcMs() + usersConfig.getUsersSessionTimeoutSec() * 1000;
-                } else {
-                    exp = Now.NowUtcMs() + 30*365*Now.ONE_FULL_DAY; // inifinite session is 30 Years
-                }
-            }
-            Claims claims = Jwts.claims()
-                    .subject(u.getLogin())
-                    .expiration(new Date(exp))
-                    .add("roles", roles)
-                    .build();
-
-            String token = Jwts.builder()
-                    .header().add("typ", "JWT")
-                    .add("sub", u.getLogin())
-                    .and()
-                    .claims().empty().add(claims)
-                    .and()
-                    .expiration(new Date(exp))
-                    .signWith(this.generateKeyForUser(u))
-                    .compact();
-
+            response.setJwtToken(this.generateJWTForUser(u, roles));
             this.incLoginSuccess();
-
-            // @TODO Return a structure with the user login hashed, the jwt, the password, expiration, the 2FA expectation and type, the EULA validation
-            // so th front will be able to redirect the user to the right page
-            // also returns the user login for the front if needed
-            return "";
+            return response;
 
         } catch (ITNotFoundException x ) {
             this.incLoginFailed();
             throw new ITRightException("User not found");
         }
-
     }
 
     //@TODO : need a solution to increase the log level once the password change is made and the eula are ok
@@ -236,6 +208,68 @@ public class UserService {
 
     //@TODO : need a password change solution with  a valid session
 
+    /**
+     * On every 24 hours, we scan the user database to identify the Users not connected since the expiration period
+     * to deactivate the ability to decrypt the personal & sensitive data by removing the userSecret key. This one will
+     * be regenerated on the next login from the password.
+     * This does not apply to API users
+     */
+    @Scheduled(fixedRateString = "PT24H", initialDelayString = "PT1H")
+    protected void clearPrivacyDataOnUnusedAccounts() {
+        long exp = Now.NowUtcMs() - (usersConfig.getUsersDataPrivacyExpirationDays()*Now.ONE_FULL_DAY);
+        List<User> users = userRepository.findExpiratedUsers(exp);
+        for (User u : users) {
+            if ( u.getUserSecret() != null && !u.getUserSecret().isEmpty() ) {
+                log.info("[users][service] User {} privacy data expired, removing user secret", u.getLogin());
+                u.setUserSecret("");
+                u.setModificationDate(Now.NowUtcMs());
+                userRepository.save(u);
+                userCache.flushUser(u.getLogin());
+            }
+        }
+    }
+
+
+    /**
+     * Create a JWT token for the user with the given list of roles
+     * The role list must be created according to the user roles outside this function
+     *
+     * @param u
+     * @param roles
+     * @return
+     */
+    protected String generateJWTForUser(User u, ArrayList<String> roles) {
+        long exp;
+        if ( u.isApiAccount() ) {
+            if ( usersConfig.getUsersSessionApiTimeoutSec() > 0 ) {
+                exp = Now.NowUtcMs() + usersConfig.getUsersSessionApiTimeoutSec() * 1000;
+            } else {
+                exp = Now.NowUtcMs() + 30*365*Now.ONE_FULL_DAY; // inifinite session is 30 Years
+            }
+        } else {
+            if ( usersConfig.getUsersSessionTimeoutSec() > 0 ) {
+                exp = Now.NowUtcMs() + usersConfig.getUsersSessionTimeoutSec() * 1000;
+            } else {
+                exp = Now.NowUtcMs() + 30*365*Now.ONE_FULL_DAY; // inifinite session is 30 Years
+            }
+        }
+        Claims claims = Jwts.claims()
+                .subject(u.getLogin())
+                .expiration(new Date(exp))
+                .add("roles", roles)
+                .build();
+
+        String token = Jwts.builder()
+                .header().add("typ", "JWT")
+                .add("sub", u.getLogin())
+                .and()
+                .claims().empty().add(claims)
+                .and()
+                .expiration(new Date(exp))
+                .signWith(this.generateKeyForUser(u))
+                .compact();
+        return token;
+    }
 
 
     /**

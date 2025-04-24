@@ -1,23 +1,25 @@
 ## User Management module
 This module is responsible for managing users in the system. It provides the following features:
 - User registration request - prefilter user registration with email validation, public API.
-- User registration - User creation (slef, authorized by a validation code or admin managed)
+- User registration - User creation (self, authorized by a validation code or admin managed)
+- User login - User authentication with password and 2FA
 - User profile
 - User role
 - User acl management
-- User login 
 - User cache management
 
 ## Related Documentation
 - [User data structure](./user_structure.md)
-- 
+- [User configuration fields](./configuration.md)
+- [User roles attribution](./dynrole_structure.md)
+- [User specific i18n keys](./i18n.md)
 
 ### User life cycle
 A user can be created manually by an administrator or after a self registration. User creation have different steps depending on the selected path:
 - self registration, enabled by `users.registration.self` property:
     - User is registering with an email, until the email has been confirmed, the user does not exist in the system but the
       registration request is stored in a pending table. When `users.registration.with.invitecode` is set to true, the user must provide
-      an invite code to register. The email address is verified and filtered (see user creation security)
+      an invitation code to register. The email address is verified and filtered (see user creation security)
     - when `user.registration.link.byemail` is true, a confirmation email is sent to the user with a secret to validate and create the user. The expiration time for the invitation code
       is defined by `users.registration.link.expiration` parameter in seconds.
     - Following the confirmation email, the user sets the minimal information (passwords, condition validation eventually), to create the user structure and assign
@@ -36,7 +38,8 @@ User can delete his account, also after a given period of inactivity, the user a
 as a consequence, without a new login of the user with the right password, the data will stay encrypted and not accessible, even for the platform administrator.  The frozen period is decided by the `user.max.inactivity` parameter.
 
 * User signout updates the `sessionSecret` value for token repudiation.
-* API accounts have a long life JWT token, the expiration is set to 1 year by default, but can be configured by the `user.api.token.exp` parameter.
+* User session JWT token have an expiration defined by `users.session.timeout.sec` default 10 hours.
+* API accounts have a long life JWT token, the expiration is set to 30 years by default (value 0) defined by `users.session.api.timeout.sec`.
   ROLE_USER_ADMIN can create apiAccount and generate JWT for them with an API endpoint.
 * Accounts pending creation are stored in a separate table that is progressively cleaned up—either because the accounts have been created
   or because they did not pass the next stage and have been rejected.
@@ -62,6 +65,11 @@ variables (or the env var equivalent):
 - `users.password.min.numbers` : (USER_PASSWORD_MIN_NUMBERS) - minimum number of numbers
 - `users.password.min.symbols` : (USER_PASSWORD_MIN_SYMBOLS) - minimum number of symbols
 
+To protect the password against dictionary attacks, the password hash uses a per-user salt, randomly generated at user. To avoid
+a database attack exposing the salt and the hash of the password, the password can be altered with a pre-string `users.password.header` 
+and a post-string `users.password.footer` to be added to the password before hashing. The pre-string and post-string are stored in configuration
+file not be exposed to database attack.
+
 #### User login
 
 When a user logs in, their login and password will be verified, and it must be ensured that the account is active 
@@ -71,8 +79,34 @@ logging in will resolve this situation by renewing the keys necessary for decryp
 password, which only they know. The login process is also an opportunity to check if the password needs to be 
 renewed if it has expired.
 
+When the user have 2 factors authentication (2FA) enabled, the login process will be done in 2 steps, after the first step,
+user will get `ROLE_LOGIN_1FA` role. It needs to complete the second step for accessing a full login. Once he has made the 
+2FA authentication, he will gain the `ROLE_LOGIN_2FA` role and the `ROLE_LOGIN_COMPLETE`. 
+
+When the user has 1FA authentication only, it will directly get the `ROLE_LOGIN_COMPLETE` role. In any case, before getting this role,
+the user must have a non expired password and signed for the user conditions. If not, the user will only have the `ROLE_LOGIN_1FA` 
+or the `ROLE_LOGIN_2FA` role and `ROLE_REGISTERED_USER` role util it has completed the login process and the condition validation.
+
+### Personal data protection
+
+The user personal data are encrypted into the database with AES encryption. The encryption key is composed of 3 parts:
+- a Server key from parameter `common.encryption.key` from configuration (common.properties) file, randomly generated
+- an Application key from parameter `common.application.key` from Jar (resources/application.properties) file, randomly generated. 
+- a User key from the `userSecret` field, generated from user raw password (field `password` is just a sha-256 hash, it's not the source)
+
+The combination of these 3 keys gives the encryption key. Any loss of one of keys will avoid any further data decryption. The purpose is to
+avoid the decryption of the data from one single data breach. The second purpose is to allow personal data removal after a given period of time
+when a user stopped to use the service. Practically, `users.data.privacy.expiration.days` parameter defines the period of time after which the
+user data will be made inaccessible. This is done by removing the userSecret value. The userSecret is used for encrypting user information, so without
+this key the data can't be restored anymore. When the user decides to reconnect the system, the `userSecret` is restored from the plain text password and the 
+data can be decrypted again. As the password is never stored, the `userSecret` can't be restored without the user action.
+
 ### traceability
 Event on user service are logged into an audit table. It includes
+- Self registration request
+- User Account creation
+- 
+
 - login event
 - logout events
 - password change

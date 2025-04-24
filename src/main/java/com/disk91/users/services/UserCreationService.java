@@ -104,8 +104,9 @@ public class UserCreationService {
             // Request from Self Service
             UserRegistration ur = userRegistrationRepository.findOneUserRegistrationByRegistrationCode(body.getValidationID());
             if ( ur == null || ur.getExpirationDate() < Now.NowUtcMs() ) {
+                Now.randomSleep(15, 45);
                 log.warn("[users] User creation request with invalid registration code");
-                throw new ITRightException("Invalid registration code");
+                throw new ITRightException("user-creation-refused");
             }
 
             // get email for registration
@@ -114,8 +115,9 @@ public class UserCreationService {
                 ur.setExpirationDate(Now.NowUtcMs()-1); // expire
                 userRegistrationRepository.save(ur);
             } catch (ITParseException | ITNotFoundException e) {
+                Now.randomSleep(15, 45);
                 log.error("[users] Error while decrypting email for user creation", e);
-                throw new ITRightException("Error while decrypting email for user creation");
+                throw new ITRightException("user-creation-refused");
             }
 
         }
@@ -124,8 +126,9 @@ public class UserCreationService {
         // Check if not already existing
         User u = userRepository.findOneUserByLogin(User.encodeLogin(body.getEmail()));
         if (u != null) {
+            Now.randomSleep(15, 45);
             log.warn("[users] User creation, already registered ");
-            throw new ITTooManyException("User already registered");
+            throw new ITTooManyException("user-creation-refused");
         }
 
         long now = Now.NowUtcMs();
@@ -276,29 +279,29 @@ public class UserCreationService {
 
         // Make sure registration is open
         if (!usersConfig.isUsersRegistrationSelf()) {
-            Now.randomSleep(50, 350);
+            Now.randomSleep(15, 45);
             this.incCreationsFailed();
-            throw new ITParseException("Account self creation is not allowed");
+            throw new ITParseException("user-creation-account-self-creation-not-allowed");
         }
 
         // Make sure the password is correctly set
         if (body.getPassword() == null || body.getPassword().isEmpty()) {
-            Now.randomSleep(50, 350);
+            Now.randomSleep(15, 45);
             this.incCreationsFailed();
-            throw new ITParseException("Password is mandatory");
+            throw new ITParseException("user-creation-missing-password");
         }
 
         if ( !this.verifyPassword(body.getPassword()) ) {
-            Now.randomSleep(50, 350);
+            Now.randomSleep(15, 45);
             this.incCreationsFailed();
-            throw new ITParseException("Password does not match the rules");
+            throw new ITParseException("user-creation-password-rules-matching");
         }
 
         // Check the acceptation if expected
         if ( usersConfig.isUsersCreationNeedEula() && ! body.isConditionValidation() ) {
-            Now.randomSleep(50, 350);
+            Now.randomSleep(15, 45);
             this.incCreationsFailed();
-            throw new ITParseException("Acceptation of the conditions is mandatory");
+            throw new ITParseException("user-creation-terms-not-accepted");
         }
 
         // No need to check email, it will not be used

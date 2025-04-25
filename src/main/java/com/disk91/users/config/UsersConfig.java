@@ -106,7 +106,7 @@ public class UsersConfig {
         return usersPendingAutoValidation;
     }
 
-    @Value("${users.creation.need.eula}:false")
+    @Value("${users.creation.need.eula:false}")
     protected boolean usersCreationNeedEula;
     public boolean isUsersCreationNeedEula() {
         return usersCreationNeedEula;

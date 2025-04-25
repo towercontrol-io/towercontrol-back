@@ -2,16 +2,28 @@ package com.disk91.users.mdb.entities.sub;
 
 import com.disk91.common.tools.CloneableObject;
 import com.disk91.common.tools.CustomField;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.util.ArrayList;
 
+@Tag(name = "User ACL", description = "User right on groups definitions")
 public class UserAcl implements CloneableObject<UserAcl> {
 
     // Group Name
+    @Schema(
+            description = "Group",
+            example = "mygroup",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
     protected String group;
 
     // Associated Role
-    protected ArrayList<String> roles;
+    @Schema(
+            description = "Associated Roles",
+            example = "[ROLE_DEVICE_READ, ROLE_DEVICE_WRITE]",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    ) protected ArrayList<String> roles;
 
     // === CLONE ===
 

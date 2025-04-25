@@ -6,6 +6,7 @@ public class ActionCatalog {
         CREATION,
         EULA_VALIDATION,
         REACTIVATION,
+        LOGIN,
         UNKNOWN,
     }
 
@@ -19,6 +20,8 @@ public class ActionCatalog {
                 return "eula_validation";
             case REACTIVATION:
                 return "reactivation";
+            case LOGIN:
+                return "login";
             case UNKNOWN:
             default:
                 return "unknown";

@@ -102,7 +102,7 @@ public class UserCreationService {
 
         if ( body.getValidationID() != null && ! body.getValidationID().isEmpty() ) {
             // Request from Self Service
-            UserRegistration ur = userRegistrationRepository.findOneUserRegistrationByRegistrationCode(body.getValidationID());
+            UserRegistration ur = userRegistrationRepository.findOneUserRegistrationByValidationId(body.getValidationID());
             if ( ur == null || ur.getExpirationDate() < Now.NowUtcMs() ) {
                 Now.randomSleep(15, 45);
                 log.warn("[users] User creation request with invalid registration code");

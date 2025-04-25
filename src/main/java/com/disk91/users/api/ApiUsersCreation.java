@@ -46,7 +46,7 @@ public class ApiUsersCreation {
                     "based on the self validation parameter or needs to be validated by an admin. The login/email will be the one used for registration, " +
                     "it is not mandatory in the body. ",
             responses = {
-                    @ApiResponse(responseCode = "200", description = "User created", content = @Content(schema = @Schema(implementation = ActionResult.class))),
+                    @ApiResponse(responseCode = "201", description = "User created", content = @Content(schema = @Schema(implementation = ActionResult.class))),
                     @ApiResponse(responseCode = "400", description = "User creation failed", content = @Content(schema = @Schema(implementation = ActionResult.class)))
             }
     )
@@ -63,7 +63,7 @@ public class ApiUsersCreation {
     ) {
         try {
             userCreationService.createUserSelf(body,request);
-            return new ResponseEntity<>(ActionResult.OK("user-creation-created"), HttpStatus.OK);
+            return new ResponseEntity<>(ActionResult.CREATED("user-creation-created"), HttpStatus.CREATED);
         } catch (ITTooManyException | ITParseException | ITRightException e) {
             return new ResponseEntity<>(ActionResult.BADREQUEST(e.getMessage()), HttpStatus.BAD_REQUEST);
         }

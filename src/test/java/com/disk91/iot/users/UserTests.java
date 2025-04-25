@@ -313,8 +313,8 @@ public class UserTests {
         given(commonConfig.getEncryptionKey()).willReturn("d5b504d560363cfe33890c4f5343f387");
 
         assertDoesNotThrow(() -> {
-            userRegistration.init("john.doe@foo.bar", "1.1.1.1",1000, commonConfig.getEncryptionKey());
-            userRegistration2.init("john.doe@foo.bar", "1.1.1.1", 2000, commonConfig.getEncryptionKey());
+            userRegistration.init("john.doe@foo.bar", null,"1.1.1.1",1000, commonConfig.getEncryptionKey());
+            userRegistration2.init("john.doe@foo.bar", "","1.1.1.1", 2000, commonConfig.getEncryptionKey());
             assertNotNull(userRegistration.getEmail());
             assertNotEquals("john.doe@foo.bar", userRegistration.getEmail());
             assertNotNull(userRegistration.getValidationId());

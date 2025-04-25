@@ -67,8 +67,8 @@ public class ApiUsersSession {
             @RequestBody(required = true) UserLoginBody body
     ) {
         try {
-            userService.userLogin(body,request);
-            return new ResponseEntity<>(ActionResult.OK("OK"), HttpStatus.OK);
+            UserLoginResponse r = userService.userLogin(body,request);
+            return new ResponseEntity<>(r, HttpStatus.OK);
         } catch ( ITParseException | ITRightException e) {
             return new ResponseEntity<>(ActionResult.BADREQUEST("user-login-refused"), HttpStatus.BAD_REQUEST);
         }

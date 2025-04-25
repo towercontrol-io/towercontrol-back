@@ -145,7 +145,7 @@ public class UserRegistrationServiceTests {
             try  ( MockedConstruction<UserRegistration> mockedConstruction = Mockito.mockConstruction(UserRegistration.class,
                     (mock, context) -> {
                         // We don't care about the init method
-                        doNothing().when(mock).init(anyString(),anyString(),anyLong(),anyString());
+                        doNothing().when(mock).init(anyString(),anyString(),anyString(),anyLong(),anyString());
 
                         // Bypass the protected status for the fields to inject
                         //Field encryptionHelperField = mock.getClass().getDeclaredField("encryptionHelper");

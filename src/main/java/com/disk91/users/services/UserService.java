@@ -193,6 +193,16 @@ public class UserService {
                 }
             }
             response.setJwtToken(this.generateJWTForUser(u, roles));
+
+            // Add audit trace
+            auditIntegration.auditLog(
+                    ModuleCatalog.Modules.USERS,
+                    ActionCatalog.getActionName(ActionCatalog.Actions.LOGIN),
+                    u.getLogin(),
+                    "Login from {1}",
+                    new String[]{(req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+            );
+            // And metrics
             this.incLoginSuccess();
             return response;
 

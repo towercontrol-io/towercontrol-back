@@ -65,8 +65,9 @@ public class UserRegistration {
     // Entry Expiration date
     protected long expirationDate;
 
-    // Registration code - not mandatory - to trace the request on device creation
-    //protected String registrationCode;
+    // Registration code - not mandatory - this is an invitation / registration code given by the admin, allowing
+    // certain access & feature
+    protected String registrationCode;
 
     // ===========================
 
@@ -81,7 +82,7 @@ public class UserRegistration {
      * @param expirationMs
      * @throws ITParseException
      */
-    public void init(String _email, String _ip, long expirationMs, String encryptionKey)  throws ITParseException {
+    public void init(String _email, String _regCode, String _ip, long expirationMs, String encryptionKey)  throws ITParseException {
 
         this.email = EncryptionHelper.encrypt(_email, __iv, encryptionKey);
 
@@ -96,6 +97,7 @@ public class UserRegistration {
         this.validationId = HexCodingTools.getRandomHexString(128);
         this.creationDate = Now.NowUtcMs();
         this.expirationDate = this.creationDate + expirationMs;
+        this.registrationCode = (_regCode==null)?"":_regCode;
     }
 
     /**
@@ -179,11 +181,11 @@ public class UserRegistration {
         this.requestorIP = requestorIP;
     }
 
-    //public String getRegistrationCode() {
-    //    return registrationCode;
-    //}
+    public String getRegistrationCode() {
+        return registrationCode;
+    }
 
-    //public void setRegistrationCode(String registrationCode) {
-    //    this.registrationCode = registrationCode;
-    //}
+    public void setRegistrationCode(String registrationCode) {
+        this.registrationCode = registrationCode;
+    }
 }

@@ -151,6 +151,7 @@ public class UserRegistrationService {
         UserRegistration ur = new UserRegistration();
         ur.init(
                 body.getEmail(),
+                body.getRegistrationCode(),
                 (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown",
                 usersConfig.getUsersRegistrationLinkExpiration() * 1000,
                 commonConfig.getEncryptionKey()

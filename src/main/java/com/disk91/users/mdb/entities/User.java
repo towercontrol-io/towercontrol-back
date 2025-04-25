@@ -108,7 +108,7 @@ public class User implements CloneableObject<User> {
     // Account locked status, user can't login but has been validated
     protected boolean locked;
 
-    // Password has expired and user need to change it on the next login
+    // Password expiration date in Ms from epoch
     protected long expiredPassword;
 
     // This Account is an API account and not a human account, it can't login but we can have existing JWT
@@ -439,10 +439,12 @@ public class User implements CloneableObject<User> {
     }
 
     public String getEncProfileFirstName() throws ITParseException {
+        if ( this.profile.getFirstName() == null || !this.profile.getFirstName().isEmpty() ) return "";
         return EncryptionHelper.decrypt(this.profile.getFirstName(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
     }
 
     public String getEncProfileLastName() throws ITParseException {
+        if ( this.profile.getLastName() == null || !this.profile.getLastName().isEmpty() ) return "";
         return EncryptionHelper.decrypt(this.profile.getLastName(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
     }
 

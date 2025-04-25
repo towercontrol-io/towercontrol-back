@@ -20,8 +20,11 @@
 package com.disk91.users.services;
 
 import com.disk91.common.config.CommonConfig;
+import com.disk91.common.pdb.entities.Param;
+import com.disk91.common.pdb.repositories.ParamRepository;
 import com.disk91.common.tools.HexCodingTools;
 import com.disk91.common.tools.exceptions.ITParseException;
+import com.disk91.users.config.UsersConfig;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +38,12 @@ public class UsersInit {
     @Autowired
     protected CommonConfig commonConfig;
 
+    @Autowired
+    protected UsersConfig usersConfig;
+
+    @Autowired
+    protected ParamRepository paramRepository;
+
     @PostConstruct
     public void init() {
         log.debug("[users] Init");
@@ -45,6 +54,22 @@ public class UsersInit {
         if ( serverKey.length != 16 || applicationKey.length != 16 ) {
             log.error("[users] ************************************");
             log.error("[users] Encryption key are not 16 bytes long");
+            log.error("[users] ************************************");
+        }
+        byte[] sessionKey = HexCodingTools.getByteArrayFromHexString(usersConfig.getUsersSessionKey());
+        if ( sessionKey.length != 32 ) {
+            log.error("[users] ************************************");
+            log.error("[users] Session key is not 32 bytes long");
+            log.error("[users] ************************************");
+        }
+
+        // Init the default parameters
+        Param p = paramRepository.findByParamKey("users.condition.version");
+        if ( p == null ) {
+            p = new Param();
+            p.setParamKey("users.condition.version");
+            p.setStringValue("initial");
+            paramRepository.save(p);
         }
 
         // We need to create the default ROLES when not existing

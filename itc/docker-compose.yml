@@ -13,10 +13,20 @@ services:
     volumes:
       - ./configuration:/configuration
     environment:
-      - QC_CHIRPSTACK_API_URL=
+      - COMMON_SERVICE_NAME=IotTowerControl
+      - COMMON_SERVICE_BACK_DOMAIN=itc-back.foo.bar
+      - COMMON_SERVICE_BACK_BASEURL=https://itc-back.foo.bar
+      - COMMON_SERVICE_FRONT_DOMAIN=itc-front.foo.bar
+      - COMMON_SERVICE_FRONT_BASEURL=https://itc-front.foo.bar
+      - COMMON_ENCRYPTION_KEY=d5b504d560363cfe33890c4f5343f387
       - COMMON_PSQL_USER=itc
       - COMMON_PSQL_PASSWORD=itc-password
       - COMMON_GOOGLE_API_KEY=
+      - AUDIT_LOGS_DECRYPTION_ENABLED=true
+      - COMMON_EMAIL_PASSWORD=
+      - COMMON_EMAIL_SENDER=no-reply@foo.bar
+      - USERS_SESSION_KEY=4f2a6b8c9d1e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a
+      - USER_DATA_PRIVACY_EXPIRATION_DAYS=1
     ports:
       - 127.0.0.1:8091:8081
     networks:

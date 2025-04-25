@@ -1,0 +1,58 @@
+### ###########################################################
+### USER MANAGEMENT API USAGE EXEMPLE
+
+### ------------------------------------
+### Step 0 : Environment Variables to setup
+
+@apiserver=http://localhost:8091
+@userEmail=john.doe@foo.bar
+
+### ------------------------------------
+### Step 1: User Registration request 
+### Register a user
+POST {{apiserver}}/users/1.0/registration/register
+Content-Type: application/json
+
+{
+  "email" : "{{userEmail}}",
+  "registrationCode" : ""
+}
+
+### ------------------------------------
+### Step 2: get the validationID from the email or the database
+
+@validationID=15D493E1C76B4433DEB80DF8D6CDF05DD0B89E85CBBAFF4AFB8C33AC5C90A1D8D63158630A4F7321A83867274CFDC3E269BC9AD18A4D0787E4DE7F0359E27D7B
+
+
+
+### Create the user
+POST {{apiserver}}/users/1.0/creation/create
+Content-Type: application/json
+
+{
+  "email" : "{{userEmail}}",
+  "password" : "changeme",
+  "conditionValidation" : true,
+  "validationID" : "{{validationID}}"
+}
+
+### ------------------------------------
+### Step 3: Sign in
+
+POST {{apiserver}}/users/1.0/session/signin
+Content-Type: application/json
+
+{
+  "email" : "{{userEmail}}",
+  "password" : "changeme"
+}
+
+### Get token and login from the reponse
+@jwtToken=eyJ0eXAiOiJKV1QiLCJzdWIiOiI5NjhBMDQ5NDgwMDU3RTRFREU2NjdERkZERTBERTUzRENBRDUyMjlGNEZFQTI5QkUzMjRGQjIyOThDNTNCMEIxIiwiYWxnIjoiSFM1MTIifQ.eyJzdWIiOiI5NjhBMDQ5NDgwMDU3RTRFREU2NjdERkZERTBERTUzRENBRDUyMjlGNEZFQTI5QkUzMjRGQjIyOThDNTNCMEIxIiwiZXhwIjoxNzQ1NjE5Mzc4LCJyb2xlcyI6WyJST0xFX0xPR0lOXzFGQSIsIlJPTEVfUEVORElOR19VU0VSIiwiUk9MRV9SRUdJU1RFUkVEX1VTRVIiLCJST0xFX0xPR0lOX0NPTVBMRVRFIl19.5MBckqTyaR23XWm_KRDiXiWqTKwIgZ6b7cvbA2CO13m88h2g2Z72mMxy5UppU6GryhHu6wvlA2BPLSpqV4T1iQ
+@login=968A049480057E4EDE667DFFDE0DE53DCAD5229F4FEA29BE324FB2298C53B0B1
+
+
+### ------------------------------------
+### Step 4 : Get user basic informations
+GET {{apiserver}}/users/1.0/profile/basic
+Authorization: Bearer {{jwtToken}}

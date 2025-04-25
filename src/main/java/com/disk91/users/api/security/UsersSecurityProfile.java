@@ -52,10 +52,14 @@ public class UsersSecurityProfile {
                 .addFilterAfter(jwtAuthorizationFilter, BasicAuthenticationFilter.class)
                 .authenticationProvider(jwtAuthenticationProvider)
                 .authorizeHttpRequests((authz) -> authz
-                        // Allows device uplinks
+                        // Allows registration link
                         .requestMatchers("/users/1.0/registration/register").permitAll()
                         .requestMatchers("/users/1.0/creation/create").permitAll()
+                        // Allow sign in link
                         .requestMatchers("/users/1.0/session/signin").permitAll()
+                        // Allow password reset link
+                        .requestMatchers("/users/1.0/profile/password/reset").permitAll()
+                        .requestMatchers("/users/1.0/profile/password/request").permitAll()
                         // Others
                         .anyRequest().authenticated()
                 );

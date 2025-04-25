@@ -7,6 +7,7 @@ public class ActionCatalog {
         EULA_VALIDATION,
         REACTIVATION,
         LOGIN,
+        PASSWORD_RESET,
         UNKNOWN,
     }
 
@@ -22,6 +23,8 @@ public class ActionCatalog {
                 return "reactivation";
             case LOGIN:
                 return "login";
+            case PASSWORD_RESET:
+                return "password_reset";
             case UNKNOWN:
             default:
                 return "unknown";

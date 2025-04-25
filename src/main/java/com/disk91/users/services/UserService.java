@@ -199,7 +199,7 @@ public class UserService {
                     ModuleCatalog.Modules.USERS,
                     ActionCatalog.getActionName(ActionCatalog.Actions.LOGIN),
                     u.getLogin(),
-                    "Login from {1}",
+                    "Login from {0}",
                     new String[]{(req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
             );
             // And metrics
@@ -217,6 +217,7 @@ public class UserService {
     //@TODO : need to upgrade the session once the 2FA is completed
 
     //@TODO : need a password change solution with  a valid session
+
 
     /**
      * On every 24 hours, we scan the user database to identify the Users not connected since the expiration period

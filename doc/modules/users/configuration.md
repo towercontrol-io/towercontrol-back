@@ -11,4 +11,5 @@ directory at the root of the java execution.
 - `users.registration.link.expiration` : confirmation link expiration in seconds
 - `user.registration.link.byemail` : confirmation link send by email 
 - `user.registration.path` : path to the registration page with confirmation link
+- `users.lostpassword.link.expiration_s` : lost password link expiration in seconds
 

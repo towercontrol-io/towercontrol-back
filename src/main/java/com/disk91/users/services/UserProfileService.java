@@ -19,15 +19,32 @@
  */
 package com.disk91.users.services;
 
+import com.disk91.audit.integration.AuditIntegration;
 import com.disk91.common.config.CommonConfig;
+import com.disk91.common.config.ModuleCatalog;
+import com.disk91.common.tools.EmailTools;
+import com.disk91.common.tools.HexCodingTools;
+import com.disk91.common.tools.Now;
+import com.disk91.common.tools.Tools;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
+import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITRightException;
+import com.disk91.common.tools.exceptions.ITTooManyException;
 import com.disk91.users.api.interfaces.UserBasicProfileResponse;
+import com.disk91.users.api.interfaces.UserPasswordChangeBody;
+import com.disk91.users.api.interfaces.UserPasswordLostBody;
+import com.disk91.users.config.ActionCatalog;
+import com.disk91.users.config.UserMessages;
+import com.disk91.users.config.UsersConfig;
 import com.disk91.users.mdb.entities.User;
+import com.disk91.users.mdb.repositories.UserRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.Locale;
 
 @Service
 public class UserProfileService {
@@ -44,6 +61,48 @@ public class UserProfileService {
     @Autowired
     protected CommonConfig commonConfig;
 
+    @Autowired
+    protected UsersConfig usersConfig;
+
+    @Autowired
+    protected UserRepository userRepository;
+
+    @Autowired
+    protected AuditIntegration auditIntegration;
+
+    @Autowired
+    protected EmailTools emailTools;
+
+    @Autowired
+    protected UserMessages userMessages;
+
+    /**
+     * Verify a requestor can access a user profile for read or write. Currently, the detailed ACL are not managed
+     * so R/W access is not supported and only global admin can access foreign accounts
+     * @param _requestor
+     * @param user
+     * @return true when requestor can R/W access the user profile
+     */
+    protected boolean isLegitAccessRead(User _requestor, String user, boolean writeAccess) {
+        boolean accessRight = false;
+        if ( ! _requestor.isActive() || _requestor.isLocked() ) return false;
+        if ( ! _requestor.isInRole(UsersRolesCache.StandardRoles.ROLE_REGISTERED_USER.getRoleName())) return false;
+
+        if (    _requestor.isInRole(UsersRolesCache.StandardRoles.ROLE_GOD_ADMIN.getRoleName())
+                ||  _requestor.isInRole(UsersRolesCache.StandardRoles.ROLE_USER_ADMIN.getRoleName())
+                ||  _requestor.getLogin().compareTo(user) == 0
+        ) {
+            // the requestion is the user searched himself or it have admin / user admin global right
+            // so we can hase the information
+            return true;
+        } else {
+            // The user is not a global user admin. We may verify if the user can be a local user admin
+            // for a group where this user is...
+            // @TODO - manage the group ACL
+            return false;
+        }
+    }
+
 
     /**
      * Return user basic profile for a given user. Only Admin can acces user information or you can access for yourself
@@ -56,20 +115,7 @@ public class UserProfileService {
         try {
             User _requestor = userCache.getUser(requestor);
 
-            boolean accessRight = false;
-            if (    _requestor.isInRole(UsersRolesCache.StandardRoles.ROLE_GOD_ADMIN.getRoleName())
-                ||  _requestor.isInRole(UsersRolesCache.StandardRoles.ROLE_USER_ADMIN.getRoleName())
-                ||  requestor.compareTo(user) == 0
-            ) {
-                // the requestion is the user searched himself or it have admin / user admin global right
-                // so we can hase the information
-                accessRight = true;
-            } else {
-                // The user is not a global user admin. We may verify if the user can be a local user admin
-                // for a group where this user is...
-                // @TODO - manage the group ACL
-            }
-            if ( !accessRight ) {
+            if ( !this.isLegitAccessRead(_requestor,user,false) ) {
                 log.warn("[users] Requestor {} does not have access right to user {} profile", requestor, user);
                 throw new ITRightException("user-profile-no-access");
             }
@@ -96,6 +142,175 @@ public class UserProfileService {
         }
     }
 
+    @Autowired
+    protected UserCreationService userCreationService;
 
+    /**
+     * Return user basic profile for a given user. Only Admin can acces user information or you can access for yourself
+     * @param requestor
+     * @return
+     */
+    public void userPasswordChange(String requestor, String user, String password)
+    throws ITRightException, ITParseException {
+
+        try {
+            User _requestor = userCache.getUser(requestor);
+
+            if ( !this.isLegitAccessRead(_requestor,user,true) ) {
+                log.warn("[users] Requestor {} does not have write access right to user {} profile", requestor, user);
+                throw new ITRightException("user-profile-no-access");
+            }
+
+            User _user = _requestor;
+            if ( requestor.compareTo(user) != 0 ) {
+                try {
+                    _user = userCache.getUser(user);
+                } catch (ITNotFoundException x){
+                    log.warn("[users] Searched user does not exists", x);
+                    throw new ITRightException("user-profile-user-not-found");
+                }
+            }
+
+            if ( !userCreationService.verifyPassword(password) ) {
+                throw new ITParseException("user-profile-password-not-valid");
+            }
+
+            _user.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
+            try {
+                _user.changePassword(password, false);
+                if ( usersConfig.getUsersPasswordExpirationDays() > 0 ) {
+                    _user.setExpiredPassword(Now.NowUtcMs() + (usersConfig.getUsersPasswordExpirationDays() * Now.ONE_FULL_DAY));
+                } else {
+                    _user.setExpiredPassword(0);
+                }
+                userCache.saveUser(_user);
+            } catch (ITParseException x) {
+                throw new ITParseException("user-profile-change-failed");
+            }
+            _user.cleanKeys();
+
+        } catch (ITNotFoundException x) {
+            log.error("[users] Requestor does not exists", x);
+            throw new ITRightException("user-profile-user-not-found");
+        }
+
+    }
+
+    /**
+     * Reset a user password after an email authentication received after a password lost request.
+     * This is a public endpoint and the user is not authenticated. The code is available a single time
+     * and for a limited period of time.
+     * @param req - request, used for IP tracking
+     * @param body - contains the passwor and the authentication link
+     * @throws ITRightException
+     * @throws ITParseException
+     */
+    public void userPublicPasswordChange(HttpServletRequest req, UserPasswordChangeBody body)
+    throws ITRightException, ITParseException {
+
+        if ( body.getPassword() == null || !userCreationService.verifyPassword(body.getPassword()) ) {
+            throw new ITParseException("user-profile-password-not-valid");
+        }
+
+        if ( body.getChangeKey() == null || body.getChangeKey().length() != 128 ) {
+            throw new ITParseException("user-profile-key-not-valid");
+        }
+
+        // Search if the key exists and is not expired
+        User _user = userRepository.findOneUserByPasswordResetIdAndPasswordResetExpGreaterThan(
+                body.getChangeKey(),
+                Now.NowUtcMs()
+        );
+        if ( _user == null ) {
+            throw new ITRightException("user-profile-key-not-found");
+        }
+
+        // We have a valid and not expired key, we can change password and expire it
+        _user.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
+        try {
+            _user.changePassword(body.getPassword(), false);
+            if ( usersConfig.getUsersPasswordExpirationDays() > 0 ) {
+                _user.setExpiredPassword(Now.NowUtcMs() + (usersConfig.getUsersPasswordExpirationDays() * Now.ONE_FULL_DAY));
+            } else {
+                _user.setExpiredPassword(0);
+            }
+            _user.setPasswordResetExp(0);
+            userCache.saveUser(_user);
+
+            // Add audit trace
+            auditIntegration.auditLog(
+                    ModuleCatalog.Modules.USERS,
+                    ActionCatalog.getActionName(ActionCatalog.Actions.PASSWORD_RESET),
+                    _user.getLogin(),
+                    "Password reset from {0}",
+                    new String[]{(req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+            );
+
+        } catch (ITParseException x) {
+            throw new ITParseException("user-profile-change-failed");
+        }
+        _user.cleanKeys();
+
+    }
+
+
+    /**
+     * Generate a link for a password reset procedure and email the user with the link
+     * The email will contain a front end link to the password reset page with a key as a parameter
+     * so the user can reset its password
+     *
+     * @param req
+     * @param body
+     * @throws ITParseException
+     */
+    public void userPublicPasswordLost(HttpServletRequest req, UserPasswordLostBody body)
+    throws ITParseException {
+
+        // Check the email format
+        if (body.getEmail() == null || body.getEmail().isEmpty() || body.getEmail().length() > usersConfig.getUsersRegistrationEmailMaxLength()) {
+            Now.randomSleep(50, 350);
+            throw new ITParseException("Email is missing or too long");
+        }
+        body.setEmail(body.getEmail().toLowerCase());
+        if (!Tools.isValidEmailSyntax(body.getEmail())) {
+            Now.randomSleep(50, 350);
+            throw new ITParseException("Email format is not valid");
+        }
+        if (!Tools.isAcceptedEmailSyntax(body.getEmail(), usersConfig.getUsersRegistrationEmailFilters())) {
+            Now.randomSleep(50, 350);
+            throw new ITParseException("Email pattern rejected");
+        }
+
+        // search for existing
+        User u = userRepository.findOneUserByLogin(User.encodeLogin(body.getEmail()));
+        if (u == null) {
+            Now.randomSleep(50, 300);
+            throw new ITParseException("User does not exists");
+        }
+
+        // Check if the user is not locked
+        if (u.isLocked() || !u.isActive()) {
+            Now.randomSleep(50, 300);
+            throw new ITParseException("User is locked/not active");
+        }
+
+        // Generate a new key and expiration
+        u.setPasswordResetId(HexCodingTools.getRandomHexString(128));
+        u.setPasswordResetExp(Now.NowUtcMs() + (usersConfig.getUsersLostPasswordLinkExpiration() * 1000));
+        userCache.saveUser(u);
+
+        // Send email
+        String _path = usersConfig.getUserLostPasswordPath().replace("!0!", u.getPasswordResetId());
+        String _link = commonConfig.getCommonServiceUrl(_path, true);
+
+        Locale locale = emailTools.extractLocale(req, Locale.forLanguageTag(commonConfig.getCommonLangDefault()));
+        Object[] args = { commonConfig.getCommonServiceName(), _link };
+        String _subject = userMessages.messageSource().getMessage("users.messages.lostpassword.subject", args, locale);
+        String _body = userMessages.messageSource().getMessage("users.messages.lostpassword.body", args, locale);
+        u.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
+        emailTools.send(u.getEncEmail(), _body, _subject, commonConfig.getCommonMailSender());
+        u.cleanKeys();
+        Now.randomSleep(40, 290);
+    }
 
 }

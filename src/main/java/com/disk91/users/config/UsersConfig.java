@@ -165,6 +165,18 @@ public class UsersConfig {
         return usersDataPrivacyExpirationDays;
     }
 
+    @Value("${users.lostpassword.link.expiration_s:3600}")
+    protected long usersLostPasswordLinkExpiration;
+    public long getUsersLostPasswordLinkExpiration() {
+        return usersLostPasswordLinkExpiration;
+    }
+
+    @Value("${user.lostpassword.path:/lostpassword/!0!/confirm}")
+    protected String userLostPasswordPath;
+    public String getUserLostPasswordPath() {
+        return userLostPasswordPath;
+    }
+
     // --------------------------------------------
     // User Cache
     // --------------------------------------------

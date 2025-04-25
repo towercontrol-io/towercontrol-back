@@ -17,24 +17,32 @@
  *    WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  *    IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+package com.disk91.users.api.interfaces;
 
-package com.disk91.users.mdb.repositories;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
-import com.disk91.users.mdb.entities.Role;
-import com.disk91.users.mdb.entities.User;
-import org.springframework.data.mongodb.repository.MongoRepository;
-import org.springframework.data.mongodb.repository.Query;
-import org.springframework.stereotype.Repository;
+@Tag(name = "User Password Lost", description = "Request a link to manage password lost requests")
+public class UserPasswordLostBody {
 
-import java.util.List;
 
-@Repository
-public interface UserRepository extends MongoRepository<User,String> {
-        public User findOneUserByLogin(String login);
+    @Schema(
+            description = "User email",
+            example = "john.doe@foo.bar",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    protected String email;
 
-        @Query(value = "{ 'lastLogin': { $lt: ?0 }, 'userSecret': { $ne: '', $ne: null }, 'apiAccount': { $ne: true } }")
-        public List<User> findExpiratedUsers(long lastLoginLimit);
 
-        // Return "the" User with the corresponding password reset id and a expiration date in the future
-        public User findOneUserByPasswordResetIdAndPasswordResetExpGreaterThan(String passwordResetId, long expirationDate);
+    // ==========================
+    // Getters & Setters
+
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
 }

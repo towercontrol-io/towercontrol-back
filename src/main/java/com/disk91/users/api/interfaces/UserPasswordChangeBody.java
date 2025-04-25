@@ -17,24 +17,47 @@
  *    WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  *    IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+package com.disk91.users.api.interfaces;
 
-package com.disk91.users.mdb.repositories;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
-import com.disk91.users.mdb.entities.Role;
-import com.disk91.users.mdb.entities.User;
-import org.springframework.data.mongodb.repository.MongoRepository;
-import org.springframework.data.mongodb.repository.Query;
-import org.springframework.stereotype.Repository;
+@Tag(name = "User Password Change", description = "Request User Password Change")
+public class UserPasswordChangeBody {
 
-import java.util.List;
 
-@Repository
-public interface UserRepository extends MongoRepository<User,String> {
-        public User findOneUserByLogin(String login);
+    @Schema(
+            description = "User new password",
+            example = "changeme",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    protected String password;
 
-        @Query(value = "{ 'lastLogin': { $lt: ?0 }, 'userSecret': { $ne: '', $ne: null }, 'apiAccount': { $ne: true } }")
-        public List<User> findExpiratedUsers(long lastLoginLimit);
+    @Schema(
+            description = "User Password change authorization key (for the public endpoint)",
+            example = " jhjfkhqsldjkfhsqljkdhfljsqdhfazuheufhazjkfnds",
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED
+    )
+    protected String changeKey;
 
-        // Return "the" User with the corresponding password reset id and a expiration date in the future
-        public User findOneUserByPasswordResetIdAndPasswordResetExpGreaterThan(String passwordResetId, long expirationDate);
+
+    // ==========================
+    // Getters & Setters
+
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public String getChangeKey() {
+        return changeKey;
+    }
+
+    public void setChangeKey(String changeKey) {
+        this.changeKey = changeKey;
+    }
 }

@@ -56,3 +56,47 @@ Content-Type: application/json
 ### Step 4 : Get user basic informations
 GET {{apiserver}}/users/1.0/profile/basic
 Authorization: Bearer {{jwtToken}}
+
+### -------------------------------------
+### Step 5 : Password change
+PUT {{apiserver}}/users/1.0/profile/password/change
+Authorization: Bearer {{jwtToken}}
+Content-Type: application/json
+
+{
+  "password" : "changeme2",
+  "changeKey" : ""
+}
+
+### -------------------------------------
+### Step 6 : Login new password
+POST {{apiserver}}/users/1.0/session/signin
+Content-Type: application/json
+
+{
+  "email" : "{{userEmail}}",
+  "password" : "changeme2"
+}
+
+### -------------------------------------
+### Step 7 : Password Lost Reset
+
+POST {{apiserver}}/users/1.0/profile/password/request
+Content-Type: application/json
+
+{
+  "email" : "{{userEmail}}"
+}
+
+### Get the lost password ID from the email or the database
+@lostPasswordID=782E2E1DFCE6D06C66BEDBB70B0112400324AEC014356889C67A7426A3093FF57B30028E5DBF9EBA3F49953092140D90439BA3703467358278DA24891D0D5B3C
+
+### -------------------------------------
+### Step 8 : Lost password reset
+PUT {{apiserver}}/users/1.0/profile/password/reset
+Content-Type: application/json
+
+{
+  "password" : "changeme",
+  "changeKey" : "{{lostPasswordID}}"
+}

@@ -141,7 +141,7 @@ public class UserCache {
             // direct acces from database
             User u = userRepository.findOneUserByLogin(userLogin);
             if ( u == null ) throw new ITNotFoundException("User not found");
-            return u;
+            return u.clone();
         } else {
             User u = this.userCache.get(userLogin);
             if ( u == null ) {
@@ -150,7 +150,7 @@ public class UserCache {
                 if ( u == null ) throw new ITNotFoundException("User not found");
                 this.userCache.put(u, u.getLogin());
             }
-            return u;
+            return u.clone();
         }
     }
 
@@ -163,6 +163,16 @@ public class UserCache {
         if ( this.serviceEnable && usersConfig.getUsersCacheMaxSize() > 0 ) {
             this.userCache.remove(userLogin,false);
         }
+    }
+
+    /**
+     * Save the User structure after an update. The cache is flushed for this user
+     * This is not protected against concurrent access on multiple cache service instance
+     * @param u
+     */
+    public void saveUser(User u) {
+         userRepository.save(u);
+         this.flushUser(u.getLogin());
     }
 
     // @TODO - manage the broadcast request for user flush and scan for flush trigger on each of the instances

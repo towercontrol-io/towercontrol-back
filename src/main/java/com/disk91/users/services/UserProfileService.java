@@ -313,4 +313,56 @@ public class UserProfileService {
         Now.randomSleep(40, 290);
     }
 
+
+
+    /**
+     * User sign out, this will invalidate the JWT token and remove the user session key. So all the JWT tokens
+     * will be invalidated immediately.Requestor can Admin can force sign out a user
+     * @param requestor - who's asking for sign out
+     * @param user - who's signing out login
+     * @param req
+     */
+    public void userSignOut(
+            String requestor,
+            String user,
+            HttpServletRequest req
+    ) throws ITRightException, ITParseException {
+
+        try {
+            User _requestor = userCache.getUser(requestor);
+            if ( !this.isLegitAccessRead(_requestor,user,true) ) {
+                log.warn("[users] Requestor {} does not have access right to user {} profile", requestor, user);
+                throw new ITRightException("user-profile-no-access");
+            }
+
+            User _user = _requestor;
+            if ( requestor.compareTo(user) != 0 ) {
+                try {
+                    _user = userCache.getUser(user);
+                } catch (ITNotFoundException x){
+                    log.warn("[users] Searched user does not exists", x);
+                    throw new ITRightException("user-profile-user-not-found");
+                }
+            }
+
+            // Remove the session key
+            _user.renewSessionSecret();
+            _user.setModificationDate(Now.NowUtcMs());
+            userCache.saveUser(_user);
+            // Add audit trace
+            auditIntegration.auditLog(
+                    ModuleCatalog.Modules.USERS,
+                    ActionCatalog.getActionName(ActionCatalog.Actions.LOGOUT),
+                    _user.getLogin(),
+                    "Logout from {0}",
+                    new String[]{(req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+            );
+
+        } catch (ITNotFoundException x) {
+            log.error("[users] Requestor {} not found", requestor);
+            throw new ITRightException("user-logout-refused");
+        }
+
+    }
+
 }

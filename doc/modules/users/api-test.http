@@ -100,3 +100,14 @@ Content-Type: application/json
   "password" : "changeme",
   "changeKey" : "{{lostPasswordID}}"
 }
+
+### -------------------------------------
+### Step 9 : Logout the user
+GET {{apiserver}}/users/1.0/session/signout
+Authorization: Bearer {{jwtToken}}
+
+### -------------------------------------
+### Step 9bis : Verify the user can't access the API anymore
+GET {{apiserver}}/users/1.0/profile/basic
+Authorization: Bearer {{jwtToken}}
+

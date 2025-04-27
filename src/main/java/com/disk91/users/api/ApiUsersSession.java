@@ -8,6 +8,7 @@ import com.disk91.users.api.interfaces.UserAccountCreationBody;
 import com.disk91.users.api.interfaces.UserLoginBody;
 import com.disk91.users.api.interfaces.UserLoginResponse;
 import com.disk91.users.services.UserCreationService;
+import com.disk91.users.services.UserProfileService;
 import com.disk91.users.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -20,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @Tag( name = "Users session management API", description = "Users module account session management API" )
@@ -32,6 +34,9 @@ public class ApiUsersSession {
 
     @Autowired
     protected UserService userService;
+
+    @Autowired
+    protected UserProfileService userProfileService;
 
     /**
      * Signin endpoint
@@ -74,5 +79,40 @@ public class ApiUsersSession {
         }
     }
 
+
+    /**
+     * Signout endpoint
+     *
+     * The user signs out by calling this endpoint. This requires to have a session open and it updates the sessionSecret for
+     * that user. So all the user sessions are immediately invalidated.
+     *
+     * User need to have a valid JWT with ROLE_REGISTERED_USER
+     */
+    @Operation(
+            summary = "User Sign Out",
+            description = "A user with a valid JWT token will be able to sign out from the system. This will invalidate all " +
+                    "the user sessions and update the session secret for that user.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Signed out", content = @Content(schema = @Schema(implementation = ActionResult.class))),
+                    @ApiResponse(responseCode = "400", description = "Sign out failed", content = @Content(schema = @Schema(implementation = ActionResult.class)))
+            }
+    )
+    @RequestMapping(
+            value = "/signout",
+            produces = "application/json",
+            method = RequestMethod.GET
+    )
+    @PreAuthorize("hasAnyRole('ROLE_REGISTERED_USER')")
+    // ----------------------------------------------------------------------
+    public ResponseEntity<?> getSelfSignOut(
+            HttpServletRequest request
+    ) {
+        try {
+            userProfileService.userSignOut(request.getUserPrincipal().getName(),request.getUserPrincipal().getName(),request);
+            return new ResponseEntity<>(ActionResult.OK("user-signed-out"), HttpStatus.OK);
+        } catch ( ITParseException | ITRightException e) {
+            return new ResponseEntity<>(ActionResult.BADREQUEST(e.getMessage()), HttpStatus.BAD_REQUEST);
+        }
+    }
 
 }

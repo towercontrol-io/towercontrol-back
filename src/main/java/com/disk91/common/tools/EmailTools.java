@@ -25,6 +25,7 @@ import org.eclipse.angus.mail.smtp.SMTPSenderFailedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.MailAuthenticationException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
@@ -55,6 +56,8 @@ public class EmailTools {
             helper.setText(text);
             helper.setSubject(subject);
             sender.send(message);
+        } catch ( MailAuthenticationException x ) {
+            log.error("[common][email] Failed to send email, bad authentication - Make your your setup api credential");
         } catch ( SMTPSenderFailedException x) {
             log.error("[common][email] Failed to send email, bad setting - "+x.getMessage());
         } catch (MessagingException e) {

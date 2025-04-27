@@ -37,7 +37,7 @@ A user can be created manually by an administrator or after a self registration.
 User can delete his account, also after a given period of inactivity, the user account will be frozen by removing the `userSecret` value. This value is used for encrypting user information,
 as a consequence, without a new login of the user with the right password, the data will stay encrypted and not accessible, even for the platform administrator.  The frozen period is decided by the `user.max.inactivity` parameter.
 
-* User signout updates the `sessionSecret` value for token repudiation.
+* User signout updates the `sessionSecret` value for token repudiation ; all running session for that user are canceled.
 * User session JWT token have an expiration defined by `users.session.timeout.sec` default 10 hours.
 * API accounts have a long life JWT token, the expiration is set to 30 years by default (value 0) defined by `users.session.api.timeout.sec`.
   ROLE_USER_ADMIN can create apiAccount and generate JWT for them with an API endpoint.

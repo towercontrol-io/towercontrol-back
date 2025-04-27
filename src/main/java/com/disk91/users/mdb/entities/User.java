@@ -247,6 +247,13 @@ public class User implements CloneableObject<User> {
     }
 
     /**
+     * Create a new Session Secret, this is invalidating all the JWT sessions
+     */
+    public void renewSessionSecret() {
+        this.sessionSecret = HexCodingTools.getRandomHexString(64);
+    }
+
+    /**
      * When the password is changed, it is necessary to rekey all information, as the password is used as a key
      * in the signature of user data. The password is also hashed with salt
      * @param password - clear text password
@@ -267,7 +274,7 @@ public class User implements CloneableObject<User> {
             this.salt = new byte[16];
             SecureRandom random = new SecureRandom();
             random.nextBytes(this.salt);
-            this.sessionSecret = HexCodingTools.getRandomHexString(64);
+            this.renewSessionSecret();  // generate SessionSecret
             this.version = USER_VERSION;
         }
 

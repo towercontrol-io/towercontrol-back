@@ -44,6 +44,16 @@ as a consequence, without a new login of the user with the right password, the d
 * Accounts pending creation are stored in a separate table that is progressively cleaned up—either because the accounts have been created
   or because they did not pass the next stage and have been rejected.
 
+#### User account deletion
+Admin can delete a user account but standard user can only delete its account. 
+Account deletion is virtual in a first step. The account has its userKey cleared to make sure the 
+user personal data won't be accessible anymore. The account will be completely deleted after `users.deletion.purgatory.duration_h`
+hours with an external schedule. This allows an admin to restore an account on user request. User login
+will be mandatory for restoring the personal data. The user won't be able to recreate an account until 
+a full destroy. User login won't be possible after this action until admin restore. 
+When the deletion purgatory period (`users.deletion.purgatory.duration_h`) is set to 0, the account is 
+immediately destroyed.
+
 #### User email messages
 The user service is able to send email messages to users. The email content is defined in the configuration file and can be
 modified by the administrator. The email content is defined in the `users.messages_xx.properties` files.

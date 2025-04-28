@@ -42,6 +42,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.Locale;
@@ -364,5 +365,88 @@ public class UserProfileService {
         }
 
     }
+
+    // ----------------------------------------------------------
+    // Delete account
+
+    /**
+     * Delete a User Account. Admin can delete a user account but standard user can only delete its account.
+     * Account deletion is virtual in a first step. The account has its userKey cleared to make sure the
+     * user personal data won't be accessible anymore. The account will be completely deleted after a given
+     * time with an external schedule. This allows an admin to restore an account on user request. User login
+     * will be mandatory for restoring the personal data. The user won't be able to recreate an account until
+     * a full destroy. User login won't be possible after this action until admin restore.
+     * When the deletion purgatory period is set to 0, the account is immediately destroyed.
+     *
+     * @param requestor
+     * @param user
+     * @param req
+     * @throws ITRightException
+     * @throws ITNotFoundException
+     * @throws ITParseException
+     */
+    public void deleteUser(String requestor, String user, HttpServletRequest req )
+    throws ITRightException, ITNotFoundException, ITParseException {
+
+        try {
+            User _requestor = userCache.getUser(requestor);
+
+            if ( !this.isLegitAccessRead(_requestor,user,true) ) {
+                log.warn("[users] Requestor {} does not have write access right to user {} profile", requestor, user);
+                throw new ITRightException("user-profile-no-access");
+            }
+
+            User _user = _requestor;
+            if ( requestor.compareTo(user) != 0 ) {
+                try {
+                    _user = userCache.getUser(user);
+                } catch (ITNotFoundException x){
+                    log.warn("[users] Searched user does not exists", x);
+                    throw new ITRightException("user-profile-user-not-found");
+                }
+            }
+
+            _user.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
+            if ( usersConfig.getUserDeletionPurgatoryDuration() > 0 ) {
+                if (_user.getDeletionDate() == 0) {
+                    _user.setDeletionDate(Now.NowUtcMs()+(usersConfig.getUserDeletionPurgatoryDuration()*Now.ONE_HOUR));
+                                                                // prepare for future physical deletion
+                    _user.setActive(false);                     // make sure it is not reconnecting later
+                    _user.setLocked(true);                      // ...
+                    _user.clearUserSecret();                    // make sure personal data won't be accessible
+                    _user.renewSessionSecret();                 // disconnect the existing sessions
+                }
+                _user.cleanKeys();
+                userCache.saveUser(_user);                      // save & flush caches
+                auditIntegration.auditLog(
+                        ModuleCatalog.Modules.USERS,
+                        ActionCatalog.getActionName(ActionCatalog.Actions.DELETION),
+                        _user.getLogin(),
+                        "User deletion by {0} from {1}",
+                        new String[]{_requestor.getLogin, (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+                );
+            } else {
+                // delete immediately
+                userRepository.delete(_user);
+            }
+        } catch (ITNotFoundException x) {
+            log.error("[users] Requestor does not exists", x);
+            throw new ITRightException("user-profile-user-not-found");
+        }
+    }
+
+
+    /*
+     * The function will check the expiration date. When the Registration is expired, the function will delete the entry
+     * in the database. Scanned on every 60 seconds
+     */
+    @Scheduled(fixedRate = 300000)
+    void processUserPhysicalDeletion() {
+        // remove all the expired registrations
+        long now = Now.NowUtcMs();
+        userRepository.deleteUserByDeletionDate(Now.NowUtcMs());
+    }
+
+
 
 }

@@ -177,6 +177,12 @@ public class UsersConfig {
         return userLostPasswordPath;
     }
 
+    @Value("${users.deletion.purgatory.duration_h:0}")
+    protected long userDeletionPurgatoryDuration;
+    public long getUserDeletionPurgatoryDuration() {
+        return userDeletionPurgatoryDuration;
+    }
+
     // --------------------------------------------
     // User Cache
     // --------------------------------------------
@@ -226,5 +232,6 @@ public class UsersConfig {
     public long getUsersSessionRenewalExtraSec() {
         return usersSessionRenewalExtraSec;
     }
+
 
 }

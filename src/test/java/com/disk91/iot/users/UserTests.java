@@ -153,6 +153,7 @@ public class UserTests {
             user.setLastLogin(regDate);
             user.setCountLogin(0);
             user.setRegistrationDate(regDate+10);
+            user.setDeletionDate(0);
             user.setEncRegistrationIP("1.1.1.1");
             assertNotEquals("1.1.1.1", user.getLogin());
             user.setModificationDate(regDate+20);

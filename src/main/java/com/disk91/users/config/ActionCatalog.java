@@ -4,6 +4,7 @@ public class ActionCatalog {
     public enum Actions {
         REGISTRATION,
         CREATION,
+        DELETION,
         EULA_VALIDATION,
         REACTIVATION,
         LOGIN,
@@ -18,6 +19,8 @@ public class ActionCatalog {
                 return "registration";
             case CREATION:
                 return "creation";
+            case DELETION:
+                return "deletion";
             case EULA_VALIDATION:
                 return "eula_validation";
             case REACTIVATION:

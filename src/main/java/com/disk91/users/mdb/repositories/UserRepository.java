@@ -37,4 +37,9 @@ public interface UserRepository extends MongoRepository<User,String> {
 
         // Return "the" User with the corresponding password reset id and a expiration date in the future
         public User findOneUserByPasswordResetIdAndPasswordResetExpGreaterThan(String passwordResetId, long expirationDate);
+
+        // Delete the User when the deletionDate > 0 && < Now
+        @Query(value = "{ 'deletionDate': { $exists: true, $gt : 0, $lt: ?0 } }", delete = true)
+        public void deleteUserByDeletionDate(long now);
+
 }

@@ -90,6 +90,9 @@ public class User implements CloneableObject<User> {
     // Registration Date (Ms since epoch)
     protected long registrationDate;
 
+    // Date of the logical deletion - 0 not deleted
+    protected long deletionDate = 0;
+
     // Registration IP (encrypted)
     protected String registrationIP;
 
@@ -703,6 +706,7 @@ public class User implements CloneableObject<User> {
         u.setLastLogin(this.lastLogin);
         u.setCountLogin(this.countLogin);
         u.setRegistrationDate(this.registrationDate);
+        u.setDeletionDate(this.deletionDate);
         u.setRegistrationIP(this.registrationIP);
         u.setModificationDate(this.modificationDate);
         u.setPasswordResetId(this.passwordResetId);
@@ -995,5 +999,13 @@ public class User implements CloneableObject<User> {
 
     public void setTwoFAType(TwoFATypes twoFAType) {
         this.twoFAType = twoFAType;
+    }
+
+    public long getDeletionDate() {
+        return deletionDate;
+    }
+
+    public void setDeletionDate(long deletionDate) {
+        this.deletionDate = deletionDate;
     }
 }

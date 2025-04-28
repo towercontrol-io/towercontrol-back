@@ -143,6 +143,7 @@ public class UserCreationService {
         u.changePassword(_password,true);
         u.setCountLogin(0);
         u.setRegistrationDate(now);
+        u.setDeletionDate(0);
         u.setModificationDate(now);
         u.setLocked(false);
         u.setApiAccount(false);

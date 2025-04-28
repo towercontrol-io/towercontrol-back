@@ -1,6 +1,7 @@
 package com.disk91.users.api;
 
 import com.disk91.common.api.interfaces.ActionResult;
+import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITRightException;
 import com.disk91.users.api.interfaces.*;
@@ -184,4 +185,44 @@ public class ApiUsersProfile {
     }
 
 
+    /**
+     * Request to delete user account
+     *
+     * This endpoint allows a user to request the deletion of its account. The account is logically
+     * deleted immediately, user won't be able to connect and the session are canceled, personnal data
+     * access is locked. The user account will be physically deleted based on the purgatory parameter.
+     *
+     * This endpoint is public
+     */
+    @Operation(
+            summary = "User deletion request",
+            description = "Request for user self deletion. The user account is logically deleted and the data access is locked. " +
+                    "The user account will be physically deleted based on the purgatory parameter. It can be reactivated by the administator " +
+                    "during this period of time. User personnal data are all locked and will require user login to be reactivated.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "User deleted", content = @Content(schema = @Schema(implementation = ActionResult.class))),
+                    @ApiResponse(responseCode = "400", description = "Deletion failed", content = @Content(schema = @Schema(implementation = ActionResult.class)))
+            }
+    )
+    @RequestMapping(
+            value = "/",
+            produces = "application/json",
+            consumes = "application/json",
+            method = RequestMethod.DELETE
+    )
+    // ----------------------------------------------------------------------
+    public ResponseEntity<?> deleteUserSelf(
+            HttpServletRequest request
+    ) {
+        try {
+            userProfileService.deleteUser(
+                    request.getUserPrincipal().getName(),
+                    request.getUserPrincipal().getName(),
+                    request);
+            return new ResponseEntity<>(ActionResult.OK("user-profile-delete-done"), HttpStatus.OK);
+        } catch (ITParseException | ITRightException | ITNotFoundException e ) {
+            return new ResponseEntity<>(ActionResult.BADREQUEST("user-profile-delete-failed"), HttpStatus.BAD_REQUEST);
+        }
+    }
+    
 }

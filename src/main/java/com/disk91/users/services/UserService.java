@@ -47,10 +47,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.security.Key;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.function.Supplier;
@@ -177,22 +181,27 @@ public class UserService {
 
             // Generate the Role list based on the user roles & status
             ArrayList<String> roles = new ArrayList<>();
+            ArrayList<String> extraRoles = new ArrayList<>();
             roles.add(UsersRolesCache.StandardRoles.ROLE_LOGIN_1FA.getRoleName());
+            boolean twoFaSession = false;
             if ( u.getTwoFAType() != TwoFATypes.NONE ) {
                 // 2FA Mechanism is active, generate the token with a limited role 1FA
                 roles.add(UsersRolesCache.StandardRoles.ROLE_REGISTERED_USER.getRoleName());
+                twoFaSession = true; // the duration of the JWT will be reduces to 10 minutes, time to get the 2FA.
             } else {
                 // 2FA Mechanism is not active, generate the token with the full role list
                 // check the password expiration to route the user to the password change page - update it
-                if ( u.getExpiredPassword() > Now.NowUtcMs() || ( p == null || p.getStringValue().isEmpty() || u.getConditionValidationVer().compareTo(p.getStringValue()) == 0 ) ) {
-                    roles.addAll(u.getRoles());
+                if ( u.getExpiredPassword() > Now.NowUtcMs() && ( p == null || p.getStringValue().isEmpty() || u.getConditionValidationVer().compareTo(p.getStringValue()) == 0 ) ) {
+                    extraRoles.addAll(u.getRoles());
                     roles.add(UsersRolesCache.StandardRoles.ROLE_LOGIN_COMPLETE.getRoleName());
                 } else {
                     // Reduce the role to the 1FA ROLE and ROLE_REGISTERED_USER to allow password change or condition validation but not more
                     roles.add(UsersRolesCache.StandardRoles.ROLE_REGISTERED_USER.getRoleName());
                 }
             }
-            response.setJwtToken(this.generateJWTForUser(u, roles));
+            response.setJwtRenewalToken(this.generateJWTForUser(u,roles,twoFaSession,true));
+            roles.addAll(extraRoles);
+            response.setJwtToken(this.generateJWTForUser(u, roles, twoFaSession,false));
 
             // Add audit trace
             auditIntegration.auditLog(
@@ -212,11 +221,119 @@ public class UserService {
         }
     }
 
-    //@TODO : need a solution to increase the log level once the password change is made and the eula are ok
 
-    //@TODO : need to upgrade the session once the 2FA is completed
+    /**
+     * Upgrade the user session, after fixing the password expiration of User Condition acceptance or the 2FA
+     * the user can upgrade its session to access the full API. This will return a new JWT token if all the
+     * condition are met. This can be called multiple times like for 2FA, then to validate password expiration...
+     *
+     * @param user
+     * @param req
+     * @return
+     * @throws ITParseException
+     * @throws ITRightException
+     */
+    public UserLoginResponse upgradeSession(
+            String user,
+            String twoFaCode,
+            HttpServletRequest req
+    ) throws ITParseException, ITRightException {
 
-    //@TODO : need a password change solution with  a valid session
+        this.incLoginAttempts();
+
+        // Check the entry
+        if (user == null || user.isEmpty()) {
+            this.incLoginFailed();
+            throw new ITParseException("user-upgrade-missing-login");
+        }
+
+        // Get the list of Roles currently in the JWT
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
+        boolean has1fa = false;
+        boolean has2fa = false;
+        boolean hasComplete = false;
+
+        for ( GrantedAuthority a : authorities ) {
+            if (a.getAuthority().equalsIgnoreCase("ROLE_LOGIN_1FA")) has1fa=true;
+            if (a.getAuthority().equalsIgnoreCase("ROLE_LOGIN_2FA")) has2fa=true;
+            if (a.getAuthority().equalsIgnoreCase("ROLE_LOGIN_COMPLETE")) hasComplete=true;
+        }
+
+        // Make sure the user have the minimum role to login
+        if ( !has1fa && !has2fa && !hasComplete ) {
+            this.incLoginFailed();
+            throw new ITRightException("user-upgrade-missing-role");
+        }
+
+        // Search the user
+        try {
+            User u = userCache.getUser(user);
+            u.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
+
+            // check if the user password & condition is ok
+            Param p = paramRepository.findByParamKey("users.condition.version");
+            UserLoginResponse response = new UserLoginResponse();
+            response.setLogin(u.getLogin());
+            response.setEmail(u.getEncEmail());
+            response.setPasswordExpired( u.getExpiredPassword() > Now.NowUtcMs() );
+            response.setConditionToValidate(( p == null || p.getStringValue().isEmpty() || u.getConditionValidationVer().compareTo(p.getStringValue()) == 0 ));
+            response.setTwoFARequired( u.getTwoFAType() != TwoFATypes.NONE );
+
+            // Generate the Role list based on the user roles & status
+            ArrayList<String> roles = new ArrayList<>();
+            ArrayList<String> extraRoles = new ArrayList<>();
+            roles.add(UsersRolesCache.StandardRoles.ROLE_LOGIN_1FA.getRoleName());
+            boolean sessionOk = false;
+            if ( u.getTwoFAType() != TwoFATypes.NONE && !has2fa ) {
+                // 2FA Mechanism is active, verify the code
+                switch ( u.getTwoFAType() ) {
+                    case EMAIL, SMS -> {
+                        if ( twoFaCode != null && !twoFaCode.isEmpty() && twoFaCode.equals(u.getEncTwoFASecret())) {
+                            // The 2FA code is Validated
+                            roles.add(UsersRolesCache.StandardRoles.ROLE_LOGIN_2FA.getRoleName());
+                            sessionOk = true;
+                        }
+                    }
+                    case AUTHENTICATOR -> {
+                        // @TODO
+                    }
+                }
+            } else if ( has2fa ) {
+                // 2FA already validated
+                roles.add(UsersRolesCache.StandardRoles.ROLE_LOGIN_2FA.getRoleName());
+            } else {
+                // 2FA, not required
+                sessionOk = true;
+            }
+
+            // check the password expiration to route the user to the password change page - update it
+            if ( sessionOk && u.getExpiredPassword() > Now.NowUtcMs() && ( p == null || p.getStringValue().isEmpty() || u.getConditionValidationVer().compareTo(p.getStringValue()) == 0 ) ) {
+                // all good make the final session
+                roles.add(UsersRolesCache.StandardRoles.ROLE_LOGIN_COMPLETE.getRoleName());
+                response.setJwtRenewalToken(this.generateJWTForUser(u,roles,false,true));
+                roles.addAll(u.getRoles());
+                response.setJwtToken(this.generateJWTForUser(u, roles, false,false));
+                this.incLoginSuccess();
+            } else if ( sessionOk ) {
+                // 2FA ok, but some problem with the password or condition we have a long session with limited roles
+                response.setJwtRenewalToken(this.generateJWTForUser(u,roles,false,true));
+                response.setJwtToken(this.generateJWTForUser(u, roles, false,false));
+            } else {
+                // Missing 2FA, renew the 2FA Tokens, that's it
+                response.setJwtRenewalToken(this.generateJWTForUser(u,roles,true,true));
+                response.setJwtToken(this.generateJWTForUser(u, roles, true,false));
+            }
+
+            incLoginSuccess();
+            return response;
+
+        } catch ( ITNotFoundException x) {
+            this.incLoginFailed();
+            throw new ITParseException("user-upgrade-missing-user");
+        }
+
+    }
 
 
     /**
@@ -247,21 +364,34 @@ public class UserService {
      *
      * @param u
      * @param roles
+     * @param twoSession - if true, the expiration time is reduced to 10 minutes (2FA)
+     * @param renewal - when true, the token is a renewal token, it gets a longer expiration time, does not apply to 2FA
      * @return
      */
-    protected String generateJWTForUser(User u, ArrayList<String> roles) {
+    protected String generateJWTForUser(User u, ArrayList<String> roles, boolean twoSession, boolean renewal) {
         long exp;
-        if ( u.isApiAccount() ) {
-            if ( usersConfig.getUsersSessionApiTimeoutSec() > 0 ) {
-                exp = Now.NowUtcMs() + usersConfig.getUsersSessionApiTimeoutSec() * 1000;
+        if ( twoSession ) {
+            if ( usersConfig.getUserSession2faTimeoutSec() > 0 ) {
+                exp = Now.NowUtcMs() + usersConfig.getUserSession2faTimeoutSec() * 1000;
             } else {
-                exp = Now.NowUtcMs() + 30*365*Now.ONE_FULL_DAY; // inifinite session is 30 Years
+                exp = Now.NowUtcMs() + 10 * Now.ONE_MINUTE; // 10 minutes minium
             }
         } else {
-            if ( usersConfig.getUsersSessionTimeoutSec() > 0 ) {
-                exp = Now.NowUtcMs() + usersConfig.getUsersSessionTimeoutSec() * 1000;
+            if (u.isApiAccount()) {
+                if (usersConfig.getUsersSessionApiTimeoutSec() > 0) {
+                    exp = Now.NowUtcMs() + usersConfig.getUsersSessionApiTimeoutSec() * 1000;
+                } else {
+                    exp = Now.NowUtcMs() + 30 * 365 * Now.ONE_FULL_DAY; // inifinite session is 30 Years
+                }
             } else {
-                exp = Now.NowUtcMs() + 30*365*Now.ONE_FULL_DAY; // inifinite session is 30 Years
+                if (usersConfig.getUsersSessionTimeoutSec() > 0) {
+                    exp = Now.NowUtcMs() + usersConfig.getUsersSessionTimeoutSec() * 1000;
+                } else {
+                    exp = Now.NowUtcMs() + 30 * 365 * Now.ONE_FULL_DAY; // inifinite session is 30 Years
+                }
+            }
+            if ( renewal ) {
+                exp += usersConfig.getUsersSessionRenewalExtraSec() * 1000; // The renewal token is valid a bit more time bt have less rights
             }
         }
         Claims claims = Jwts.claims()
@@ -270,7 +400,7 @@ public class UserService {
                 .add("roles", roles)
                 .build();
 
-        String token = Jwts.builder()
+        return Jwts.builder()
                 .header().add("typ", "JWT")
                 .add("sub", u.getLogin())
                 .and()
@@ -279,7 +409,6 @@ public class UserService {
                 .expiration(new Date(exp))
                 .signWith(this.generateKeyForUser(u))
                 .compact();
-        return token;
     }
 
 

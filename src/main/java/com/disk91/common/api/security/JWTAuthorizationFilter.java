@@ -42,6 +42,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.filter.GenericFilterBean;
 
 import java.io.IOException;
+import java.io.Serial;
 import java.security.Key;
 import java.util.ArrayList;
 
@@ -53,6 +54,7 @@ public class JWTAuthorizationFilter extends GenericFilterBean {
 
     protected static class MyGrantedAuthority implements GrantedAuthority {
 
+        @Serial
         private static final long serialVersionUID = 0L;
         protected String authority;
 

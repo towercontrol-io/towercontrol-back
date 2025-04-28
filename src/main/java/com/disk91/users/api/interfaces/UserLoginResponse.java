@@ -47,6 +47,13 @@ public class UserLoginResponse {
     protected String jwtToken;
 
     @Schema(
+            description = "JWT with limited access for Token renewal, this one have a longer expiration time",
+            example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE0ODA5MjkyODIsImV4cCI6MTQ4MDkzMjg2OCwibmFtZSI6IlVzZXJuYW1lIn0.gZeuWNbjO8kyEX92AjgX5oLy5qhu6YWTPr6vtYELZQ4",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    protected String jwtRenewalToken;
+
+    @Schema(
             description = "The password is expired, change required, roles will be restricted until changed",
             example = "false",
             requiredMode = Schema.RequiredMode.REQUIRED
@@ -119,5 +126,13 @@ public class UserLoginResponse {
 
     public void setTwoFARequired(boolean twoFARequired) {
         this.twoFARequired = twoFARequired;
+    }
+
+    public String getJwtRenewalToken() {
+        return jwtRenewalToken;
+    }
+
+    public void setJwtRenewalToken(String jwtRenewalToken) {
+        this.jwtRenewalToken = jwtRenewalToken;
     }
 }

@@ -209,10 +209,22 @@ public class UsersConfig {
         return usersSessionApiTimeoutSec;
     }
 
+    @Value("${user.session.2fa.timeout.sec:600}")
+    protected long userSession2faTimeoutSec;
+    public long getUserSession2faTimeoutSec() {
+        return userSession2faTimeoutSec;
+    }
+
     @Value("${users.session.key:9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a}")
     protected String usersSessionKey;
     public String getUsersSessionKey() {
         return usersSessionKey;
+    }
+
+    @Value("${users.session.renewal.extra.sec:3600}")
+    protected long usersSessionRenewalExtraSec;
+    public long getUsersSessionRenewalExtraSec() {
+        return usersSessionRenewalExtraSec;
     }
 
 }

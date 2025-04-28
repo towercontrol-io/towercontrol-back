@@ -81,11 +81,20 @@ renewed if it has expired.
 
 When the user have 2 factors authentication (2FA) enabled, the login process will be done in 2 steps, after the first step,
 user will get `ROLE_LOGIN_1FA` role. It needs to complete the second step for accessing a full login. Once he has made the 
-2FA authentication, he will gain the `ROLE_LOGIN_2FA` role and the `ROLE_LOGIN_COMPLETE`. 
+2FA authentication, he will gain the `ROLE_LOGIN_2FA` role and the `ROLE_LOGIN_COMPLETE`. The user have `user.session.2fa.timeout.sec`
+to complete the 2FA authentication. If the user does not complete the 2FA authentication in time, the session will be closed.
 
 When the user has 1FA authentication only, it will directly get the `ROLE_LOGIN_COMPLETE` role. In any case, before getting this role,
 the user must have a non expired password and signed for the user conditions. If not, the user will only have the `ROLE_LOGIN_1FA` 
 or the `ROLE_LOGIN_2FA` role and `ROLE_REGISTERED_USER` role util it has completed the login process and the condition validation.
+
+Once connected, the user obtains 2 JWT tokens. The first is the authentication token, which contains the list of functional roles 
+in addition to the dynamic roles linked to the connection. This token will be used for all API calls until it expires. 
+It is possible to renew the token using the `upgrade` API. Once the token has expired, it is possible to request a new 
+token using the renewal token. The renewal token is valid for `users.session.renewal.extra.sec` additional seconds 
+and allows the authentication token to be renewed without having all functional rights.
+
+For being used, the JWT token must be preceded by the `Bearer` keyword. 
 
 ### Personal data protection
 
@@ -105,17 +114,16 @@ data can be decrypted again. As the password is never stored, the `userSecret` c
 Event on user service are logged into an audit table. It includes
 - Self registration request
 - User Account creation
-- 
+- Login event
+- Logout event
+- Password change
+- Dekeying event
+- Rekeying event
 
-- login event
-- logout events
-- password change
 - email sent (not content, just event)
 - authorization addition and removal
 - group association and removal
 - profile modification date
-- rekeying event
-- dekeying event
 - condition validation history
 - communication message seen
 

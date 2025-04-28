@@ -53,7 +53,7 @@ public class UsersRolesCache {
     protected RolesRepository rolesRepository;
 
     // Platform roles to setup for database init
-    private String [] pfRoles = {
+    private final String [] pfRoles = {
         "{'version':1, 'platform':true, 'name':'ROLE_GOD_ADMIN','description':'role-god-admin-desc', 'enDescription':'super administrator', 'creationBy':'system', 'creationMs':0}",
         "{'version':1, 'platform':true, 'name':'ROLE_USER_ADMIN','description':'role-user-admin-desc', 'enDescription':'user administrator', 'creationBy':'system', 'creationMs':0}",
         "{'version':1, 'platform':true, 'name':'ROLE_GROUP_ADMIN','description':'role-group-admin-desc', 'enDescription':'group administrator', 'creationBy':'system', 'creationMs':0}",

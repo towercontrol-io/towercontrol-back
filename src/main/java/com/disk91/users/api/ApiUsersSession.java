@@ -24,6 +24,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Optional;
+
 @Tag( name = "Users session management API", description = "Users module account session management API" )
 @CrossOrigin
 @RequestMapping(value = "/users/1.0/session")
@@ -86,7 +88,7 @@ public class ApiUsersSession {
      * The user signs out by calling this endpoint. This requires to have a session open and it updates the sessionSecret for
      * that user. So all the user sessions are immediately invalidated.
      *
-     * User need to have a valid JWT with ROLE_REGISTERED_USER
+     * User need to have a valid JWT with ROLE_REGISTERED_USER and ROLE_LOGIN_1FA
      */
     @Operation(
             summary = "User Sign Out",
@@ -110,6 +112,49 @@ public class ApiUsersSession {
         try {
             userProfileService.userSignOut(request.getUserPrincipal().getName(),request.getUserPrincipal().getName(),request);
             return new ResponseEntity<>(ActionResult.OK("user-signed-out"), HttpStatus.OK);
+        } catch ( ITParseException | ITRightException e) {
+            return new ResponseEntity<>(ActionResult.BADREQUEST(e.getMessage()), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    /**
+     * Upgrade session endpoint
+     *
+     * When everything is valid, the user have a non expired password, the user has accepted the
+     * latest condition and eventually the user has passed the 2nd factor authentication. Then
+     * the user can upgrade its session and get a new JWT with the full access. This endpoint
+     * can also be used to get a new JWT token with a longer expiration time.
+     *
+     * User need to have a valid JWT with ROLE_LOGIN_1FA
+     */
+    @Operation(
+            summary = "User Session Upgrade",
+            description = "This endpoint allows to renew / upgrade the JWT token. It's used to extend the " +
+                    "JWT duration or to upgrade the roles of the user when password has expired, user condition did " +
+                    "not met or the 2nd factor authentication is required.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Session renewed", content = @Content(schema = @Schema(implementation = UserLoginResponse.class))),
+                    @ApiResponse(responseCode = "400", description = "Sign out failed", content = @Content(schema = @Schema(implementation = ActionResult.class)))
+            }
+    )
+    @RequestMapping(
+            value = "/upgrade",
+            produces = "application/json",
+            method = RequestMethod.GET
+    )
+    @PreAuthorize("hasAnyRole('ROLE_LOGIN_1FA')")
+    // ----------------------------------------------------------------------
+    public ResponseEntity<?> getSelfSessionUpgrade(
+            HttpServletRequest request,
+            @RequestParam(value = "secondFactor", required = false) Optional<String> secondFactor
+    ) {
+        try {
+            UserLoginResponse r = userService.upgradeSession(
+                    request.getUserPrincipal().getName(),
+                    secondFactor.orElse(""),
+                    request
+            );
+            return new ResponseEntity<>(r, HttpStatus.OK);
         } catch ( ITParseException | ITRightException e) {
             return new ResponseEntity<>(ActionResult.BADREQUEST(e.getMessage()), HttpStatus.BAD_REQUEST);
         }

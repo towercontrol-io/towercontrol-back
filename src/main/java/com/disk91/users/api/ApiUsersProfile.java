@@ -224,5 +224,5 @@ public class ApiUsersProfile {
             return new ResponseEntity<>(ActionResult.BADREQUEST("user-profile-delete-failed"), HttpStatus.BAD_REQUEST);
         }
     }
-    
+
 }

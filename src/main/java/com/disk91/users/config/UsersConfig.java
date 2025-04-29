@@ -233,5 +233,28 @@ public class UsersConfig {
         return usersSessionRenewalExtraSec;
     }
 
+    @Value("${users.session.security.hashmap.size:1000}")
+    protected int usersSessionSecurityHashMapSize;
+    public int getUsersSessionSecurityHashMapSize() {
+        return usersSessionSecurityHashMapSize;
+    }
+
+    @Value("${users.session.security.max.login.failed:30}")
+    protected int usersSessionSecurityMaxLoginFailed;
+    public int getUsersSessionSecurityMaxLoginFailed() {
+        return usersSessionSecurityMaxLoginFailed;
+    }
+
+    @Value("${users.session.security.max.ip.failed:300}")
+    protected int usersSessionSecurityMaxIpFailed;
+    public int getUsersSessionSecurityMaxIpFailed() {
+        return usersSessionSecurityMaxIpFailed;
+    }
+
+    @Value("${users.session.security.block.period_s:3600}")
+    protected long usersSessionSecurityBlockPeriod;
+    public long getUsersSessionSecurityBlockPeriod() {
+        return usersSessionSecurityBlockPeriod;
+    }
 
 }

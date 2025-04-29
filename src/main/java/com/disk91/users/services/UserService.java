@@ -24,6 +24,7 @@ import com.disk91.common.config.CommonConfig;
 import com.disk91.common.config.ModuleCatalog;
 import com.disk91.common.pdb.entities.Param;
 import com.disk91.common.pdb.repositories.ParamRepository;
+import com.disk91.common.tools.EmailTools;
 import com.disk91.common.tools.HexCodingTools;
 import com.disk91.common.tools.Now;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
@@ -32,6 +33,7 @@ import com.disk91.common.tools.exceptions.ITRightException;
 import com.disk91.users.api.interfaces.UserLoginBody;
 import com.disk91.users.api.interfaces.UserLoginResponse;
 import com.disk91.users.config.ActionCatalog;
+import com.disk91.users.config.UserMessages;
 import com.disk91.users.config.UsersConfig;
 import com.disk91.users.mdb.entities.User;
 import com.disk91.users.mdb.entities.sub.TwoFATypes;
@@ -53,10 +55,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.security.Key;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.function.Supplier;
 
 @Service
@@ -88,6 +87,13 @@ public class UserService {
 
     @Autowired
     protected ParamRepository paramRepository;
+
+    @Autowired
+    protected EmailTools emailTools;
+
+    @Autowired
+    protected UserMessages userMessages;
+
 
     /**
      * User Login verification, search for a corresponding user & email.
@@ -122,6 +128,12 @@ public class UserService {
         // Get the hash of the user login
         String loginHash = User.encodeLogin(body.getEmail());
 
+        // Verify Brute Force Blocking
+        if ( this.isBlocked(loginHash, (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown")) {
+            this.incLoginFailed();
+            throw new ITParseException("Possible brute force attack");
+        }
+
         try {
             User u = userCache.getUser(loginHash);
             // Check if authorized
@@ -142,6 +154,7 @@ public class UserService {
             u.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
             String _password = usersConfig.getUsersPasswordHeader() + body.getPassword() + usersConfig.getUsersPasswordFooter();
             if ( !u.isRightPassword(_password) ) {
+                this.registerFailure(u, (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown");
                 this.incLoginFailed();
                 throw new ITRightException("Invalid password");
             }
@@ -188,6 +201,20 @@ public class UserService {
                 // 2FA Mechanism is active, generate the token with a limited role 1FA
                 roles.add(UsersRolesCache.StandardRoles.ROLE_REGISTERED_USER.getRoleName());
                 twoFaSession = true; // the duration of the JWT will be reduces to 10 minutes, time to get the 2FA.
+                switch(u.getTwoFAType()) {
+                    case EMAIL -> {
+                        // create a random hex string 4 bytes long
+                        String code = HexCodingTools.getRandomHexString(4);
+                        u.setEncTwoFASecret(Now.NowUtcMs()+"-"+code);   // store the time to manage timeout on code.
+                        // Send an email with this string
+                        Locale locale = emailTools.extractLocale(req, Locale.forLanguageTag(commonConfig.getCommonLangDefault()));
+                        Object[] args = { commonConfig.getCommonServiceName(), code };
+                        String _subject = userMessages.messageSource().getMessage("users.messages.2fa.email.subject", args, locale);
+                        String _body = userMessages.messageSource().getMessage("users.messages.2fa.email.body", args, locale);
+                        emailTools.send(body.getEmail(), _body, _subject, commonConfig.getCommonMailSender());
+                        userCache.saveUser(u);
+                    }
+                }
             } else {
                 // 2FA Mechanism is not active, generate the token with the full role list
                 // check the password expiration to route the user to the password change page - update it
@@ -266,6 +293,13 @@ public class UserService {
             throw new ITRightException("user-upgrade-missing-role");
         }
 
+        // Verify Brute Force Blocking
+        if ( this.isBlocked(user, (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown")) {
+            this.incLoginFailed();
+            throw new ITParseException("user-upgrade-brute-force");
+        }
+
+
         // Search the user
         try {
             User u = userCache.getUser(user);
@@ -289,10 +323,27 @@ public class UserService {
                 // 2FA Mechanism is active, verify the code
                 switch ( u.getTwoFAType() ) {
                     case EMAIL, SMS -> {
-                        if ( twoFaCode != null && !twoFaCode.isEmpty() && twoFaCode.equals(u.getEncTwoFASecret())) {
+                        String [] codes = u.getEncTwoFASecret().split("-");
+                        if ( codes.length != 2 ) {
+                            log.error("[users] Internal failure, 2FA code format");
+                            throw new ITParseException("user-upgrade-internal-2fa-code");
+                        }
+                        long time = Long.parseLong(codes[0]);
+                        if (     twoFaCode != null              // we have a code provided
+                             && !twoFaCode.isEmpty()            // not empty
+                             && (time + usersConfig.getUserSession2faTimeoutSec()*1000) > Now.NowUtcMs() // in the validity period
+                             && twoFaCode.equals(codes[1])      // with a correct value
+                        ) {
                             // The 2FA code is Validated
                             roles.add(UsersRolesCache.StandardRoles.ROLE_LOGIN_2FA.getRoleName());
                             sessionOk = true;
+                        } else if ( twoFaCode != null              // we have a code provided
+                                && !twoFaCode.isEmpty()            // not empty
+                                && (time + usersConfig.getUserSession2faTimeoutSec()*1000) > Now.NowUtcMs() // in the validity period
+                                && !twoFaCode.equals(codes[1])     // with a wrong value
+                        ) {
+                            // this can be a brute force attack
+                            this.registerFailure(u,(req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"));
                         }
                     }
                     case AUTHENTICATOR -> {
@@ -479,6 +530,148 @@ public class UserService {
     }
     protected Supplier<Number> getCreationsSuccess() {
         return ()-> loginSuccess;
+    }
+
+    // ==========================================================================
+    // Brute force protection
+    // ==========================================================================
+
+    protected static class FailureCounter {
+        public String login;
+        public String ip;
+        public long count;
+        public long lastAttempt;
+
+        public FailureCounter(
+                String login,
+                String ip,
+                long count,
+                long lastAttempt
+        ) {
+            this.login = login;
+            this.ip = ip;
+            this.count = count;
+            this.lastAttempt = lastAttempt;
+        }
+    }
+
+
+    // This will store the failures by login and by IP, We will have a clean
+    // mechanism, a limit of attempts in the given period of time by IP and
+    // by login. We also have a limit in term of size of the hashmap. All parameters
+    protected final HashMap<String, FailureCounter> failureCounters = new HashMap<>();
+
+    /*
+     * When a new login or session upgrade is received, we verify the login attempt is
+     * lower than the limit fixed by users.session.security.max.login.failed for the user and
+     * users.session.security.max.ip.failed for the IP. The number of trial per IP is higher
+     * due to the possible multiple users behind a NAT in companies or university. This only
+     * counts the failures. When the failure max is reached, the next attempts are blocked
+     * and the 2FA code if exist is reset.
+     * If the hashmap size limit has been reached, all the errors make the 2fa to be reset.
+     * on every 5 minutes, the cache is cleaned to remove the old entries (no schedule, executed
+     * on call)
+     */
+
+    private long lastFailureCountersClean = Now.NowUtcMs();
+
+    /**
+     * Call the function on every failure we want to keep trace. Creates or update
+     * the entry for the UserLogin and for the IP
+     * @param user
+     * @param ip
+     */
+    protected synchronized void registerFailure(User user, String ip) {
+
+        // Clean the cache
+        if ((Now.NowUtcMs() - lastFailureCountersClean) > 5 * Now.ONE_MINUTE) {
+            lastFailureCountersClean = Now.NowUtcMs();
+            ArrayList<String> toClean = new ArrayList<>();
+            for ( String fck : failureCounters.keySet()) {
+                FailureCounter fc =  failureCounters.get(fck);
+                if ( fc != null && fc.lastAttempt < ( Now.NowUtcMs() - usersConfig.getUsersSessionSecurityBlockPeriod()*1000)) {
+                    // candidate for cleanup
+                    toClean.add(fck);
+                }
+            }
+            synchronized (failureCounters) {
+                for ( String s : toClean ) {
+                    failureCounters.remove(s);
+                }
+            }
+        }
+
+        // Search if user exists
+        FailureCounter fcUser = failureCounters.get(user.getLogin());
+        if ( fcUser == null ) {
+            // create a new one
+            if ( failureCounters.size() < usersConfig.getUsersSessionSecurityHashMapSize() ) {
+                // Ok we can make it
+                fcUser = new FailureCounter(user.getLogin(), ip, 1, Now.NowUtcMs());
+                failureCounters.put(user.getLogin(),fcUser);
+            } else {
+                // We can't use the hashmap, remove the 2FA secret we are at risk
+                if ( user.getTwoFAType() == TwoFATypes.EMAIL ) {
+                    user.setTwoFASecret("");
+                    userCache.saveUser(user);
+                }
+            }
+        } else {
+            // update structure
+            fcUser.lastAttempt=Now.NowUtcMs();
+            fcUser.count++;
+        }
+
+        // Search by IP
+        FailureCounter fcIp = failureCounters.get(ip);
+        if ( fcIp == null ) {
+            // create a new one
+            if ( failureCounters.size() < usersConfig.getUsersSessionSecurityHashMapSize() ) {
+                // Ok we can make it
+                fcIp = new FailureCounter(user.getLogin(), ip, 1, Now.NowUtcMs());
+                failureCounters.put(ip,fcIp);
+            } else {
+                // We can't use the hashmap, remove the 2FA secret we are at risk
+                if ( user.getTwoFAType() == TwoFATypes.EMAIL ) {
+                    user.setTwoFASecret("");
+                    userCache.saveUser(user);
+                }
+            }
+        } else {
+            // update structure
+            fcIp.lastAttempt=Now.NowUtcMs();
+            fcIp.count++;
+        }
+    }
+
+    /**
+     * Check if the user of ip should be blocked based on the failures, return true
+     * when the user/IP is blocked.
+     *
+     * @param user
+     * @param ip
+     * @return
+     */
+    protected boolean isBlocked(String user, String ip) {
+        synchronized (failureCounters) {
+            FailureCounter fcUser = failureCounters.get(user);
+            if (fcUser != null
+                    && fcUser.lastAttempt > (Now.NowUtcMs() - usersConfig.getUsersSessionSecurityBlockPeriod() * 1000) // in a validity perior
+                    && fcUser.count > usersConfig.getUsersSessionSecurityMaxLoginFailed()
+            ) {
+                fcUser.lastAttempt = Now.NowUtcMs();
+                return true;
+            }
+            FailureCounter fcIp = failureCounters.get(ip);
+            if (fcIp != null
+                    && fcIp.lastAttempt > (Now.NowUtcMs() - usersConfig.getUsersSessionSecurityBlockPeriod() * 1000) // in a validity perior
+                    && fcIp.count > usersConfig.getUsersSessionSecurityMaxIpFailed()
+            ) {
+                fcIp.lastAttempt = Now.NowUtcMs();
+                return true;
+            }
+        }
+        return false;
     }
 
 

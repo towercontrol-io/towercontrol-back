@@ -34,4 +34,7 @@ directory at the root of the java execution.
 - `users.session.api.timeout.sec` : session timeout for API accounts in seconds, 0 means no expiration
 - `user.session.2fa.timeout.sec` : temporary session timeout for 2FA in seconds
 - `user.session.key` : common key used for JWT signature, change this value for security or global session invalidation
-
+- `users.session.security.hashmap.size` : size of the hashmap used for risky session storage
+- `users.session.security.block.period_s` : if a risky session is identified by not had an attempt during this period, we can clean the entry, in seconds
+- `users.session.security.max.ip.failed` : number of accepted failures on a given IP before locking IP
+- `users.session.security.max.login.failed`: number of accepted failures on a given LOGIN before locking it.

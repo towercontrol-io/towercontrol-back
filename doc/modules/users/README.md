@@ -106,6 +106,25 @@ and allows the authentication token to be renewed without having all functional 
 
 For being used, the JWT token must be preceded by the `Bearer` keyword. 
 
+#### Brute force protection on user login
+
+When a new login or session upgrade is received, we verify the login attempt is
+lower than the limit fixed by `users.session.security.max.login.failed` for the user and
+`users.session.security.max.ip.failed` for the IP. The number of trial per IP is higher
+due to the possible multiple users behind a NAT in companies or university. This only
+counts the failures. When the failure max is reached, the next attempts are blocked
+and the 2FA code if exist is reset.
+If the hashmap size limit `users.session.security.hashmap.size` has been reached, all the errors make 
+the 2fa to be reset. On every 5 minutes, the cache is cleaned to remove the old entries, the one with
+the last access time lower than `users.session.security.block.period_s`
+
+#### Email 2FA
+
+When a user has their 2FA enabled with email, during login, a 4-digit hexadecimal code will be randomly 
+generated and sent by email. The user must then enter this code within the 2FA session time 
+`user.session.2fa.timeout.sec`, even if the session is extended. After this duration, the code will be 
+invalidated. The **brute force** protections described above apply to prevent this type of attack.
+
 ### Personal data protection
 
 The user personal data are encrypted into the database with AES encryption. The encryption key is composed of 3 parts:

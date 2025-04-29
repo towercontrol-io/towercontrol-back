@@ -343,7 +343,7 @@ public class UserService {
                                 && !twoFaCode.equals(codes[1])     // with a wrong value
                         ) {
                             // this can be a brute force attack
-                            this.registerFailure(u,(req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"));
+                            this.registerFailure(u,(req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown");
                         }
                     }
                     case AUTHENTICATOR -> {

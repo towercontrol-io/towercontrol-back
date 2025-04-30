@@ -22,6 +22,8 @@ package com.disk91.users.services;
 import com.disk91.audit.integration.AuditIntegration;
 import com.disk91.common.config.CommonConfig;
 import com.disk91.common.config.ModuleCatalog;
+import com.disk91.common.pdb.entities.Param;
+import com.disk91.common.pdb.repositories.ParamRepository;
 import com.disk91.common.tools.EmailTools;
 import com.disk91.common.tools.HexCodingTools;
 import com.disk91.common.tools.Now;
@@ -30,21 +32,22 @@ import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITRightException;
 import com.disk91.common.tools.exceptions.ITTooManyException;
-import com.disk91.users.api.interfaces.UserBasicProfileResponse;
-import com.disk91.users.api.interfaces.UserPasswordChangeBody;
-import com.disk91.users.api.interfaces.UserPasswordLostBody;
+import com.disk91.users.api.interfaces.*;
 import com.disk91.users.config.ActionCatalog;
 import com.disk91.users.config.UserMessages;
 import com.disk91.users.config.UsersConfig;
 import com.disk91.users.mdb.entities.User;
+import com.disk91.users.mdb.entities.sub.TwoFATypes;
 import com.disk91.users.mdb.repositories.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
+import org.bouncycastle.util.encoders.Base32;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.security.SecureRandom;
 import java.util.Locale;
 
 @Service
@@ -76,6 +79,9 @@ public class UserProfileService {
 
     @Autowired
     protected UserMessages userMessages;
+
+    @Autowired
+    protected ParamRepository paramRepository;
 
     /**
      * Verify a requestor can access a user profile for read or write. Currently, the detailed ACL are not managed
@@ -142,6 +148,70 @@ public class UserProfileService {
             throw new ITRightException("user-profile-user-not-found");
         }
     }
+
+
+    /**
+     * Accept the User Conditions for a given user. The user can accept its own conditions or an admin can accept the conditions
+     * (even if this not really making sense)
+     * @param requestor - who's requesting the user condition acceptation
+     * @param user - who's user's condition applies
+     * @param req - for tracing IP
+     * @throws ITRightException
+     * @throws ITParseException
+     */
+    public void userConditionAcceptation(
+            String requestor,
+            String user,
+            HttpServletRequest req
+    ) throws ITRightException, ITParseException {
+        try {
+            User _requestor = userCache.getUser(requestor);
+
+            if ( !this.isLegitAccessRead(_requestor,user,true) ) {
+                log.warn("[users] Requestor {} does not have write access right to user {} profile", requestor, user);
+                throw new ITRightException("user-profile-no-access");
+            }
+
+            User _user = _requestor;
+            if ( requestor.compareTo(user) != 0 ) {
+                try {
+                    _user = userCache.getUser(user);
+                } catch (ITNotFoundException x){
+                    log.warn("[users] Searched user does not exists", x);
+                    throw new ITRightException("user-profile-user-not-found");
+                }
+            }
+
+            _user.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
+            Param p = paramRepository.findByParamKey("users.condition.version");
+            if ( p != null && !p.getStringValue().isEmpty() ) {
+                _user.setConditionValidation(true);
+                _user.setConditionValidationDate(Now.NowUtcMs());
+                _user.setConditionValidationVer(p.getStringValue());
+            } else throw new ITParseException("user-profile-condition-not-found");
+            _user.cleanKeys();
+            userCache.saveUser(_user);                      // save & flush caches
+            auditIntegration.auditLog(
+                    ModuleCatalog.Modules.USERS,
+                    ActionCatalog.getActionName(ActionCatalog.Actions.EULA_VALIDATION),
+                    _user.getLogin(),
+                    "User Condition validated by {0} from {1} with version {2}",
+                    new String[]{
+                            _requestor.getLogin(),
+                            (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown",
+                            p.getStringValue()
+                    }
+            );
+        } catch (ITNotFoundException x) {
+            log.error("[users] Requestor does not exists", x);
+            throw new ITRightException("user-profile-user-not-found");
+        }
+    }
+
+
+
+    // -------------------------------------------------------
+    // User Password
 
     @Autowired
     protected UserCreationService userCreationService;
@@ -423,7 +493,7 @@ public class UserProfileService {
                         ActionCatalog.getActionName(ActionCatalog.Actions.DELETION),
                         _user.getLogin(),
                         "User deletion by {0} from {1}",
-                        new String[]{_requestor.getLogin, (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+                        new String[]{_requestor.getLogin(), (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
                 );
             } else {
                 // delete immediately
@@ -447,6 +517,97 @@ public class UserProfileService {
         userRepository.deleteUserByDeletionDate(Now.NowUtcMs());
     }
 
+
+    // ----------------------------------------------------------
+    // 2FA related
+
+    /**
+     * Enable 2FA for a user. The user will be asked to provide a TOTP code to enable the 2FA
+     * @param requestor - who's requesting the application
+     * @param user - Who's going to have 2FA set
+     * @param req - Http Request to get the IP
+     * @throws ITRightException
+     * @throws ITParseException
+     * @return The method used and the secret to be used for the authenticator
+     */
+    public UserTwoFaResponse setupSecondFactor(
+            String requestor,
+            String user,
+            UserTwoFaBody body,
+            HttpServletRequest req
+    ) throws ITRightException, ITParseException {
+        try {
+            User _requestor = userCache.getUser(requestor);
+
+            if ( !this.isLegitAccessRead(_requestor,user,true) ) {
+                log.warn("[users] Requestor {} does not have write access right to user {} profile", requestor, user);
+                throw new ITRightException("user-profile-no-access");
+            }
+
+            User _user = _requestor;
+            if ( requestor.compareTo(user) != 0 ) {
+                try {
+                    _user = userCache.getUser(user);
+                } catch (ITNotFoundException x){
+                    log.warn("[users] Searched user does not exists", x);
+                    throw new ITRightException("user-profile-user-not-found");
+                }
+            }
+
+            _user.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
+            UserTwoFaResponse response = new UserTwoFaResponse();
+            response.setTwoFaMethod(body.getTwoFaMethod());
+            response.setSecret("");
+            // We setup the 2FA with the given method
+            switch (body.getTwoFaMethod()) {
+                case 0:
+                    // None
+                    _user.setTwoFAType(TwoFATypes.NONE);
+                    _user.setTwoFASecret("");
+                    break;
+                case 1:
+                    // Email
+                    _user.setTwoFAType(TwoFATypes.EMAIL);
+                    _user.setTwoFASecret("");
+                    break;
+                case 2:
+                    throw new ITParseException("user-profile-2fa-sms-not-supported");
+                case 3:
+                    // Authenticator
+                    SecureRandom random = new SecureRandom();
+                    byte [] bytes = new byte[10];
+                    random.nextBytes(bytes);
+                    _user.setEncTwoFASecret(Base32.toBase32String(bytes));
+                    _user.setTwoFAType(TwoFATypes.AUTHENTICATOR);
+                    response.setSecret(
+                            "otpauth://totp/" + commonConfig.getCommonServiceName() + ":" + _user.getLogin() +
+                                    "?secret=" + Base32.toBase32String(bytes) +
+                                    "&issuer=" + commonConfig.getCommonServiceName()
+                    );
+                    break;
+                default:
+                    throw new ITParseException("user-profile-2fa-method-not-valid");
+            }
+            _user.cleanKeys();
+            userCache.saveUser(_user);                      // save & flush caches
+            auditIntegration.auditLog(
+                    ModuleCatalog.Modules.USERS,
+                    ActionCatalog.getActionName(ActionCatalog.Actions.TWOFACTOR_CHANGE),
+                    _user.getLogin(),
+                    "User 2FA changed by {0} from {1} for method {2}",
+                    new String[]{
+                            _requestor.getLogin(),
+                            (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown",
+                            String.valueOf(_user.getTwoFAType())
+                    }
+            );
+            return response;
+        } catch (ITNotFoundException x) {
+            log.error("[users] Requestor does not exists", x);
+            throw new ITRightException("user-profile-user-not-found");
+        }
+
+    }
 
 
 }

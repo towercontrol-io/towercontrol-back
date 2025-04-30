@@ -48,7 +48,8 @@ Content-Type: application/json
 }
 
 ### Get token and login from the reponse
-@jwtToken=eyJ0eXAiOiJKV1QiLCJzdWIiOiI5NjhBMDQ5NDgwMDU3RTRFREU2NjdERkZERTBERTUzRENBRDUyMjlGNEZFQTI5QkUzMjRGQjIyOThDNTNCMEIxIiwiYWxnIjoiSFM1MTIifQ.eyJzdWIiOiI5NjhBMDQ5NDgwMDU3RTRFREU2NjdERkZERTBERTUzRENBRDUyMjlGNEZFQTI5QkUzMjRGQjIyOThDNTNCMEIxIiwiZXhwIjoxNzQ1Nzg1MTc0LCJyb2xlcyI6WyJST0xFX0xPR0lOXzFGQSIsIlJPTEVfUEVORElOR19VU0VSIiwiUk9MRV9SRUdJU1RFUkVEX1VTRVIiLCJST0xFX0xPR0lOX0NPTVBMRVRFIl19.CSr-uMXkpUEfNBzaWZeOVWezYJtGuHEigeoRS7q3GUMJQySQd5zWLllA4urv2Fu-TO1U4xkCztkQFXmcSxu93Q
+@jwtToken=eyJ0eXAiOiJKV1QiLCJzdWIiOiI5NjhBMDQ5NDgwMDU3RTRFREU2NjdERkZERTBERTUzRENBRDUyMjlGNEZFQTI5QkUzMjRGQjIyOThDNTNCMEIxIiwiYWxnIjoiSFM1MTIifQ.eyJzdWIiOiI5NjhBMDQ5NDgwMDU3RTRFREU2NjdERkZERTBERTUzRENBRDUyMjlGNEZFQTI5QkUzMjRGQjIyOThDNTNCMEIxIiwiZXhwIjoxNzQ2MDQyMTY0LCJyb2xlcyI6WyJST0xFX0xPR0lOXzFGQSIsIlJPTEVfUkVHSVNURVJFRF9VU0VSIl19.YE-_pGmTFIFxccjv0BSnx1bhi_fzVEZdLXdMgocZGnvWQWURDrwY-ic9PFUxoBCeQSMOoznwMpEELiclyyPC3Q
+
 @login=968A049480057E4EDE667DFFDE0DE53DCAD5229F4FEA29BE324FB2298C53B0B1
 
 
@@ -111,7 +112,34 @@ Authorization: Bearer {{jwtToken}}
 GET {{apiserver}}/users/1.0/profile/basic
 Authorization: Bearer {{jwtToken}}
 
+### ---------------------------------------
+### Step 10 : Validate the user condition
+PUT {{apiserver}}/users/1.0/profile/eula
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+
 ### -------------------------------------
-### Step 10 : Upgarde a session to get a new JWT token
+### Step 10bis : Upgrade a session to get a new JWT token with condition validation
 GET {{apiserver}}/users/1.0/session/upgrade
 Authorization: Bearer {{jwtToken}}
+
+### Udate the JWT token with the new one
+@jwtToken2=eyJ0eXAiOiJKV1QiLCJzdWIiOiI5NjhBMDQ5NDgwMDU3RTRFREU2NjdERkZERTBERTUzRENBRDUyMjlGNEZFQTI5QkUzMjRGQjIyOThDNTNCMEIxIiwiYWxnIjoiSFM1MTIifQ.eyJzdWIiOiI5NjhBMDQ5NDgwMDU3RTRFREU2NjdERkZERTBERTUzRENBRDUyMjlGNEZFQTI5QkUzMjRGQjIyOThDNTNCMEIxIiwiZXhwIjoxNzQ2MDQ0OTkxLCJyb2xlcyI6WyJST0xFX0xPR0lOXzFGQSIsIlJPTEVfTE9HSU5fQ09NUExFVEUiLCJST0xFX1BFTkRJTkdfVVNFUiIsIlJPTEVfUkVHSVNURVJFRF9VU0VSIl19.T2W1lHijCArzqT8BnDLETnlRp1OgY-7SXAS0sZK5BYz6n0-aiHyjlqQVs2Rv9GuXL1wP8c2f70iursRL-YhQaA
+
+### -------------------------------------
+### Step 11 : Enable the 2FA with the TOTP
+PUT {{apiserver}}/users/1.0/profile/2fa
+Content-Type: application/json
+Authorization: Bearer {{jwtToken2}}
+
+{
+  "twoFaMethod" : 3
+}
+
+### Generate a QR code from the given secret and scan it with the Google Authenticator
+
+### -------------------------------------
+### Step 12 : Verify the 2FA code
+GET {{apiserver}}/users/1.0/session/2fa?secondFactor=123456
+Authorization: Bearer {{jwtToken2}}

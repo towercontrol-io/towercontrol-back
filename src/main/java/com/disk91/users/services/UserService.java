@@ -32,6 +32,7 @@ import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITRightException;
 import com.disk91.users.api.interfaces.UserLoginBody;
 import com.disk91.users.api.interfaces.UserLoginResponse;
+import com.disk91.users.api.interfaces.UserTwoFaResponse;
 import com.disk91.users.config.ActionCatalog;
 import com.disk91.users.config.UserMessages;
 import com.disk91.users.config.UsersConfig;
@@ -45,6 +46,7 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
+import org.bouncycastle.util.encoders.Base32;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,7 +56,12 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.security.InvalidKeyException;
 import java.security.Key;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.*;
 import java.util.function.Supplier;
 
@@ -188,8 +195,8 @@ public class UserService {
             UserLoginResponse response = new UserLoginResponse();
             response.setLogin(u.getLogin());
             response.setEmail(body.getEmail());
-            response.setPasswordExpired( u.getExpiredPassword() > Now.NowUtcMs() );
-            response.setConditionToValidate(( p == null || p.getStringValue().isEmpty() || u.getConditionValidationVer().compareTo(p.getStringValue()) == 0 ));
+            response.setPasswordExpired( u.getExpiredPassword() > 0 && u.getExpiredPassword() < Now.NowUtcMs() );
+            response.setConditionToValidate(( p != null && !p.getStringValue().isEmpty() && u.getConditionValidationVer().compareTo(p.getStringValue()) != 0 ));
             response.setTwoFARequired( u.getTwoFAType() != TwoFATypes.NONE );
 
             // Generate the Role list based on the user roles & status
@@ -218,7 +225,9 @@ public class UserService {
             } else {
                 // 2FA Mechanism is not active, generate the token with the full role list
                 // check the password expiration to route the user to the password change page - update it
-                if ( u.getExpiredPassword() > Now.NowUtcMs() && ( p == null || p.getStringValue().isEmpty() || u.getConditionValidationVer().compareTo(p.getStringValue()) == 0 ) ) {
+                if ( (u.getExpiredPassword() == 0 || u.getExpiredPassword() > Now.NowUtcMs() )
+                        && ( p == null || p.getStringValue().isEmpty() || u.getConditionValidationVer().compareTo(p.getStringValue()) == 0 )
+                ) {
                     extraRoles.addAll(u.getRoles());
                     roles.add(UsersRolesCache.StandardRoles.ROLE_LOGIN_COMPLETE.getRoleName());
                 } else {
@@ -310,13 +319,12 @@ public class UserService {
             UserLoginResponse response = new UserLoginResponse();
             response.setLogin(u.getLogin());
             response.setEmail(u.getEncEmail());
-            response.setPasswordExpired( u.getExpiredPassword() > Now.NowUtcMs() );
-            response.setConditionToValidate(( p == null || p.getStringValue().isEmpty() || u.getConditionValidationVer().compareTo(p.getStringValue()) == 0 ));
+            response.setPasswordExpired( u.getExpiredPassword() > 0 && u.getExpiredPassword() < Now.NowUtcMs() );
+            response.setConditionToValidate(( p != null && !p.getStringValue().isEmpty() && u.getConditionValidationVer().compareTo(p.getStringValue()) != 0 ));
             response.setTwoFARequired( u.getTwoFAType() != TwoFATypes.NONE );
 
             // Generate the Role list based on the user roles & status
             ArrayList<String> roles = new ArrayList<>();
-            ArrayList<String> extraRoles = new ArrayList<>();
             roles.add(UsersRolesCache.StandardRoles.ROLE_LOGIN_1FA.getRoleName());
             boolean sessionOk = false;
             if ( u.getTwoFAType() != TwoFATypes.NONE && !has2fa ) {
@@ -359,7 +367,10 @@ public class UserService {
             }
 
             // check the password expiration to route the user to the password change page - update it
-            if ( sessionOk && u.getExpiredPassword() > Now.NowUtcMs() && ( p == null || p.getStringValue().isEmpty() || u.getConditionValidationVer().compareTo(p.getStringValue()) == 0 ) ) {
+            if ( sessionOk
+                    && ( u.getExpiredPassword() == 0 || u.getExpiredPassword() > Now.NowUtcMs() )
+                    && ( p == null || p.getStringValue().isEmpty() || u.getConditionValidationVer().compareTo(p.getStringValue()) == 0 )
+            ) {
                 // all good make the final session
                 roles.add(UsersRolesCache.StandardRoles.ROLE_LOGIN_COMPLETE.getRoleName());
                 response.setJwtRenewalToken(this.generateJWTForUser(u,roles,false,true));
@@ -484,6 +495,118 @@ public class UserService {
             key[i+32] = (byte)(_srvKey[i] ^ _userSecret[i]);
         }
         return Keys.hmacShaKeyFor(key);
+    }
+
+    // --------------------------------------------------------------
+    // TOTP Management / RFC 6238
+    // --------------------------------------------------------------
+
+    /**
+     * Verify the TOTP code for the given user, from an API request
+     * @param user - user login
+     * @param secondFactor - code to verify
+     * @param req - to get Request IP eventually
+     * @return true when the given code is valid
+     * @throws ITParseException
+     * @throws ITRightException
+     */
+    public boolean verifyTOTPCode(
+            String user,
+            String secondFactor,
+            HttpServletRequest req
+    ) throws ITParseException, ITRightException {
+        try {
+            User _user = userCache.getUser(user);
+            _user.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
+            return this.isTOTPCodeValid(_user, secondFactor);
+        } catch (ITNotFoundException x){
+            log.warn("[users] Searched user does not exists", x);
+            throw new ITRightException("user-profile-user-not-found");
+        }
+
+    }
+
+    public boolean isTOTPCodeValid(User u, String code) {
+        switch ( u.getTwoFAType() ) {
+            case EMAIL ->{
+                try {
+                    return code.equals(u.getEncTwoFASecret());
+                } catch (ITParseException e) {
+                    log.error("[users] Internal failure, 2FA code format invalid");
+                    return false;
+                }
+            }
+            case SMS ->{  // @TODO not supported yet
+                return true;
+            }
+            case AUTHENTICATOR -> {
+                try {
+                    long now = Now.NowUtcMs() - 30_000; // previous block;
+                    for ( int i = 0 ; i < 3 ; i++ ) {
+                        long _code = this.getTotpCodeForTimeRef(u, now);
+                        if ( _code == Long.parseLong(code) ) {
+                            return true;
+                        }
+                        now += 30_000; // next block
+                    }
+                    return false;
+                } catch (ITParseException e) {
+                    log.error("[users] Internal failure, 2FA code format invalid");
+                    return false;
+                }
+            }
+            case NONE -> {
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+    /**
+     * Get a TOTP code for the given user and time reference, this follows the RFC 6238
+     *
+     * @param u - User where we can find the secret
+     * @param timeRefMs - the time reference for this code in MS, good to test current, previous and next in case of clock shift
+     * @return - the TOTP code for the given user and time reference
+     * @throws ITParseException
+     */
+    private long getTotpCodeForTimeRef(User u, long timeRefMs)
+    throws ITParseException {
+
+        byte[] secret = Base32.decode(u.getEncTwoFASecret());
+
+        // The TimeRefMs is the current time but we can go for previous session eventually
+        // The timeRef is the time in seconds since 1970, divided by 30s slots
+        long timeRef = timeRefMs / 30_000;
+
+        byte[] _timeRef = new byte[8];
+        for (int i = 7; i >= 0; i--) {
+            _timeRef[i] = (byte) (timeRef & 0xFF);
+            timeRef >>= 8;
+        }
+
+        try {
+            SecretKeySpec signature = new SecretKeySpec(secret, "HmacSHA1");
+            Mac mac = Mac.getInstance("HmacSHA1");
+            mac.init(signature);
+            byte[] hash = mac.doFinal(_timeRef);
+
+            // hash[19] gives the offset in hash for calculating the code, a value between 0 and 15
+            int s = hash[19] & 0x0F;
+            // The code is composed by the 4 bytes starting at the offset ; the first one is masked to
+            // make sure we have a positive value
+            long code = hash[s] & 0x7F;
+            code = (code << 8) | (hash[s + 1] & 0xFF);
+            code = (code << 8) | (hash[s + 2] & 0xFF);
+            code = (code << 8) | (hash[s + 3] & 0xFF);
+            // The code value is in between 0 and 999 999 (included)
+            return code % 1000000;
+
+        } catch (NoSuchAlgorithmException | InvalidKeyException e) {
+            log.error("[users] Internal failure, TOTP generation failure");
+            throw new ITParseException("user-totp-generation-failure");
+        }
     }
 
 

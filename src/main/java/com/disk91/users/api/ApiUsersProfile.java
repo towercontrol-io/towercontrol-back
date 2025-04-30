@@ -21,6 +21,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Optional;
+
 @Tag( name = "Users profile management API", description = "Users module profile management API" )
 @CrossOrigin
 @RequestMapping(value = "/users/1.0/profile")
@@ -210,6 +212,7 @@ public class ApiUsersProfile {
             consumes = "application/json",
             method = RequestMethod.DELETE
     )
+    @PreAuthorize("hasAnyRole('ROLE_LOGIN_COMPLETE')")
     // ----------------------------------------------------------------------
     public ResponseEntity<?> deleteUserSelf(
             HttpServletRequest request
@@ -224,5 +227,95 @@ public class ApiUsersProfile {
             return new ResponseEntity<>(ActionResult.BADREQUEST("user-profile-delete-failed"), HttpStatus.BAD_REQUEST);
         }
     }
+
+    // ============================================
+    // Enable 2FA
+    // ============================================
+
+    /**
+     * Request to configure 2FA method
+     *
+     * This endpoint allows a user to setup a 2FA method. The 2FA is directly applicable, so it is recommended to
+     * to use the verification endpoint to check the 2FA configuration before logout with a risk of being locked out.
+     * This is on the front duty.
+     *
+     * This endpoint requires to have LOGIN COMPLETED first
+     */
+    @Operation(
+            summary = "User 2FA configuration",
+            description = "Request to enable/disable the 2FA configuration. The 2FA is directly applicable, so it is recommended to " +
+                    "to use the verification endpoint to check the 2FA configuration before logout with a risk of being locked out. " +
+                    "This is on the front duty. For Authenticator, the secret is generated and returned to the user to compute & display " +
+                    "the related QRCode.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "User 2FA setup applied", content = @Content(schema = @Schema(implementation = UserTwoFaResponse.class))),
+                    @ApiResponse(responseCode = "400", description = "User 2FA setup failed", content = @Content(schema = @Schema(implementation = ActionResult.class)))
+            }
+    )
+    @RequestMapping(
+            value = "/2fa",
+            produces = "application/json",
+            consumes = "application/json",
+            method = RequestMethod.PUT
+    )
+    @PreAuthorize("hasAnyRole('ROLE_LOGIN_COMPLETE')")
+    // ----------------------------------------------------------------------
+    public ResponseEntity<?> setupUser2Fa(
+            HttpServletRequest request,
+            @RequestBody(required = true) UserTwoFaBody body
+    ) {
+        try {
+            UserTwoFaResponse r = userProfileService.setupSecondFactor(
+                    request.getUserPrincipal().getName(),
+                    request.getUserPrincipal().getName(),
+                    body,
+                    request);
+            return new ResponseEntity<>(r, HttpStatus.OK);
+        } catch (ITParseException | ITRightException e ) {
+            return new ResponseEntity<>(ActionResult.BADREQUEST(e.getMessage()), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    // -----------------------------------------
+    // User Conditions
+
+    /**
+     * Request to accept the user conditions
+     *
+     * This endpoint is to accept the user conditions ; it is mostly used when the condition change and the
+     * user needs to re-accept them to log into the system.
+     *
+     * This endpoint requires to have LOGIN_1FA completed first
+     */
+    @Operation(
+            summary = "User Condition Acceptance",
+            description = "Request to accept the user conditions ; it is mostly used when the condition change and the " +
+                    "user needs to re-accept them to log into the system. This endpoint just needs to be called to accept the conditions.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "User condition accepted", content = @Content(schema = @Schema(implementation = ActionResult.class))),
+                    @ApiResponse(responseCode = "400", description = "User condition change failed", content = @Content(schema = @Schema(implementation = ActionResult.class)))
+            }
+    )
+    @RequestMapping(
+            value = "/eula",
+            consumes = "application/json",
+            method = RequestMethod.PUT
+    )
+    @PreAuthorize("hasAnyRole('ROLE_LOGIN_1FA')")
+    // ----------------------------------------------------------------------
+    public ResponseEntity<?> userConditionAccept(
+            HttpServletRequest request
+    ) {
+        try {
+            userProfileService.userConditionAcceptation(
+                    request.getUserPrincipal().getName(),
+                    request.getUserPrincipal().getName(),
+                    request);
+            return new ResponseEntity<>(ActionResult.OK("user-profile-eula-accepted"), HttpStatus.OK);
+        } catch (ITParseException | ITRightException e ) {
+            return new ResponseEntity<>(ActionResult.BADREQUEST(e.getMessage()), HttpStatus.BAD_REQUEST);
+        }
+    }
+
 
 }

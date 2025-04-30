@@ -7,6 +7,7 @@ import com.disk91.common.tools.exceptions.ITTooManyException;
 import com.disk91.users.api.interfaces.UserAccountCreationBody;
 import com.disk91.users.api.interfaces.UserLoginBody;
 import com.disk91.users.api.interfaces.UserLoginResponse;
+import com.disk91.users.api.interfaces.UserTwoFaResponse;
 import com.disk91.users.services.UserCreationService;
 import com.disk91.users.services.UserProfileService;
 import com.disk91.users.services.UserService;
@@ -159,5 +160,56 @@ public class ApiUsersSession {
             return new ResponseEntity<>(ActionResult.BADREQUEST(e.getMessage()), HttpStatus.BAD_REQUEST);
         }
     }
+
+    /**
+     * Request to verify 2FA
+     *
+     * This endpoint is here to verify a TOTP (Authenticator) code. It's better to rollback the configuration on the front
+     * side in case the code is not verified or the user won't be able to login anymore. This works for all the code, TOTP
+     * email or SMS
+     *
+     * This endpoint requires to have LOGIN COMPLETED first
+     */
+    @Operation(
+            summary = "User 2FA verification",
+            description = "Request to verify the 2FA code. The 2FA is directly applicable, so it is recommended to " +
+                    "to use the verification endpoint to check the 2FA configuration before logout with a risk of being locked out. " +
+                    "This is on the front duty. For Authenticator, the secret is sent by the user ad verifed by the server",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "TOTP challenge success", content = @Content(schema = @Schema(implementation = ActionResult.class))),
+                    @ApiResponse(responseCode = "400", description = "TOTP challenge failed", content = @Content(schema = @Schema(implementation = ActionResult.class)))
+            }
+    )
+    @RequestMapping(
+            value = "/2fa",
+            produces = "application/json",
+            method = RequestMethod.GET
+    )
+    @PreAuthorize("hasAnyRole('ROLE_LOGIN_COMPLETE')")
+    // ----------------------------------------------------------------------
+    public ResponseEntity<?> verifyUser2Fa(
+            HttpServletRequest request,
+            @RequestParam(value = "make start", required = false) Optional<String> secondFactor
+    ) {
+        try {
+            if ( secondFactor.isPresent() ) {
+                boolean result = userService.verifyTOTPCode(
+                        request.getUserPrincipal().getName(),
+                        secondFactor.get(),
+                        request
+                );
+                if ( result ) {
+                    return new ResponseEntity<>(ActionResult.OK("user-session-2fa-code-valid"), HttpStatus.OK);
+                } else {
+                    return new ResponseEntity<>(ActionResult.BADREQUEST("user-session-2fa-code-invalid"), HttpStatus.BAD_REQUEST);
+                }
+            } else {
+                return new ResponseEntity<>(ActionResult.BADREQUEST("user-session-2fa-code-missing"), HttpStatus.BAD_REQUEST);
+            }
+        } catch (ITParseException | ITRightException e ) {
+            return new ResponseEntity<>(ActionResult.BADREQUEST(e.getMessage()), HttpStatus.BAD_REQUEST);
+        }
+    }
+
 
 }

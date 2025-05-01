@@ -91,7 +91,6 @@ public class UserProfileService {
      * @return true when requestor can R/W access the user profile
      */
     protected boolean isLegitAccessRead(User _requestor, String user, boolean writeAccess) {
-        boolean accessRight = false;
         if ( ! _requestor.isActive() || _requestor.isLocked() ) return false;
         if ( ! _requestor.isInRole(UsersRolesCache.StandardRoles.ROLE_REGISTERED_USER.getRoleName())) return false;
 

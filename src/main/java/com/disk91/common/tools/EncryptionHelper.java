@@ -20,11 +20,8 @@
 package com.disk91.common.tools;
 
 
-import com.disk91.common.config.CommonConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;

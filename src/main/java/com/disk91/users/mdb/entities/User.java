@@ -398,8 +398,7 @@ public class User implements CloneableObject<User> {
      * @return
      */
     public String getEncEmail() throws ITParseException {
-        String _email = EncryptionHelper.decrypt(this.email, IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
-        return _email;
+        return EncryptionHelper.decrypt(this.email, IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
     }
 
     /**

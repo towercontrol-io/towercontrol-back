@@ -10,6 +10,7 @@ public class ActionCatalog {
         LOGIN,
         LOGOUT,
         PASSWORD_RESET,
+        PASSWORD_CHANGE,
         TWOFACTOR_CHANGE,
         UNKNOWN,
     }
@@ -32,6 +33,8 @@ public class ActionCatalog {
                 return "logout";
             case PASSWORD_RESET:
                 return "password_reset";
+            case PASSWORD_CHANGE:
+                return "password_change";
             case TWOFACTOR_CHANGE:
                 return "twofactor_change";
             case UNKNOWN:

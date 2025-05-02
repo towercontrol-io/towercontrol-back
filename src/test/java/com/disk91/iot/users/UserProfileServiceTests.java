@@ -160,7 +160,7 @@ public class UserProfileServiceTests {
         });
 
         // Admin may access normal user
-        log.info("[users][Profile][test] Normal user may not access another user");
+        log.info("[users][Profile][test] Admin user may access another user");
         assertDoesNotThrow(() -> {
             UserBasicProfileResponse r = userProfileService.getMyUserBasicProfile(admin.getLogin(), johnDoe.getLogin());
             assertEquals("john.doe@foo.bar", r.getEmail());
@@ -170,8 +170,76 @@ public class UserProfileServiceTests {
             assertEquals(1,r.getRoles().size());
             assertEquals(0, r.getAcls().size());
         });
+    }
+
+    @Test
+    @Order(2)
+    public void testuserConditionAcceptation() throws ITNotFoundException {
+        log.info("[users][Profile][test] userConditionAcceptation");
+        doNothing().when(auditIntegration).auditLog(any(),any(),any(), any(), any());
+        doNothing().when(userCache).saveUser(any());
+
+        given(userCache.getUser(johnDoe.getLogin())).willReturn(johnDoe);
+        given(commonConfig.getEncryptionKey()).willReturn(testKey);
+        given(commonConfig.getApplicationKey()).willReturn(testKey);
+        Param p = new Param();
+        p.setParamKey("users.condition.version");
+        p.setStringValue("1234");
+        given(paramRepository.findByParamKey("users.condition.version")).willReturn(p);
+
+        // Validate for ourself, make sure structure has been updated with good date & version
+        log.info("[users][Profile][test] self accept user condition");
+        assertDoesNotThrow(() -> {
+            userProfileService.userConditionAcceptation(johnDoe.getLogin(), johnDoe.getLogin(), null);
+            assertTrue(johnDoe.isConditionValidation());
+            assertEquals("1234",johnDoe.getConditionValidationVer());
+            assertTrue((Now.NowUtcMs() - johnDoe.getConditionValidationDate()) < 1000);
+        });
+
+    }
 
 
+    @Test
+    @Order(3)
+    public void testuserPasswordChange() throws ITNotFoundException {
+        log.info("[users][Profile][test] userPasswordChange");
+        doNothing().when(auditIntegration).auditLog(any(),any(),any(), any(), any());
+
+        given(userCache.getUser(johnDoe.getLogin())).willReturn(johnDoe);
+        given(userCache.getUser(admin.getLogin())).willReturn(admin);
+        lenient().when(userCache.getUser(aliceBob.getLogin())).thenReturn(aliceBob);
+        given(commonConfig.getEncryptionKey()).willReturn(testKey);
+        given(commonConfig.getApplicationKey()).willReturn(testKey);
+
+        given(userCreationService.verifyPassword(any())).willReturn(true);
+        given(usersConfig.getUsersPasswordExpirationDays()).willReturn(2);
+
+        // Request ourself, no problem
+        log.info("[users][Profile][test] self password change");
+        assertDoesNotThrow(() -> {
+            userProfileService.userPasswordChange(johnDoe.getLogin(), johnDoe.getLogin(), "1234abcd");
+            johnDoe.setKeys(testKey, testKey);
+            assertEquals("john.doe@foo.bar", johnDoe.getEncEmail());
+            assertTrue((johnDoe.getExpiredPassword()-Now.NowUtcMs()) > (2*Now.ONE_FULL_DAY-1000) );
+            assertTrue((johnDoe.getExpiredPassword()-Now.NowUtcMs()) < (2*Now.ONE_FULL_DAY+1000) );
+        });
+
+        // Request alice.bob must fail
+        log.info("[users][Profile][test] Normal user may not access another user");
+        assertThrows(ITRightException.class, () -> {
+            userProfileService.userPasswordChange(johnDoe.getLogin(), aliceBob.getLogin(), "1234abcd");
+        });
+
+        // Admin may access normal user
+        log.info("[users][Profile][test] Admin user may access another user");
+        given(usersConfig.getUsersPasswordExpirationDays()).willReturn(5);
+        assertDoesNotThrow(() -> {
+            userProfileService.userPasswordChange(admin.getLogin(), johnDoe.getLogin(), "12abcd34");
+            johnDoe.setKeys(testKey, testKey);
+            assertEquals("john.doe@foo.bar", johnDoe.getEncEmail());
+            assertTrue((johnDoe.getExpiredPassword()-Now.NowUtcMs()) > (5*Now.ONE_FULL_DAY-1000) );
+            assertTrue((johnDoe.getExpiredPassword()-Now.NowUtcMs()) < (5*Now.ONE_FULL_DAY+1000) );
+        });
     }
 
 

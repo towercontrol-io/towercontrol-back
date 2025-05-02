@@ -197,7 +197,7 @@ public class UserProfileService {
                     "User Condition validated by {0} from {1} with version {2}",
                     new String[]{
                             _requestor.getLogin(),
-                            (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown",
+                            (req != null && req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown",
                             p.getStringValue()
                     }
             );
@@ -235,6 +235,16 @@ public class UserProfileService {
             if ( requestor.compareTo(user) != 0 ) {
                 try {
                     _user = userCache.getUser(user);
+                    auditIntegration.auditLog(
+                            ModuleCatalog.Modules.USERS,
+                            ActionCatalog.getActionName(ActionCatalog.Actions.PASSWORD_CHANGE),
+                            _user.getLogin(),
+                            "User {0} made a password change",
+                            new String[]{
+                                    _requestor.getLogin()
+                            }
+                    );
+
                 } catch (ITNotFoundException x){
                     log.warn("[users] Searched user does not exists", x);
                     throw new ITRightException("user-profile-user-not-found");

@@ -110,7 +110,7 @@ public class UserCreationServiceTests {
             given(r.getExpirationDate()).willReturn(Now.NowUtcMs()+100_000);
             given(r.getEncEmail(anyString())).willReturn("john.doe@foo.bar");
 
-            given(userRegistrationRepository.findOneUserRegistrationByRegistrationCode(any())).willReturn(r);
+            given(userRegistrationRepository.findOneUserRegistrationByValidationId(any())).willReturn(r);
             doNothing().when(r).setExpirationDate(anyLong());
             given(userRegistrationRepository.save(any())).willAnswer(invocation -> invocation.getArgument(0));
             given(userRepository.save(any())).willAnswer(invocation -> invocation.getArgument(0));
@@ -179,13 +179,13 @@ public class UserCreationServiceTests {
 
             // ---------------------------------------
             log.info("[users][Creation][test] Invalid Registration ID");
-            given(userRegistrationRepository.findOneUserRegistrationByRegistrationCode(any())).willReturn(null);
+            given(userRegistrationRepository.findOneUserRegistrationByValidationId(any())).willReturn(null);
             try {
                 User us = (User) createUserMethod.invoke(userCreationService, body, req, true);
             } catch (InvocationTargetException | IllegalAccessException x) {
                 assertInstanceOf(ITRightException.class, x.getCause());
             }
-            given(userRegistrationRepository.findOneUserRegistrationByRegistrationCode(any())).willReturn(r);
+            given(userRegistrationRepository.findOneUserRegistrationByValidationId(any())).willReturn(r);
 
             // ---------------------------------------
             log.info("[users][Creation][test] Existing User");
@@ -242,7 +242,7 @@ public class UserCreationServiceTests {
             UserRegistration r = Mockito.mock(UserRegistration.class);
             given(r.getExpirationDate()).willReturn(Now.NowUtcMs() + 100_000);
             given(r.getEncEmail(anyString())).willReturn("john.doe@foo.bar");
-            given(userRegistrationRepository.findOneUserRegistrationByRegistrationCode(any())).willReturn(r);
+            given(userRegistrationRepository.findOneUserRegistrationByValidationId(any())).willReturn(r);
             doNothing().when(r).setExpirationDate(anyLong());
             given(userRegistrationRepository.save(any())).willAnswer(invocation -> invocation.getArgument(0));
             given(userRepository.save(any())).willAnswer(invocation -> invocation.getArgument(0));

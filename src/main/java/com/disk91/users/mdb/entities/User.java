@@ -448,12 +448,12 @@ public class User implements CloneableObject<User> {
     }
 
     public String getEncProfileFirstName() throws ITParseException {
-        if ( this.profile.getFirstName() == null || !this.profile.getFirstName().isEmpty() ) return "";
+        if ( this.profile.getFirstName() == null || this.profile.getFirstName().isEmpty() ) return "";
         return EncryptionHelper.decrypt(this.profile.getFirstName(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
     }
 
     public String getEncProfileLastName() throws ITParseException {
-        if ( this.profile.getLastName() == null || !this.profile.getLastName().isEmpty() ) return "";
+        if ( this.profile.getLastName() == null || this.profile.getLastName().isEmpty() ) return "";
         return EncryptionHelper.decrypt(this.profile.getLastName(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
     }
 

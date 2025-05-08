@@ -12,7 +12,7 @@ The user data structure is defined as follows:
      "string",                    // user role collection, role are predefined
   ],
   "acls": [
-    { "group": "string", "roles" : [ "string"] }   // user acl collection, acl are based on groups and dynamic
+    { "group": "string", "localName" : "string", "roles" : [ "string"] }   // user acl collection, acl are based on groups and dynamic, name of the groupe can be changed by the user
   ],
   "salt": [ "numbers" ],          // encryption salt 
   "sessionSecret" :  "string",    // session signature salt for token repudiation

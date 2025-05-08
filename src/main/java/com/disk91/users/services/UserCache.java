@@ -19,16 +19,9 @@
  */
 package com.disk91.users.services;
 
-import com.disk91.audit.integration.AuditIntegration;
-import com.disk91.common.config.CommonConfig;
-import com.disk91.common.mdb.entities.WiFiMacLocation;
-import com.disk91.common.mdb.repositories.WiFiMacLocationRepository;
 import com.disk91.common.tools.Now;
 import com.disk91.common.tools.ObjectCache;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
-import com.disk91.common.tools.exceptions.ITParseException;
-import com.disk91.common.tools.exceptions.ITRightException;
-import com.disk91.users.api.interfaces.UserLoginBody;
 import com.disk91.users.config.UsersConfig;
 import com.disk91.users.mdb.entities.User;
 import com.disk91.users.mdb.repositories.UserRepository;
@@ -36,7 +29,6 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
-import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,9 +36,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
 
 @Service
 public class UserCache {
@@ -57,9 +47,6 @@ public class UserCache {
      * User Cache Service is caching the User Information. It may be instantiated in all the instances
      * and multiple cache should collaborate in a cluster
      */
-
-    @Autowired
-    protected CommonConfig commonConfig;
 
     @Autowired
     protected UsersConfig usersConfig;
@@ -116,19 +103,19 @@ public class UserCache {
     public void destroy() {
         log.info("[users] UserCache stopping");
         this.serviceEnable = false;
-        if ( commonConfig.getWifiMacCacheSize() > 0 ) {
+        if ( usersConfig.getUsersCacheMaxSize() > 0 ) {
             userCache.deleteCache();
         }
         log.info("[users] UserCache stopped");
     }
 
     @Scheduled(fixedRateString = "${users.cache.log.period:PT24H}", initialDelay = 3600_000)
-    protected void wifiMacLocationCacheStatus() {
+    protected void userCacheStatus() {
         try {
-            Duration duration = Duration.parse(commonConfig.getWifiMacCacheLogPeriod());
+            Duration duration = Duration.parse(usersConfig.getUsersCacheLogPeriod());
             if (duration.toMillis() >= Now.ONE_FULL_DAY ) return;
         } catch (Exception ignored) {}
-        if ( ! this.serviceEnable || commonConfig.getWifiMacCacheSize() == 0 ) return;
+        if ( ! this.serviceEnable || usersConfig.getUsersCacheMaxSize() == 0 ) return;
         this.userCache.log();
     }
 

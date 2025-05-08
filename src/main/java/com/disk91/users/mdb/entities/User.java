@@ -154,6 +154,28 @@ public class User implements CloneableObject<User> {
     protected String twoFASecret;
     protected TwoFATypes twoFAType;
 
+    // =========== Get Group List ( another way to get acls but adding the virtual groups ) ===========
+
+    /**
+     * Returns the list of the groups the user have access, including the virtual group.
+     * @return
+     */
+    public ArrayList<String> getGroups() {
+        ArrayList<String> groups = new ArrayList<>();
+        groups.add("user_"+this.getLogin());
+        for ( UserAcl acl : this.acls ) {
+                groups.add(acl.getGroup());
+        }
+        return groups;
+    }
+
+    /**
+     * Get user default group name, application does not focus on group management will prefer this method.
+     * @return
+     */
+    public String getDefaultGroupId() {
+        return "user_"+this.getLogin();
+    }
 
     // =========== Encryption Management ===========
     @Transient

@@ -18,6 +18,14 @@ public class UserAcl implements CloneableObject<UserAcl> {
     )
     protected String group;
 
+    // Local Name
+    @Schema(
+            description = "Allows to change the name of the group locally",
+            example = "my favorite group",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    protected String localName;
+
     // Associated Role
     @Schema(
             description = "Associated Roles",
@@ -30,6 +38,7 @@ public class UserAcl implements CloneableObject<UserAcl> {
     public UserAcl clone() {
         UserAcl u = new UserAcl();
         u.setGroup(group);
+        u.setLocalName(localName);
         u.setRoles(new ArrayList<>(roles));
         return u;
     }
@@ -50,5 +59,13 @@ public class UserAcl implements CloneableObject<UserAcl> {
 
     public void setRoles(ArrayList<String> roles) {
         this.roles = roles;
+    }
+
+    public String getLocalName() {
+        return localName;
+    }
+
+    public void setLocalName(String localName) {
+        this.localName = localName;
     }
 }

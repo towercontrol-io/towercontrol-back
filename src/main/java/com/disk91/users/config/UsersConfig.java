@@ -199,6 +199,12 @@ public class UsersConfig {
         return usersCacheExpiration;
     }
 
+    @Value("{users.cache.log.period:PT24H}")
+    protected String usersCacheLogPeriod;
+    public String getUsersCacheLogPeriod() {
+        return usersCacheLogPeriod;
+    }
+
     // --------------------------------------------
     // User Sessions
     // --------------------------------------------

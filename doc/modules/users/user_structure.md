@@ -9,7 +9,7 @@ The user data structure is defined as follows:
   "password": "string",           // password hash
   "email": "string",              // user email [Base64(encrypted)]
   "roles": [
-     "string",                    // user role collection, role are predefined
+     "string"                     // user role collection, role are predefined
   ],
   "acls": [
     { "group": "string", "localName" : "string", "roles" : [ "string"] }   // user acl collection, acl are based on groups and dynamic, name of the groupe can be changed by the user

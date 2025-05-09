@@ -18,7 +18,7 @@
  *    IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.disk91.groups.config;
+package com.disk91.devices.config;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,8 +27,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 
 @Configuration
-@PropertySource(value = {"file:configuration/groups.properties"}, ignoreResourceNotFound = true)
-public class GroupsConfig {
+@PropertySource(value = {"file:configuration/devices.properties"}, ignoreResourceNotFound = true)
+public class DevicesConfig {
 
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
@@ -44,10 +44,10 @@ public class GroupsConfig {
     }
 
     // Select the medium to be used for the intracom service communication
-    @Value("${groups.intracom.medium:db}")
-    protected String groupsIntracomMedium;
-    public String getGroupsIntracomMedium() {
-        return groupsIntracomMedium;
+    @Value("${devices.intracom.medium:db}")
+    protected String devicesIntracomMedium;
+    public String getDevicesIntracomMedium() {
+        return devicesIntracomMedium;
     }
 
 
@@ -55,22 +55,22 @@ public class GroupsConfig {
     // Group Cache
     // --------------------------------------------
 
-    @Value("${groups.cache.max.size:1000}")
-    protected int groupsCacheMaxSize;
-    public int getGroupsCacheMaxSize() {
-        return groupsCacheMaxSize;
+    @Value("${devices.cache.max.size:1000}")
+    protected int devicesCacheMaxSize;
+    public int getDevicesCacheMaxSize() {
+        return devicesCacheMaxSize;
     }
 
-    @Value("${groups.cache.expiration_s:0}")
-    protected int groupsCacheExpiration;
-    public int getGroupsCacheExpiration() {
-        return groupsCacheExpiration;
+    @Value("${devices.cache.expiration_s:0}")
+    protected int devicesCacheExpiration;
+    public int getDevicesCacheExpiration() {
+        return devicesCacheExpiration;
     }
 
-    @Value("${groups.cache.log.period:PT24H}")
-    protected String groupsCacheLogPeriod;
-    public String getGroupsCacheLogPeriod() {
-        return groupsCacheLogPeriod;
+    @Value("${devices.cache.log.period:PT24H}")
+    protected String devicesCacheLogPeriod;
+    public String getDevicesCacheLogPeriod() {
+        return devicesCacheLogPeriod;
     }
 
 }

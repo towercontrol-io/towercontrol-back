@@ -77,7 +77,7 @@ public class GroupCache {
         log.info("[groups] initGroupsCache");
         if ( groupsConfig.getGroupsCacheMaxSize() > 0 ) {
             this.groupCache = new ObjectCache<String, Group>(
-                    "UserROCache",
+                    "GroupsROCache",
                     groupsConfig.getGroupsCacheMaxSize(),
                     groupsConfig.getGroupsCacheExpiration()*1000
             ) {
@@ -95,13 +95,13 @@ public class GroupCache {
         this.serviceEnable = true;
 
         Gauge.builder("common.service.groups.cache_total_time", this.groupCache.getTotalCacheTime())
-                .description("[Users] total time cache execution")
+                .description("[Groups] total time cache execution")
                 .register(meterRegistry);
         Gauge.builder("common.service.groups.cache_total", this.groupCache.getTotalCacheTry())
-                .description("[Users] total cache try")
+                .description("[Groups] total cache try")
                 .register(meterRegistry);
         Gauge.builder("common.service.groups.cache_miss", this.groupCache.getCacheMissStat())
-                .description("[Users] total cache miss")
+                .description("[Groups] total cache miss")
                 .register(meterRegistry);
     }
 

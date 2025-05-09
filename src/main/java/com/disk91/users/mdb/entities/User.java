@@ -24,6 +24,7 @@ import com.disk91.common.tools.CloneableObject;
 import com.disk91.common.tools.CustomField;
 import com.disk91.common.tools.EncryptionHelper;
 import com.disk91.common.tools.HexCodingTools;
+import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.users.mdb.entities.sub.*;
 import org.slf4j.Logger;
@@ -154,7 +155,9 @@ public class User implements CloneableObject<User> {
     protected String twoFASecret;
     protected TwoFATypes twoFAType;
 
-    // =========== Get Group List ( another way to get acls but adding the virtual groups ) ===========
+    // ================================================================================================
+    // Get Group List ( another way to get acls but adding the virtual groups )
+    // ================================================================================================
 
     /**
      * Returns the list of the groups the user have access, including the virtual group.
@@ -177,7 +180,76 @@ public class User implements CloneableObject<User> {
         return "user_"+this.getLogin();
     }
 
-    // =========== Encryption Management ===========
+
+    // ================================================================================================
+    // Helper for CustomFields (Profile & Billing)
+    // ================================================================================================
+
+    /**
+     * Get the custom field value from the profile ; decrypt the value
+     * @param name
+     * @return
+     * @throws ITNotFoundException
+     * @throws ITParseException
+     */
+    public String getProfileCustomFieldByName(String name) throws ITNotFoundException, ITParseException {
+        if ( this.profile == null || this.profile.getCustomFields() == null) throw new ITNotFoundException();
+        for ( CustomField cf : this.profile.getCustomFields() ) {
+            if ( cf.getName().compareTo(name) == 0 ) return EncryptionHelper.decrypt(cf.getValue(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+        }
+        throw new ITNotFoundException();
+    }
+
+    /**
+     * Set the custom field value in the profile, encrypt the value. If the value is null, remove the field
+     * @param name
+     * @param value
+     * @throws ITNotFoundException
+     * @throws ITParseException
+     */
+    public void upsertProfileCustomFieldByName(String name, String value) throws ITParseException {
+        if ( this.profile == null ) this.profile = new UserProfile();
+        if ( this.profile.getCustomFields() == null ) this.profile.setCustomFields(new ArrayList<>());
+
+        if ( value == null) {
+            // remove the field
+            CustomField toRem = null;
+            for ( CustomField cf : this.profile.getCustomFields() ) {
+                if ( cf.getName().compareTo(name) == 0 ) {
+                    toRem = cf;
+                    break;
+                }
+            }
+            if ( toRem != null ) this.profile.getCustomFields().remove(toRem);
+        } else {
+            // search of it for upsert
+            for (CustomField cf : this.profile.getCustomFields()) {
+                if (cf.getName().compareTo(name) == 0) {
+                    // found, update it or remove it
+                    cf.setValue(EncryptionHelper.encrypt(value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+                    return;
+                }
+            }
+            // not found, add it
+            CustomField cf = new CustomField();
+            cf.setName(name);
+            cf.setValue(EncryptionHelper.encrypt(value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+            this.profile.getCustomFields().add(cf);
+        }
+    }
+
+    /**
+     * Delete a custom field from the profile, if the field does not exist, do nothing
+     * @param name
+     * @throws ITParseException
+     */
+    public void deleteProfileCustomFieldByName(String name) throws ITParseException {
+        upsertProfileCustomFieldByName(name, null);
+    }
+
+    // ================================================================================================
+    // Encryption Management
+    // ================================================================================================
     @Transient
     private static final String IV = "0123456789abcdef0123456789abcdef"; // 16 bytes IV for AES encryption
 

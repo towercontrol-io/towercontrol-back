@@ -10,6 +10,8 @@ This module is responsible for managing the device life-cycle, it provides the f
 - Device encryption & signature ids
 - Device cache management
 
-## Related documentation
+### Related documentation
 - [Device life cycle](./device_lifecycle.md)
 - [Device identification](./device_identification.md)
+
+### Device Identification

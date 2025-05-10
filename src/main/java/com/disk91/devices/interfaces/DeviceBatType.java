@@ -8,4 +8,5 @@ public enum DeviceBatType {
     NIMH_2V4,
     NIMH_3V6,
     NIMH_4V8,
+    UNKNOWN_BATTERY_TYPE,
 }

@@ -24,7 +24,11 @@ import com.disk91.devices.mdb.entities.Device;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface DevicesRepository extends MongoRepository<Device,String> {
         public Device findOneDeviceById(String id);
+
+        public List<Device> findDevicesByDataStreamId(String dataStreamId);
 }

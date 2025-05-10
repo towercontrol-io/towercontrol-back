@@ -4,7 +4,9 @@ public class ModuleCatalog {
     public enum Modules {
         USERS,
         GROUPS,
-        AUDIT
+        AUDIT,
+        DEVICES,
+        CUSTOM
     }
 
     public static String getServiceName(ModuleCatalog.Modules service) {
@@ -14,6 +16,10 @@ public class ModuleCatalog {
             return "groups";
         } else if (service == ModuleCatalog.Modules.AUDIT) {
             return "audit";
+        } else if (service == ModuleCatalog.Modules.DEVICES) {
+            return "devices";
+        } else if (service == ModuleCatalog.Modules.CUSTOM) {
+            return "custom";
         }
         return null;
     }

@@ -154,6 +154,27 @@ public class DeviceCache {
     }
 
     /**
+     * Search a device with the data stream Id and strore in the cache if not already
+     * This will query the database on every call as the cache is based on the Id
+     * @param streamId
+     * @return
+     * @throws ITNotFoundException
+     */
+    public List<Device> getDevicesByDataStream(String streamId) throws ITNotFoundException {
+        List<Device> devices = devicesRepository.findDevicesByDataStreamId(streamId);
+        if (devices == null || devices.isEmpty()) throw new ITNotFoundException("Device not found");
+        if (!this.serviceEnable || deviceConfig.getDevicesCacheMaxSize() == 0) {
+            for ( Device device : devices ) {
+                Device u = this.devicesCache.get(device.getId());
+                if (u == null) {
+                    this.devicesCache.put(u, u.getId());
+                }
+            }
+        }
+        return devices;
+    }
+
+    /**
      * Remove a device from the local cache if exists (this is when the user has been updated somewhere else
      * @param d - deviceId to be removed
      * @return
@@ -177,6 +198,21 @@ public class DeviceCache {
             devicesHistoryRepository.save(dh);
         }
         devicesRepository.save(u);
+        this.flushDevice(u.getId());
+    }
+
+    /**
+     * Delete a device from the database and flush the cache, if a reason is given, the device is saved in History
+     * @param u - device to be deleted
+     * @param r - reason for deletion
+     */
+    public void deleteDevice(Device u, DeviceHistoryReason r) {
+        if ( r != DeviceHistoryReason.NO_REASON ) {
+            // make a copy from the original device
+            DeviceHistory dh = DeviceHistory.getDeviceHistory(u, r);
+            devicesHistoryRepository.save(dh);
+        }
+        devicesRepository.delete(u);
         this.flushDevice(u.getId());
     }
 

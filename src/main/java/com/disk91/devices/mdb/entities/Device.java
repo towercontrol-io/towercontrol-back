@@ -27,6 +27,7 @@ package com.disk91.devices.mdb.entities;
 
 
 import com.disk91.common.tools.CloneableObject;
+import com.disk91.common.tools.Now;
 import com.disk91.devices.interfaces.DeviceBatType;
 import com.disk91.devices.interfaces.DeviceState;
 import com.disk91.devices.mdb.entities.sub.DevAttribute;
@@ -45,6 +46,9 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.disk91.devices.interfaces.DeviceBatType.UNKNOWN_BATTERY_TYPE;
+import static com.disk91.devices.interfaces.DeviceState.IDENTIFIED;
 
 @Document(collection = "devices")
 @CompoundIndexes({
@@ -173,6 +177,53 @@ public class Device implements CloneableObject<Device> {
     protected ArrayList<DevGroupAssociated> associatedGroups;
 
     // ========================================
+
+    public static Device newDevice(String user) {
+        Device device = new Device();
+        device.setVersion(Device.DEVICE_VERSION);
+        device.setInstanceOfId("");
+        device.setPublicId("");
+        device.setHardwareIds(new ArrayList<>());
+        device.setNearFieldId("");
+        device.setCustomerId("");
+        device.setDataStreamId("");
+        device.setOnboardingId("");
+        device.setFamilyId("");
+        device.setName("");
+        device.setDescription("");
+        device.setDevState(IDENTIFIED);
+        device.setDevStateDateMs(Now.NowUtcMs());
+        device.setLastSeenDateMs(0);
+        device.setLastRestartDateMs(0);
+        device.setFirmwareVersion("");
+        device.setHardwareVersion("");
+        device.setBatteryType(UNKNOWN_BATTERY_TYPE);
+        device.setBatteryCapacity(0);
+        device.setBatteryLowLevel(0);
+        device.setBatteryLevel(0);
+        device.setCreationBy(user);
+        device.setCreationOnMs(Now.NowUtcMs());
+        device.setUpdatedBy(user);
+        device.setUpdatedOnMs(Now.NowUtcMs());
+        device.setBillingPeriodStartMs(0);
+        device.setBillingPeriodEndMs(0);
+        device.setBillingGroupId("");
+        device.setDynamicLocation(false);
+        DevLocation loc = new DevLocation();
+        loc.setLocationMs(0);
+        loc.setLatitude(0);
+        loc.setLongitude(0);
+        loc.setAltitude(0);
+        loc.setAccuracy(0);
+        loc.setFloor("");
+        device.setLocation(loc);
+        device.setDataEncrypted(false);
+        device.setCommunicationIds(new ArrayList<>());
+        device.setAttributes(new ArrayList<>());
+        device.setAssociatedGroups(new ArrayList<>());
+        return device;
+    }
+
     public Device clone() {
         Device u = new Device();
         u.setId(id);

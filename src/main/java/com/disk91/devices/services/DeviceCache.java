@@ -47,7 +47,7 @@ public class DeviceCache {
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
     /**
-     * Group Cache Service is caching the Group Information. It may be instantiated in all the instances
+     * Device Cache Service is caching the Group Information. It may be instantiated in all the instances
      * and multiple cache should collaborate in a cluster
      */
 
@@ -115,7 +115,7 @@ public class DeviceCache {
         log.info("[devices] DevicesCache stopped");
     }
 
-    @Scheduled(fixedRateString = "${groups.cache.log.period:PT24H}", initialDelay = 3600_000)
+    @Scheduled(fixedRateString = "${devices.cache.log.period:PT24H}", initialDelay = 3600_000)
     protected void groupCacheStatus() {
         try {
             Duration duration = Duration.parse(deviceConfig.getDevicesCacheLogPeriod());

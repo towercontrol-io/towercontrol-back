@@ -22,6 +22,7 @@ package com.disk91.devices.mdb.repositories;
 
 import com.disk91.devices.mdb.entities.Device;
 import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -31,4 +32,7 @@ public interface DevicesRepository extends MongoRepository<Device,String> {
         public Device findOneDeviceById(String id);
 
         public List<Device> findDevicesByDataStreamId(String dataStreamId);
+
+        @Query(value = "{ 'associatedGroups.groupId': { $in: ?0 } }")
+        List<Device> findDevicesByAssociatedGroups(List<String> groupIds);
 }

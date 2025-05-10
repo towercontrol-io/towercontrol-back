@@ -167,7 +167,7 @@ public class User implements CloneableObject<User> {
         ArrayList<String> groups = new ArrayList<>();
         groups.add("user_"+this.getLogin());
         for ( UserAcl acl : this.acls ) {
-                groups.add(acl.getGroup());
+            groups.add(acl.getGroup());
         }
         return groups;
     }

@@ -69,7 +69,8 @@ The device data structure is defined as follows:
     "longitude" : "number",         // device known longitude
     "altitude" :  "number",         // device known altitude from sea level (m)
     "floor" : "string",             // device floor when applicable
-    "accuracyM" :  "number"         // location accuracy in meters
+    "accuracyM" :  "number",        // location accuracy in meters
+    "hexLocation" : "string"        // hex location, this is the hex representation of the location (uber h3)
   },
   
   "dataEncrypted": "boolean",     // device data is encrypted flag, this is the flag used to identify if the device data is encrypted

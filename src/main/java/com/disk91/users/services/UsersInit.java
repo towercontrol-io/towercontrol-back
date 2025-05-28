@@ -23,7 +23,6 @@ import com.disk91.common.config.CommonConfig;
 import com.disk91.common.pdb.entities.Param;
 import com.disk91.common.pdb.repositories.ParamRepository;
 import com.disk91.common.tools.HexCodingTools;
-import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.users.config.UsersConfig;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;

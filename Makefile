@@ -11,7 +11,7 @@ setup_base: .FORCE
 	mkdir $(CONF_DIR)
 	cp -R ./itc/* $(CONF_DIR)
 	rm $(CONF_DIR)/postgresql/data/.empty
-	-sudo chown nobody:nogroup $(CONF_DIR)/prometheus
+	-sudo chown 99:99 $(CONF_DIR)/prometheus
 	-sudo chown 472:root $(CONF_DIR)/grafana
 
 setup_nginx: .FORCE
@@ -52,23 +52,23 @@ install: setup_shared back
 
 start:
 	@if [ -d $(CONF_DIR)/nginx/ssl/accounts ]; then \
-    		cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc --profile nginx up  -d ; cd - ;\
+    		cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc --profile nginx --profile monitoring up -d ; cd - ;\
     else \
-    		cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc up -d ; cd - ;\
+    		cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc --profile monitoring up -d ; cd - ;\
     fi
 
 start-clean:
 	$(DOCKER_CMD) network prune
 	@if [ -d $(CONF_DIR)/nginx/ssl/accounts ]; then \
-		cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc --profile nginx up --force-recreate -d ; cd - ;\
+		cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc --profile nginx --profile monitoring up --force-recreate -d ; cd - ;\
     else \
-		cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc up --force-recreate -d ; cd - ;\
+		cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc --profile monitoring up --force-recreate -d ; cd - ;\
     fi
 
 stop:
 	@if [ -d $(CONF_DIR)/nginx/ssl/accounts ]; then \
-		cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc --profile nginx stop ; cd - ;\
+		cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc --profile nginx --profile monitoring stop ; cd - ;\
 	else \
-		cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc stop ; cd - ;\
+		cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc --profile monitoring stop ; cd - ;\
     fi
 

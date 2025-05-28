@@ -11,8 +11,8 @@ setup_base: .FORCE
 	mkdir $(CONF_DIR)
 	cp -R ./itc/* $(CONF_DIR)
 	rm $(CONF_DIR)/postgresql/data/.empty
-	-sudo chown 99:99 $(CONF_DIR)/prometheus
-	-sudo chown 472:root $(CONF_DIR)/grafana
+	-sudo chown -R nobody:nogroup $(CONF_DIR)/prometheus
+	-sudo chown -R 472:root $(CONF_DIR)/grafana
 
 setup_nginx: .FORCE
 	cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile nginx --profile itc --profile mongo up --no-deps nginx -d ; cd -

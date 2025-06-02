@@ -53,6 +53,14 @@ public class DevLocation implements CloneableObject<DevLocation> {
             requiredMode = Schema.RequiredMode.REQUIRED
     ) protected int accuracy;
 
+    // h3 hex encoding of the location
+    @Schema(
+            description = "hex encoding for the location",
+            example = "0x1234567890abcdef",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    ) protected String hexLocation;
+
+
     // === CLONE ===
 
     public DevLocation clone() {
@@ -63,6 +71,7 @@ public class DevLocation implements CloneableObject<DevLocation> {
         u.setAltitude(altitude);
         u.setFloor(floor);
         u.setAccuracy(accuracy);
+        u.setHexLocation(hexLocation);
         return u;
     }
 
@@ -115,5 +124,13 @@ public class DevLocation implements CloneableObject<DevLocation> {
 
     public void setAccuracy(int accuracy) {
         this.accuracy = accuracy;
+    }
+
+    public String getHexLocation() {
+        return hexLocation;
+    }
+
+    public void setHexLocation(String hexLocation) {
+        this.hexLocation = hexLocation;
     }
 }

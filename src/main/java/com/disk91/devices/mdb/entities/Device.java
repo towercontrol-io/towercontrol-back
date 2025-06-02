@@ -36,6 +36,7 @@ import com.disk91.devices.mdb.entities.sub.DevHardwareId;
 import com.disk91.devices.mdb.entities.sub.DevLocation;
 import com.disk91.groups.mdb.entities.sub.GroupAttribute;
 import com.disk91.groups.mdb.entities.sub.GroupReferring;
+import com.uber.h3core.H3Core;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.annotation.Id;
@@ -44,6 +45,7 @@ import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -275,6 +277,27 @@ public class Device implements CloneableObject<Device> {
         }
         return u;
     }
+
+    // ========================================
+
+    /**
+     * Update the location and the hexLocation in one single call
+     * @param lat
+     * @param lng
+     */
+    public void setLatLng(double lat, double lng) {
+        if (location == null) location = new DevLocation();
+        location.setLatitude(lat);
+        location.setLongitude(lng);
+        try {
+            // get the hex corresponding in a resolution of 14 - 3m2
+            H3Core h3 = H3Core.newInstance();
+            location.setHexLocation(h3.latLngToCellAddress(location.getLatitude(), location.getLongitude(),14));
+        } catch (IOException ioException) {
+            log.error("[devices] Unable to create H3Core instance", ioException);
+        }
+    }
+
 
     // ========================================
 

@@ -1,8 +1,12 @@
 package com.disk91.devices.mdb.entities.sub;
 
 import com.disk91.common.tools.CloneableObject;
+import com.disk91.common.tools.GeolocationTools;
+import com.uber.h3core.H3Core;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
+
+import java.io.IOException;
 
 
 @Tag(name = "Device Location", description = "Device location")
@@ -75,6 +79,25 @@ public class DevLocation implements CloneableObject<DevLocation> {
         return u;
     }
 
+    // ==== SPECIAL METHODS ====
+
+    public String getHexLocation() {
+        if ( hexLocation != null && !hexLocation.isEmpty() ) {
+            return hexLocation;
+        }
+        if (GeolocationTools.isAValidCoordinate(this.getLatitude(), this.getLongitude()) ) {
+            try {
+                // get the hex corresponding in a resolution of 14 - 3m2
+                H3Core h3 = H3Core.newInstance();
+                this.setHexLocation(h3.latLngToCellAddress(this.getLatitude(), this.getLongitude(),14));
+                return this.hexLocation;
+            } catch (IOException ioException) {
+                return null;
+            }
+        }
+        return null;
+    }
+
     // === GETTER / SETTER ===
 
 
@@ -124,10 +147,6 @@ public class DevLocation implements CloneableObject<DevLocation> {
 
     public void setAccuracy(int accuracy) {
         this.accuracy = accuracy;
-    }
-
-    public String getHexLocation() {
-        return hexLocation;
     }
 
     public void setHexLocation(String hexLocation) {

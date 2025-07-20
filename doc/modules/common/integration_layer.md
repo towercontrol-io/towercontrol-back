@@ -1,4 +1,18 @@
 ## Service Integration Layer
+
+The goal of the *integration* system is to enable communication between modules that may be distributed across multiple servers,
+using a shared medium such as a **database** or an **MQTT broker** or in **memory** in single instance mode. This setup ensures
+that when one module needs to perform an update or trigger a resynchronization, other modules can be notified accordingly and take
+the appropriate action.
+
+The *integration* service allow to broadcast a communication from one instance of a service to
+the other instances of that service.
+
+The implementation of this service can be made with the MongoDB shared database or with a message queue
+broker like mosquitto or in memory Queue when the system dioes not have multiple instances. 
+In the current implementation only memory is implemented. The selection is indicated by the
+following configuration lines in the configuration file:
+
 The service integration layer allows communication between service and 
 between instances of services. This is a common interface, integrated to all the 
 services and not a specific service. It manages the communications using different 
@@ -18,6 +32,7 @@ Messages and responses are encapsulated into a common message.
     'queryId': String,                    // Uid of the message to link with response
     'serviceNameSource' : QueryService,   // Service name for the source related to package (users)
     'serviceNameDest': QueryService,      // Service name for the destination (users)
+    'route': QueryRoute,                  // Route to use for the message, db, memory, mqtt, based on service config
     'type': QueryType,                    // Query type, fire & forget, broadcast, async, sync...
     'action' : number,                    // Query action, value depends on services
     'query': object,                      // Query parameters as an Object depending on oction
@@ -27,7 +42,8 @@ Messages and responses are encapsulated into a common message.
                                           // Query access request parallelism support
     'query_ts' : number,                  // Query start time ref, structure creation in ns
     'response_ts' : number,               // Response time ref, in ns
-    'query_ms' : number                   // Query timestamp in ms for timeout
+    'query_ms' : number,                  // Query timestamp in ms for timeout
+    'timout_ms': number                   // Timeout (duration) in ms for the query
 }
 ```
 

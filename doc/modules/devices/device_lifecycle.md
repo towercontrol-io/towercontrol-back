@@ -19,10 +19,12 @@ In the case of a replay, it is crucial to ensure the correct state is identified
 - **Activated**: The device is activated on the communication networks and able to send data
 - **Open**: The device data can flow into the platform
 
-- **Upgradable**: The device can be upgraded to a new version
-- **Upgraded**: The device has been upgraded to a new version - this is an acknowledgeable state
-- **Configurable**: The device have a new configuration pending
-- **Configured**: The device configuration has been applied - this is an acknowledgeable state
+- The following states are cumulative, so we use state **action pending** and state **action done** and the aplication
+will manage the different situations.
+  - **Upgradable**: The device can be upgraded to a new version
+  - **Upgraded**: The device has been upgraded to a new version - this is an acknowledgeable state
+  - **Configurable**: The device have a new configuration pending
+  - **Configured**: The device configuration has been applied - this is an acknowledgeable state
 
 - **Defective**: The device is defective and need to be replaced.
 - **Lost**: The device is lost.

@@ -129,11 +129,25 @@ public class Now {
         return formatter.format(instant);
     }
 
+    public static String formatToYYYYMMDDHHMMSSUtc(long t) {
+        Instant instant = Instant.ofEpochMilli(t);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+                .withZone(ZoneId.of("UTC"));
+        return formatter.format(instant);
+    }
+
     /**
      * Sleep for ms
      * @param ms
      */
     public static void sleep(long ms) {
+        try {
+            Thread.sleep(ms);
+        } catch ( InterruptedException x ) {};
+    }
+
+    public static void randomSleep(long min, long max) {
+        long ms = min + (long)(Math.random() * (max - min));
         try {
             Thread.sleep(ms);
         } catch ( InterruptedException x ) {};

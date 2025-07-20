@@ -1,0 +1,5 @@
+# Manage inside Java
+db.adminCommand( { shardCollection: "itc.qc_device_batlevel", key: {publicKey : 1, id : 1} } )
+db.adminCommand( { shardCollection: "itc.qc_device_positions", key: {publicKey : 1, id : 1} } )
+db.adminCommand( { shardCollection: "itc.qc_device_restart", key: {publicKey : 1, id : 1} } )
+db.adminCommand( { shardCollection: "itc.qc_device_version", key: {publicKey : 1, id : 1} } )

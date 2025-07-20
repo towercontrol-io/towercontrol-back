@@ -6,6 +6,7 @@ import com.disk91.users.config.UsersConfig;
 import com.disk91.users.mdb.entities.Role;
 import com.disk91.users.mdb.repositories.RolesRepository;
 import com.disk91.users.services.UsersRolesCache;
+import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -16,18 +17,22 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration;
 import org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
-@SpringBootTest
+//@SpringBootTest(classes = IotApplication.class)
 @Import(UsersConfig.class)
 @EnableAutoConfiguration(exclude={MongoAutoConfiguration.class, MongoDataAutoConfiguration.class})
 @ExtendWith(MockitoExtension.class)
+@ActiveProfiles("test")
+@PropertySource(value = {"file:configuration/common-test.properties"}, ignoreResourceNotFound = true)
+@AutoConfigureEmbeddedDatabase
 public class RoleTests {
 
     private final Logger log = LoggerFactory.getLogger(this.getClass());

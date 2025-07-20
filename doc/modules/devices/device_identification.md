@@ -1,13 +1,30 @@
 ## Device identification
 
-A device can support different kind of identifications based on the context. The following identifications can be used:
-- **Device Hw Unique Id**: The device hardware unique id is a unique identifier for the device 
-in the platform ; it matches one-to-one with a hardware device.
-- **Device Data Unique Id**: The Data unique id is an identifier for the data provided by a device into the platform.
-The purpose is to manage a single dataset when a hardware device is swapped with another (replacement case). This allows
-to maintain a continuity of the data all along the device life-cycle. When the device is re-affected to another customer,
-the Data Unique Id is preserved for letting the user access it's previous data but detached from the device. This is the ID 
-manipulated by the user.
-- **Communication IDs**: This is an array of set of communication IDS. A single device can have different communication IDS as 
-it can support multiple communications technologies and / or operators. These credential are affected at different stages. 
-This information is used to route the information from the capture interfaces to the right device data.
+A device will use many identifiers depending on the use cases and to account for the various situations it may encounter:
+
+### Logical Identification
+
+- **Device Id**: The device id is a unique identifier for the device in the platform; it is a *randomly* generated ID that
+will be unique for each device structure. It is the primary key to use for interacting with the APIs.
+- **Public Id**: This is a random key that can be generated to make this object publicly accessible to anyone who knows 
+this key. For example, to track a package, the user can know this key (tracking number) which allows them to access the 
+data of this specific object.
+- **Hardware Id**: This is an identification associated with the object, hardware-related, and can be used to search for
+it. It can be a MAC address, a Sigfox ID, or something else. An object can have multiple hardware identifiers.
+- **Near Field Id**: This is an identification associated with the object that will be easily manipulated by the user, 
+for example, for onboarding, a QR code, an NFC ID, or RFID; it is randomly generated or assigned during the manufacturing process.
+- **Customer Id**: This is a business-related identification, assigned by the user, for example, an order number or an 
+ID from another system.
+- **Data Stream Id**: This identifier links to a data stream, aiming to decouple the data from the physical object. This way, 
+it is possible to clean the data of an object without necessarily deleting it, or to link data even if the object has been 
+replaced. This is useful in case of failure, for example.
+- **Onboarding Id**: This identifier is used to associate the object during onboarding. Unlike the near field id, this 
+onboarding ID is considered a secret, a random value that only the person holding the object can know. This secures 
+the ownership of the object. Generally, after use, this code is changed and will be required to reassign ownership to another user.
+- **Family Id**: This identifier refers to a family of objects, a free field used to identify the type of object and the 
+common behaviors associated with it. It can be a string giving the name of the object or an ID corresponding to a 
+specific entity with its own attributes, usable in other modules.
+- **Communication Ids**: This is a set of elements enabling communication and network management. For example, on Sigfox, 
+you will find the devId and the PAC; on LoRaWan, the deveui, appeui, appkey, etc.
+
+

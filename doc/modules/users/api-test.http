@@ -1,0 +1,145 @@
+### ###########################################################
+### USER MANAGEMENT API USAGE EXEMPLE
+
+### ------------------------------------
+### Step 0 : Environment Variables to setup
+
+@apiserver=http://localhost:8091
+@userEmail=john.doe@foo.bar
+
+### ------------------------------------
+### Step 1: User Registration request 
+### Register a user
+POST {{apiserver}}/users/1.0/registration/register
+Content-Type: application/json
+
+{
+  "email" : "{{userEmail}}",
+  "registrationCode" : ""
+}
+
+### ------------------------------------
+### Step 2: get the validationID from the email or the database
+
+@validationID=982B80AB8EBB12C779D698EB389E9AE0FAEA02CD983E2BDB3A40A86C570C090D48253DBE86E5D3EF254FC371D3C1834B62980C821ABF21B27CB1832D3E8DB6AD
+
+
+
+### Create the user
+POST {{apiserver}}/users/1.0/creation/create
+Content-Type: application/json
+
+{
+  "email" : "{{userEmail}}",
+  "password" : "changeme",
+  "conditionValidation" : true,
+  "validationID" : "{{validationID}}"
+}
+
+### ------------------------------------
+### Step 3: Sign in
+
+POST {{apiserver}}/users/1.0/session/signin
+Content-Type: application/json
+
+{
+  "email" : "{{userEmail}}",
+  "password" : "changeme"
+}
+
+### Get token and login from the reponse
+@jwtToken=eyJ0eXAiOiJKV1QiLCJzdWIiOiI5NjhBMDQ5NDgwMDU3RTRFREU2NjdERkZERTBERTUzRENBRDUyMjlGNEZFQTI5QkUzMjRGQjIyOThDNTNCMEIxIiwiYWxnIjoiSFM1MTIifQ.eyJzdWIiOiI5NjhBMDQ5NDgwMDU3RTRFREU2NjdERkZERTBERTUzRENBRDUyMjlGNEZFQTI5QkUzMjRGQjIyOThDNTNCMEIxIiwiZXhwIjoxNzQ2MDQyMTY0LCJyb2xlcyI6WyJST0xFX0xPR0lOXzFGQSIsIlJPTEVfUkVHSVNURVJFRF9VU0VSIl19.YE-_pGmTFIFxccjv0BSnx1bhi_fzVEZdLXdMgocZGnvWQWURDrwY-ic9PFUxoBCeQSMOoznwMpEELiclyyPC3Q
+
+@login=968A049480057E4EDE667DFFDE0DE53DCAD5229F4FEA29BE324FB2298C53B0B1
+
+
+### ------------------------------------
+### Step 4 : Get user basic informations
+GET {{apiserver}}/users/1.0/profile/basic
+Authorization: Bearer {{jwtToken}}
+
+### -------------------------------------
+### Step 5 : Password change
+PUT {{apiserver}}/users/1.0/profile/password/change
+Authorization: Bearer {{jwtToken}}
+Content-Type: application/json
+
+{
+  "password" : "changeme2",
+  "changeKey" : ""
+}
+
+### -------------------------------------
+### Step 6 : Login new password
+POST {{apiserver}}/users/1.0/session/signin
+Content-Type: application/json
+
+{
+  "email" : "{{userEmail}}",
+  "password" : "changeme2"
+}
+
+### -------------------------------------
+### Step 7 : Password Lost Reset
+
+POST {{apiserver}}/users/1.0/profile/password/request
+Content-Type: application/json
+
+{
+  "email" : "{{userEmail}}"
+}
+
+### Get the lost password ID from the email or the database
+@lostPasswordID=782E2E1DFCE6D06C66BEDBB70B0112400324AEC014356889C67A7426A3093FF57B30028E5DBF9EBA3F49953092140D90439BA3703467358278DA24891D0D5B3C
+
+### -------------------------------------
+### Step 8 : Lost password reset
+PUT {{apiserver}}/users/1.0/profile/password/reset
+Content-Type: application/json
+
+{
+  "password" : "changeme",
+  "changeKey" : "{{lostPasswordID}}"
+}
+
+### -------------------------------------
+### Step 9 : Logout the user
+GET {{apiserver}}/users/1.0/session/signout
+Authorization: Bearer {{jwtToken}}
+
+### -------------------------------------
+### Step 9bis : Verify the user can't access the API anymore
+GET {{apiserver}}/users/1.0/profile/basic
+Authorization: Bearer {{jwtToken}}
+
+### ---------------------------------------
+### Step 10 : Validate the user condition
+PUT {{apiserver}}/users/1.0/profile/eula
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+
+### -------------------------------------
+### Step 10bis : Upgrade a session to get a new JWT token with condition validation
+GET {{apiserver}}/users/1.0/session/upgrade
+Authorization: Bearer {{jwtToken}}
+
+### Udate the JWT token with the new one
+@jwtToken2=eyJ0eXAiOiJKV1QiLCJzdWIiOiI5NjhBMDQ5NDgwMDU3RTRFREU2NjdERkZERTBERTUzRENBRDUyMjlGNEZFQTI5QkUzMjRGQjIyOThDNTNCMEIxIiwiYWxnIjoiSFM1MTIifQ.eyJzdWIiOiI5NjhBMDQ5NDgwMDU3RTRFREU2NjdERkZERTBERTUzRENBRDUyMjlGNEZFQTI5QkUzMjRGQjIyOThDNTNCMEIxIiwiZXhwIjoxNzQ2MDQ0OTkxLCJyb2xlcyI6WyJST0xFX0xPR0lOXzFGQSIsIlJPTEVfTE9HSU5fQ09NUExFVEUiLCJST0xFX1BFTkRJTkdfVVNFUiIsIlJPTEVfUkVHSVNURVJFRF9VU0VSIl19.T2W1lHijCArzqT8BnDLETnlRp1OgY-7SXAS0sZK5BYz6n0-aiHyjlqQVs2Rv9GuXL1wP8c2f70iursRL-YhQaA
+
+### -------------------------------------
+### Step 11 : Enable the 2FA with the TOTP
+PUT {{apiserver}}/users/1.0/profile/2fa
+Content-Type: application/json
+Authorization: Bearer {{jwtToken2}}
+
+{
+  "twoFaMethod" : 3
+}
+
+### Generate a QR code from the given secret and scan it with the Google Authenticator
+
+### -------------------------------------
+### Step 12 : Verify the 2FA code
+GET {{apiserver}}/users/1.0/session/2fa?secondFactor=123456
+Authorization: Bearer {{jwtToken2}}

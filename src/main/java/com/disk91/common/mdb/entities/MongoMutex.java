@@ -29,7 +29,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "it_mutex")
 @CompoundIndexes({
-    @CompoundIndex(name = "mutexId", def = "{'login': 'hashed'}", unique = false),
+    @CompoundIndex(name = "commonIdx_mutexId", def = "{'login': 1}"),
 })
 public class MongoMutex {
 

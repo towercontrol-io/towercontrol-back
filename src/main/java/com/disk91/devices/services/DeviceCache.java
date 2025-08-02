@@ -154,7 +154,7 @@ public class DeviceCache {
     }
 
     /**
-     * Search a device with the data stream Id and strore in the cache if not already
+     * Search a device with the data stream Id and store in the cache if not already
      * This will query the database on every call as the cache is based on the Id
      * @param streamId
      * @return
@@ -166,7 +166,7 @@ public class DeviceCache {
         if (!this.serviceEnable || deviceConfig.getDevicesCacheMaxSize() == 0) {
             for ( Device device : devices ) {
                 Device u = this.devicesCache.get(device.getId());
-                if (u == null) {
+                if (u != null) {
                     this.devicesCache.put(u, u.getId());
                 }
             }

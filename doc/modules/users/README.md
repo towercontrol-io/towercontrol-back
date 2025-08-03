@@ -21,7 +21,8 @@ A user can be created manually by an administrator or after a self registration.
       registration request is stored in a pending table. When `users.registration.with.invitecode` is set to true, the user must provide
       an invitation code to register. The email address is verified and filtered (see user creation security)
     - when `user.registration.link.byemail` is true, a confirmation email is sent to the user with a secret to validate and create the user. The expiration time for the invitation code
-      is defined by `users.registration.link.expiration` parameter in seconds.
+      is defined by `users.registration.link.expiration` parameter in seconds. The email contains a link to the front-end validation page defined by `user.registration.path` parameter, 
+      when this parameter is empty, the validation code will be sent directly.
     - Following the confirmation email, the user sets the minimal information (passwords, condition validation eventually), to create the user structure and assign
       the `ROLE_PENDING_USER` role. The user condition is set with the parameter (db) `users.condition.version` when existing and set in body ; parameter `users.creation.need.eula`
       force the user condition (eula) validation for the user creation.

@@ -171,14 +171,23 @@ public class UserRegistrationService {
 
         userRegistrationRepository.save(ur);
         if (usersConfig.isUserRegistrationLinkByEmail()) {
-            String _path = usersConfig.getUserRegistrationPath().replace("!0!", ur.getValidationId());
-            String _link = commonConfig.getCommonServiceUrl(_path, true);
-
             Locale locale = emailTools.extractLocale(req, Locale.forLanguageTag(commonConfig.getCommonLangDefault()));
-            Object[] args = { commonConfig.getCommonServiceName(), _link };
-            String _subject = userMessages.messageSource().getMessage("users.messages.registration.subject", args, locale);
-            String _body = userMessages.messageSource().getMessage("users.messages.registration.body", args, locale);
-            emailTools.send(body.getEmail(), _body, _subject, commonConfig.getCommonMailSender());
+            // In case the registration path is empty, the validation code is directly printed in the email, in the other case,
+            // the email contains the link to the frontend.
+            if ( usersConfig.getUserRegistrationPath().isEmpty() ) {
+                Object[] args = {commonConfig.getCommonServiceName(), ur.getValidationId()};
+                String _subject = userMessages.messageSource().getMessage("users.messages.registration.subject", args, locale);
+                String _body = userMessages.messageSource().getMessage("users.messages.registration.code.body", args, locale);
+                emailTools.send(body.getEmail(), _body, _subject, commonConfig.getCommonMailSender());
+            } else {
+                String _path = usersConfig.getUserRegistrationPath().replace("!0!", ur.getValidationId());
+                String _link = commonConfig.getCommonServiceUrl(_path, true);
+
+                Object[] args = {commonConfig.getCommonServiceName(), _link};
+                String _subject = userMessages.messageSource().getMessage("users.messages.registration.subject", args, locale);
+                String _body = userMessages.messageSource().getMessage("users.messages.registration.body", args, locale);
+                emailTools.send(body.getEmail(), _body, _subject, commonConfig.getCommonMailSender());
+            }
         }
         Now.randomSleep(50, 250);
 

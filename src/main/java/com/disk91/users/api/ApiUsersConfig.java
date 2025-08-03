@@ -49,7 +49,7 @@ public class ApiUsersConfig {
             }
     )
     @RequestMapping(
-            value = "/",
+            value = "",
             produces = "application/json",
             method = RequestMethod.GET
     )

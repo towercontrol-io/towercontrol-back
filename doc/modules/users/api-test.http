@@ -143,3 +143,7 @@ Authorization: Bearer {{jwtToken2}}
 ### Step 12 : Verify the 2FA code
 GET {{apiserver}}/users/1.0/session/2fa?secondFactor=123456
 Authorization: Bearer {{jwtToken2}}
+
+
+### Get the user module configuration for front-end
+GET {{apiserver}}/users/1.0/config

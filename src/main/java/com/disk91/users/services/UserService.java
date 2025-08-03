@@ -30,6 +30,7 @@ import com.disk91.common.tools.Now;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITRightException;
+import com.disk91.users.api.interfaces.UserConfigResponse;
 import com.disk91.users.api.interfaces.UserLoginBody;
 import com.disk91.users.api.interfaces.UserLoginResponse;
 import com.disk91.users.api.interfaces.UserTwoFaResponse;
@@ -797,6 +798,20 @@ public class UserService {
         return false;
     }
 
-
+    /**
+     * Get the configuration of the user module to apply on the frontend behavior
+     */
+    protected UserConfigResponse userConfigResponse = null;
+    public UserConfigResponse getUserModuleConfig() {
+        if ( userConfigResponse == null ) {
+            userConfigResponse = new UserConfigResponse();
+            userConfigResponse.setAutoValidation(usersConfig.isUsersPendingAutoValidation());
+            userConfigResponse.setEulaRequired(usersConfig.isUsersCreationNeedEula());
+            userConfigResponse.setInvitationCodeRequired(usersConfig.isUsersRegistrationWithInviteCode());
+            userConfigResponse.setSelfRegistration(usersConfig.isUsersRegistrationSelf());
+            userConfigResponse.setRegistrationLinkByEmail(usersConfig.isUserRegistrationLinkByEmail());
+        }
+        return userConfigResponse;
+    }
 
 }

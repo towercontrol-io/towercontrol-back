@@ -60,6 +60,8 @@ public class UsersSecurityProfile {
                         // Allow password reset link
                         .requestMatchers("/users/1.0/profile/password/reset").permitAll()
                         .requestMatchers("/users/1.0/profile/password/request").permitAll()
+                        // Allow user config api
+                        .requestMatchers("/users/1.0/config").permitAll()
                         // Others
                         .anyRequest().authenticated()
                 );

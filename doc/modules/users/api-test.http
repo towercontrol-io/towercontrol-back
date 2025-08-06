@@ -54,7 +54,7 @@ Content-Type: application/json
 
 
 ### ------------------------------------
-### Step 4 : Get user basic informations
+### Step 4 : Get user basic information
 GET {{apiserver}}/users/1.0/profile/basic
 Authorization: Bearer {{jwtToken}}
 

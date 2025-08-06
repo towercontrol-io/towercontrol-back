@@ -19,6 +19,7 @@
  */
 package com.disk91.users.api.interfaces;
 
+import com.disk91.users.mdb.entities.sub.TwoFATypes;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
@@ -74,6 +75,19 @@ public class UserLoginResponse {
     )
     protected boolean twoFARequired;
 
+    @Schema(
+            description = "The 2FA expected code size, this helps the front-end to display the right input field",
+            example = "6",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    protected int twoFASize;
+
+    @Schema(
+            description = "The 2FA type, this helps the front-end to display the right information",
+            example = "AUTHENTICATOR",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    protected TwoFATypes twoFAType;
 
 
     // ==========================
@@ -134,5 +148,21 @@ public class UserLoginResponse {
 
     public void setJwtRenewalToken(String jwtRenewalToken) {
         this.jwtRenewalToken = jwtRenewalToken;
+    }
+
+    public int getTwoFASize() {
+        return twoFASize;
+    }
+
+    public void setTwoFASize(int twoFASize) {
+        this.twoFASize = twoFASize;
+    }
+
+    public TwoFATypes getTwoFAType() {
+        return twoFAType;
+    }
+
+    public void setTwoFAType(TwoFATypes twoFAType) {
+        this.twoFAType = twoFAType;
     }
 }

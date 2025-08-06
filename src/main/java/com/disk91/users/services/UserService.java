@@ -33,7 +33,6 @@ import com.disk91.common.tools.exceptions.ITRightException;
 import com.disk91.users.api.interfaces.UserConfigResponse;
 import com.disk91.users.api.interfaces.UserLoginBody;
 import com.disk91.users.api.interfaces.UserLoginResponse;
-import com.disk91.users.api.interfaces.UserTwoFaResponse;
 import com.disk91.users.config.ActionCatalog;
 import com.disk91.users.config.UserMessages;
 import com.disk91.users.config.UsersConfig;
@@ -199,6 +198,12 @@ public class UserService {
             response.setPasswordExpired( u.getExpiredPassword() > 0 && u.getExpiredPassword() < Now.NowUtcMs() );
             response.setConditionToValidate(( p != null && !p.getStringValue().isEmpty() && u.getConditionValidationVer().compareTo(p.getStringValue()) != 0 ));
             response.setTwoFARequired( u.getTwoFAType() != TwoFATypes.NONE );
+            response.setTwoFAType(u.getTwoFAType());
+            switch (u.getTwoFAType()) {
+                case NONE -> response.setTwoFASize(0); // no 2FA
+                case SMS -> response.setTwoFASize(4); // 2FA code is 4 bytes long
+                case EMAIL,AUTHENTICATOR -> response.setTwoFASize(6); // Authenticator code is 6 bytes long
+            }
 
             // Generate the Role list based on the user roles & status
             ArrayList<String> roles = new ArrayList<>();
@@ -323,6 +328,12 @@ public class UserService {
             response.setPasswordExpired( u.getExpiredPassword() > 0 && u.getExpiredPassword() < Now.NowUtcMs() );
             response.setConditionToValidate(( p != null && !p.getStringValue().isEmpty() && u.getConditionValidationVer().compareTo(p.getStringValue()) != 0 ));
             response.setTwoFARequired( u.getTwoFAType() != TwoFATypes.NONE );
+            response.setTwoFAType(u.getTwoFAType());
+            switch (u.getTwoFAType()) {
+                case NONE -> response.setTwoFASize(0); // no 2FA
+                case SMS -> response.setTwoFASize(4); // 2FA code is 4 bytes long
+                case EMAIL,AUTHENTICATOR -> response.setTwoFASize(6); // Authenticator code is 6 bytes long
+            }
 
             // Generate the Role list based on the user roles & status
             ArrayList<String> roles = new ArrayList<>();

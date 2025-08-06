@@ -69,6 +69,9 @@ public class CommonSecurityProfile {
                         // prometheus
                         .requestMatchers("/actuator/**").permitAll()
 
+                        // Allow all OPTIONS requests
+                        .requestMatchers(HttpMethod.OPTIONS).permitAll()
+
                         // Authenticate all other apis
                         .anyRequest().authenticated()
                 );

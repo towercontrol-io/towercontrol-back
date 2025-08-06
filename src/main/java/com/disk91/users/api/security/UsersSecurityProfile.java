@@ -27,6 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
@@ -62,6 +63,8 @@ public class UsersSecurityProfile {
                         .requestMatchers("/users/1.0/profile/password/request").permitAll()
                         // Allow user config api
                         .requestMatchers("/users/1.0/config").permitAll()
+                        // Allow all OPTIONS requests
+                        .requestMatchers(HttpMethod.OPTIONS).permitAll()
                         // Others
                         .anyRequest().authenticated()
                 );

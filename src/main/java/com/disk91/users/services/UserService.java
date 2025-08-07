@@ -199,6 +199,7 @@ public class UserService {
             response.setConditionToValidate(( p != null && !p.getStringValue().isEmpty() && u.getConditionValidationVer().compareTo(p.getStringValue()) != 0 ));
             response.setTwoFARequired( u.getTwoFAType() != TwoFATypes.NONE );
             response.setTwoFAType(u.getTwoFAType());
+            response.setTwoFAValidated(false);
             switch (u.getTwoFAType()) {
                 case NONE -> response.setTwoFASize(0); // no 2FA
                 case SMS -> response.setTwoFASize(4); // 2FA code is 4 bytes long
@@ -225,6 +226,14 @@ public class UserService {
                         String _subject = userMessages.messageSource().getMessage("users.messages.2fa.email.subject", args, locale);
                         String _body = userMessages.messageSource().getMessage("users.messages.2fa.email.body", args, locale);
                         emailTools.send(body.getEmail(), _body, _subject, commonConfig.getCommonMailSender());
+                        userCache.saveUser(u);
+                    }
+                    case SMS -> {
+                        // create a random hex string 4 bytes long
+                        String code = HexCodingTools.getRandomHexString(4);
+                        u.setEncTwoFASecret(Now.NowUtcMs()+"-"+code);   // store the time to manage timeout on code.
+                        // Send an SMS with this string
+                        // @TODO - send SMS with the code
                         userCache.saveUser(u);
                     }
                 }
@@ -329,10 +338,11 @@ public class UserService {
             response.setConditionToValidate(( p != null && !p.getStringValue().isEmpty() && u.getConditionValidationVer().compareTo(p.getStringValue()) != 0 ));
             response.setTwoFARequired( u.getTwoFAType() != TwoFATypes.NONE );
             response.setTwoFAType(u.getTwoFAType());
+            response.setTwoFAValidated(false); // default value, will be set to true if the 2FA is ok
             switch (u.getTwoFAType()) {
                 case NONE -> response.setTwoFASize(0); // no 2FA
-                case SMS -> response.setTwoFASize(4); // 2FA code is 4 bytes long
-                case EMAIL,AUTHENTICATOR -> response.setTwoFASize(6); // Authenticator code is 6 bytes long
+                case EMAIL,SMS -> response.setTwoFASize(4); // 2FA code is 4 hexString long
+                case AUTHENTICATOR -> response.setTwoFASize(6); // Authenticator code is 6 bytes long
             }
 
             // Generate the Role list based on the user roles & status
@@ -343,36 +353,45 @@ public class UserService {
                 // 2FA Mechanism is active, verify the code
                 switch ( u.getTwoFAType() ) {
                     case EMAIL, SMS -> {
-                        String [] codes = u.getEncTwoFASecret().split("-");
-                        if ( codes.length != 2 ) {
-                            log.error("[users] Internal failure, 2FA code format");
-                            throw new ITParseException("user-upgrade-internal-2fa-code");
-                        }
-                        long time = Long.parseLong(codes[0]);
                         if (     twoFaCode != null              // we have a code provided
                              && !twoFaCode.isEmpty()            // not empty
-                             && (time + usersConfig.getUserSession2faTimeoutSec()*1000) > Now.NowUtcMs() // in the validity period
-                             && twoFaCode.equals(codes[1])      // with a correct value
+                             && this.isTOTPCodeValid(u,twoFaCode)      // with a correct value
                         ) {
                             // The 2FA code is Validated
                             roles.add(UsersRolesCache.StandardRoles.ROLE_LOGIN_2FA.getRoleName());
+                            response.setTwoFAValidated(true);
                             sessionOk = true;
                         } else if ( twoFaCode != null              // we have a code provided
                                 && !twoFaCode.isEmpty()            // not empty
-                                && (time + usersConfig.getUserSession2faTimeoutSec()*1000) > Now.NowUtcMs() // in the validity period
-                                && !twoFaCode.equals(codes[1])     // with a wrong value
                         ) {
                             // this can be a brute force attack
                             this.registerFailure(u,(req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown");
                         }
                     }
                     case AUTHENTICATOR -> {
-                        // @TODO
+                        if (    twoFaCode != null                       // a code is provided
+                             && twoFaCode.length() == 6                 // the size is correct
+                             && twoFaCode.matches("[0-9]+")       // only digits
+                             && this.isTOTPCodeValid(u, twoFaCode)      // the code is the right one
+                        ) {
+                            // The 2FA code is Validated
+                            roles.add(UsersRolesCache.StandardRoles.ROLE_LOGIN_2FA.getRoleName());
+                            response.setTwoFAValidated(true);
+                            sessionOk = true;
+                        } else if (    twoFaCode != null                       // a code is provided
+                                && twoFaCode.length() == 6                     // the size is correct
+                                && twoFaCode.matches("[0-9]+")           // only digits
+                        ) {
+                            // Even if the code is rolling, we can imagine someone trying to brute force the code
+                            // in the limited amount of time the code is valid.
+                            this.registerFailure(u,(req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown");
+                        }
                     }
                 }
             } else if ( has2fa ) {
                 // 2FA already validated
                 roles.add(UsersRolesCache.StandardRoles.ROLE_LOGIN_2FA.getRoleName());
+                response.setTwoFAValidated(true);
             } else {
                 // 2FA, not required
                 sessionOk = true;
@@ -394,7 +413,7 @@ public class UserService {
                 response.setJwtRenewalToken(this.generateJWTForUser(u,roles,false,true));
                 response.setJwtToken(this.generateJWTForUser(u, roles, false,false));
             } else {
-                // Missing 2FA, renew the 2FA Tokens, that's it
+                // Missing 2FA, renew the 1FA Tokens, that's it
                 response.setJwtRenewalToken(this.generateJWTForUser(u,roles,true,true));
                 response.setJwtToken(this.generateJWTForUser(u, roles, true,false));
             }
@@ -538,18 +557,33 @@ public class UserService {
 
     }
 
+    /**
+     * Check the TOTP code, return true when the code is valid.
+     * @param u
+     * @param code
+     * @return
+     */
     public boolean isTOTPCodeValid(User u, String code) {
         switch ( u.getTwoFAType() ) {
-            case EMAIL ->{
+            case EMAIL, SMS ->{
                 try {
-                    return code.equals(u.getEncTwoFASecret());
-                } catch (ITParseException e) {
-                    log.error("[users] Internal failure, 2FA code format invalid");
+                    String[] codes = u.getEncTwoFASecret().split("-");
+                    if (codes.length != 2) {
+                        log.error("[users] Internal failure, 2FA code format");
+                        return false;
+                    }
+                    long time = Long.parseLong(codes[0]);
+                    if (code != null               // we have a code provided
+                            && !code.isEmpty()            // not empty
+                            && (time + usersConfig.getUserSession2faTimeoutSec() * 1000) > Now.NowUtcMs() // in the validity period
+                            && code.equals(codes[1])      // with a correct value
+                    ) {
+                        return true; // The 2FA code is Validated
+                    }
+                } catch (ITParseException x) {
+                    log.error("[users] Internal failure, 2FA code format in invalid");
                     return false;
                 }
-            }
-            case SMS ->{  // @TODO not supported yet
-                return true;
             }
             case AUTHENTICATOR -> {
                 try {

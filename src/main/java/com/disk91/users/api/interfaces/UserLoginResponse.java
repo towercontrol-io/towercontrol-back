@@ -76,6 +76,14 @@ public class UserLoginResponse {
     protected boolean twoFARequired;
 
     @Schema(
+            description = "First and Second authentication factor is ok",
+            example = "true",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    protected boolean twoFAValidated;
+
+
+    @Schema(
             description = "The 2FA expected code size, this helps the front-end to display the right input field",
             example = "6",
             requiredMode = Schema.RequiredMode.REQUIRED
@@ -164,5 +172,13 @@ public class UserLoginResponse {
 
     public void setTwoFAType(TwoFATypes twoFAType) {
         this.twoFAType = twoFAType;
+    }
+
+    public boolean isTwoFAValidated() {
+        return twoFAValidated;
+    }
+
+    public void setTwoFAValidated(boolean twoFAValidated) {
+        this.twoFAValidated = twoFAValidated;
     }
 }

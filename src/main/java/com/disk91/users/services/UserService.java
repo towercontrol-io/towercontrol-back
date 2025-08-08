@@ -855,6 +855,11 @@ public class UserService {
             userConfigResponse.setInvitationCodeRequired(usersConfig.isUsersRegistrationWithInviteCode());
             userConfigResponse.setSelfRegistration(usersConfig.isUsersRegistrationSelf());
             userConfigResponse.setRegistrationLinkByEmail(usersConfig.isUserRegistrationLinkByEmail());
+            userConfigResponse.setPasswordMinSize(usersConfig.getUsersPasswordMinSize());
+            userConfigResponse.setPasswordMinUpperCase(usersConfig.getUsersPasswordMinUppercase());
+            userConfigResponse.setPasswordMinLowerCase(usersConfig.getUsersPasswordMinLowercase());
+            userConfigResponse.setPasswordMinSymbols(usersConfig.getUsersPasswordMinSymbols());
+            userConfigResponse.setPasswordMinDigits(usersConfig.getUsersPasswordMinNumbers());
         }
         return userConfigResponse;
     }

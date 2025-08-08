@@ -60,6 +60,42 @@ public class UserConfigResponse {
     )
     protected boolean eulaRequired;
 
+
+    @Schema(
+            description = "Password minimum size",
+            example = "8",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    protected int passwordMinSize;
+
+    @Schema(
+            description = "Password minimum number of upper case characters",
+            example = "0",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    protected int passwordMinUpperCase;
+
+    @Schema(
+            description = "Password minimum number of lower case characters",
+            example = "0",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    protected int passwordMinLowerCase;
+
+    @Schema(
+            description = "Password minimum number of digit characters",
+            example = "0",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    protected int passwordMinDigits;
+
+    @Schema(
+            description = "Password minimum number of symbols characters",
+            example = "0",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    protected int passwordMinSymbols;
+
     // ==========================
     // Getters & Setters
 
@@ -102,5 +138,45 @@ public class UserConfigResponse {
 
     public void setEulaRequired(boolean eulaRequired) {
         this.eulaRequired = eulaRequired;
+    }
+
+    public int getPasswordMinSize() {
+        return passwordMinSize;
+    }
+
+    public void setPasswordMinSize(int passwordMinSize) {
+        this.passwordMinSize = passwordMinSize;
+    }
+
+    public int getPasswordMinUpperCase() {
+        return passwordMinUpperCase;
+    }
+
+    public void setPasswordMinUpperCase(int passwordMinUpperCase) {
+        this.passwordMinUpperCase = passwordMinUpperCase;
+    }
+
+    public int getPasswordMinLowerCase() {
+        return passwordMinLowerCase;
+    }
+
+    public void setPasswordMinLowerCase(int passwordMinLowerCase) {
+        this.passwordMinLowerCase = passwordMinLowerCase;
+    }
+
+    public int getPasswordMinDigits() {
+        return passwordMinDigits;
+    }
+
+    public void setPasswordMinDigits(int passwordMinDigits) {
+        this.passwordMinDigits = passwordMinDigits;
+    }
+
+    public int getPasswordMinSymbols() {
+        return passwordMinSymbols;
+    }
+
+    public void setPasswordMinSymbols(int passwordMinSymbols) {
+        this.passwordMinSymbols = passwordMinSymbols;
     }
 }

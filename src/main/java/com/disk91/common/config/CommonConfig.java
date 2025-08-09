@@ -99,7 +99,7 @@ public class CommonConfig {
         if (path.startsWith("/")) {
             path = path.substring(1);
         }
-        if ( isFront ) {
+        if ( !isFront ) {
             if ( this.getCommonServiceBackPort() > 0 ) {
                 return commonServiceBackBaseUrl + ":" + commonServiceBackPort + "/" + path;
             } else {

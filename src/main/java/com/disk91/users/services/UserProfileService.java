@@ -216,7 +216,7 @@ public class UserProfileService {
     protected UserCreationService userCreationService;
 
     /**
-     * Return user basic profile for a given user. Only Admin can access user information or you can access for yourself
+     * Change user password, as an admin or for yourself
      * @param requestor
      * @return
      */

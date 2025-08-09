@@ -25,6 +25,7 @@ import org.eclipse.angus.mail.smtp.SMTPSenderFailedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailAuthenticationException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -44,24 +45,31 @@ public class EmailTools {
     @Autowired
     private JavaMailSender sender;
 
+    @Value("${spring.mail.password:''}")
+    private String mailPassword;
+
     @Async
     public void send(String to, String text, String subject, String from) {
         text = text.replace("\\n","\n");
 
         try {
-            MimeMessage message = sender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message);
-            helper.setFrom(from);
-            helper.setTo(to);
-            helper.setText(text);
-            helper.setSubject(subject);
-            sender.send(message);
+            if ( mailPassword.compareToIgnoreCase("debug")==0 ) {
+                log.info("[common][email] Sending email to ({}) with subject ({}) and text ({})", to, subject, text);
+            } else {
+                MimeMessage message = sender.createMimeMessage();
+                MimeMessageHelper helper = new MimeMessageHelper(message);
+                helper.setFrom(from);
+                helper.setTo(to);
+                helper.setText(text);
+                helper.setSubject(subject);
+                sender.send(message);
+            }
         } catch ( MailAuthenticationException x ) {
             log.error("[common][email] Failed to send email, bad authentication - Make sure you setup email credentials");
         } catch ( SMTPSenderFailedException x) {
-            log.error("[common][email] Failed to send email, bad setting - "+x.getMessage());
+            log.error("[common][email] Failed to send email, bad setting - {}", x.getMessage());
         } catch (MessagingException e) {
-            log.error("[common][email] Impossible to send an email to ("+to+")");
+            log.error("[common][email] Impossible to send an email to ({})", to);
         }
     }
 

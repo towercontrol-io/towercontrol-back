@@ -26,7 +26,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public class UserAccountCreationBody {
 
     @Schema(
-            description = "Email for the account creation",
+            description = "Email for the account creation. In fact not used for self registration. Here for future usage.",
             example = "john.doe@foo.bar",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED
     )

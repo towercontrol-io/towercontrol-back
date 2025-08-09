@@ -57,7 +57,7 @@ public class EmailTools {
             helper.setSubject(subject);
             sender.send(message);
         } catch ( MailAuthenticationException x ) {
-            log.error("[common][email] Failed to send email, bad authentication - Make your your setup api credential");
+            log.error("[common][email] Failed to send email, bad authentication - Make sure you setup email credentials");
         } catch ( SMTPSenderFailedException x) {
             log.error("[common][email] Failed to send email, bad setting - "+x.getMessage());
         } catch (MessagingException e) {

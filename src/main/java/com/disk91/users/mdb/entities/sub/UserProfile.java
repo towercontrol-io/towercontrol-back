@@ -31,6 +31,7 @@ public class UserProfile implements CloneableObject<UserProfile> {
     // country (encrypted)
     private String country;
 
+    // Custom fields, contains key / value pairs, encrypted
     private ArrayList<CustomField> customFields;
 
     // === GETTER / SETTER ===

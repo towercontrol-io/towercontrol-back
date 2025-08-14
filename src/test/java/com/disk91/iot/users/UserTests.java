@@ -173,6 +173,12 @@ public class UserTests {
             user.setProfile(new UserProfile());
             user.setBillingProfile(new UserBillingProfile());
             user.setAlertPreference(new UserAlertPreference());
+            ArrayList<CustomField> customFields = new ArrayList<>();
+            CustomField cf = new CustomField();
+            cf.setName("mobile");
+            cf.setValue("0203040507");
+            customFields.add(cf);
+            user.setEncCustomFields(customFields);
 
             user.setEncProfileGender("Mr");
             user.setEncProfileFirstName("John");
@@ -182,8 +188,8 @@ public class UserTests {
             user.setEncProfileCity("Paris");
             user.setEncProfileCountry("France");
             user.setEncProfilePhone("0123456789");
-            ArrayList<CustomField> customFields = new ArrayList<>();
-            CustomField cf = new CustomField();
+            customFields = new ArrayList<>();
+            cf = new CustomField();
             cf.setName("mobile");
             cf.setValue("0203040506");
             customFields.add(cf);
@@ -224,6 +230,10 @@ public class UserTests {
         assertNotEquals("john.doe@foo.bar", user.getLogin());
         assertNotEquals("john.doe@foo.bar", user.getEmail());
         assertNotEquals("1.1.1.1", user.getRegistrationIP());
+        assertEquals(1, user.getCustomFields().size());
+        assertEquals("mobile", user.getCustomFields().getFirst().getName());
+        assertNotEquals("0203040507", user.getCustomFields().getFirst().getValue());
+
         assertNotEquals("Mr", user.getProfile().getGender());
         assertNotEquals("John", user.getProfile().getFirstName());
         assertNotEquals("Doe", user.getProfile().getLastName());
@@ -264,6 +274,9 @@ public class UserTests {
             assertNotEquals(user.getProfile().getFirstName(), encFirstName);
             assertNotEquals(user.getEmail(), encEmail);
             assertNotEquals(user.getProfile().getLastName(), encLastName);
+            assertEquals(1, user.getCustomFields().size());
+            assertEquals("mobile", user.getCustomFields().getFirst().getName());
+            assertEquals("0203040507", user.getEncCustomFields().getFirst().getValue());
 
             log.info("[users][test]  Verify rekeying");
             assertEquals("john.doe@foo.bar", user.getEncEmail());

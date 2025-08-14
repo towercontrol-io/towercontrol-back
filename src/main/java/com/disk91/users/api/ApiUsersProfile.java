@@ -200,7 +200,7 @@ public class ApiUsersProfile {
             summary = "User deletion request",
             description = "Request for user self deletion. The user account is logically deleted and the data access is locked. " +
                     "The user account will be physically deleted based on the purgatory parameter. It can be reactivated by the administator " +
-                    "during this period of time. User personnal data are all locked and will require user login to be reactivated.",
+                    "during this period of time. User personal data are all locked and will require user login to be reactivated.",
             responses = {
                     @ApiResponse(responseCode = "200", description = "User deleted", content = @Content(schema = @Schema(implementation = ActionResult.class))),
                     @ApiResponse(responseCode = "400", description = "Deletion failed", content = @Content(schema = @Schema(implementation = ActionResult.class)))

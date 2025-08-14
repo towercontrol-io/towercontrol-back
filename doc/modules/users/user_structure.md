@@ -77,7 +77,11 @@ The user data structure is defined as follows:
     "twoFAType": "enum",                // 2FA type (NONE, EMAIL, SMS, GAUTHENTICATOR)
     "twoFASecret": "string",            // 2FA secret key [Base64(encrypted)]
  
-    "lastComMessageSeen": "number"      // last communication message seen
+    "lastComMessageSeen": "number",     // last communication message seen
+    "customFields": [{                  // user custom fields
+        "name": "string",               // custom field key [clear]
+        "value": "string"               // custom field value [Base64(encrypted)]
+    }]
 }
 ```
 
@@ -136,4 +140,10 @@ The user can choose to use 2FA or not. If the user chooses to use 2FA, during th
 restricted to the second step FA with password. The `twoFASecret` field is used to store the secret key for the 2FA, 
 it can be the Authenticator secret or it can be the temporary code for the SMS or email.
 
-
+### Custom fields
+The structure contains several customizable fields that allow the structure to be extended. These can be 
+enriched by the frontend without interpretation by the standard backend, but can also be used by custom 
+backends that need extensions without modifying the standard structure.
+In the main structure at the root of the user, fields whose name starts with `basic_` are returned in
+the basic API. They are intended to store UI configuration information such as a theme color, a choice 
+for a dark mode ...

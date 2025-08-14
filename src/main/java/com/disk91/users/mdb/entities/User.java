@@ -155,6 +155,9 @@ public class User implements CloneableObject<User> {
     protected String twoFASecret;
     protected TwoFATypes twoFAType;
 
+    // Custom fields, contains key / value pairs, encrypted
+    private ArrayList<CustomField> customFields;
+
     // ================================================================================================
     // Get Group List ( another way to get acls but adding the virtual groups )
     // ================================================================================================
@@ -184,6 +187,68 @@ public class User implements CloneableObject<User> {
     // ================================================================================================
     // Helper for CustomFields (Profile & Billing)
     // ================================================================================================
+
+    /**
+     * Get the custom field value from root ; decrypt the value
+     * @param name
+     * @return
+     * @throws ITNotFoundException
+     * @throws ITParseException
+     */
+    public String getCustomFieldByName(String name) throws ITNotFoundException, ITParseException {
+        if ( this.getCustomFields() == null) throw new ITNotFoundException();
+        for ( CustomField cf : this.getCustomFields() ) {
+            if ( cf.getName().compareTo(name) == 0 ) return EncryptionHelper.decrypt(cf.getValue(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+        }
+        throw new ITNotFoundException();
+    }
+
+    /**
+     * Set the custom field value in the root, encrypt the value. If the value is null, remove the field
+     * @param name
+     * @param value
+     * @throws ITNotFoundException
+     * @throws ITParseException
+     */
+    public void upsertCustomFieldByName(String name, String value) throws ITParseException {
+        if ( this.getCustomFields() == null ) this.setCustomFields(new ArrayList<>());
+
+        if ( value == null) {
+            // remove the field
+            CustomField toRem = null;
+            for ( CustomField cf : this.getCustomFields() ) {
+                if ( cf.getName().compareTo(name) == 0 ) {
+                    toRem = cf;
+                    break;
+                }
+            }
+            if ( toRem != null ) this.getCustomFields().remove(toRem);
+        } else {
+            // search of it for upsert
+            for (CustomField cf : this.getCustomFields()) {
+                if (cf.getName().compareTo(name) == 0) {
+                    // found, update it or remove it
+                    cf.setValue(EncryptionHelper.encrypt(value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+                    return;
+                }
+            }
+            // not found, add it
+            CustomField cf = new CustomField();
+            cf.setName(name);
+            cf.setValue(EncryptionHelper.encrypt(value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+            this.getCustomFields().add(cf);
+        }
+    }
+
+    /**
+     * Delete a custom field from root, if the field does not exist, do nothing
+     * @param name
+     * @throws ITParseException
+     */
+    public void deleteCustomFieldByName(String name) throws ITParseException {
+        upsertCustomFieldByName(name, null);
+    }
+
 
     /**
      * Get the custom field value from the profile ; decrypt the value
@@ -388,6 +453,7 @@ public class User implements CloneableObject<User> {
                 // Decode all Data ...
                 String _email = ( this.email != null ) ? this.getEncEmail() : null;
                 String _getRegistrationIP = ( this.registrationIP != null ) ? this.getEncRegistrationIP() : null;
+                ArrayList<CustomField> _getCustomFields = (this.getCustomFields() != null )?this.getEncCustomFields():null;
                 String _getProfileGender = (this.profile.getGender() != null )? this.getEncProfileGender() : null;
                 String _getProfileFirstName = (this.profile.getFirstName() != null )? this.getEncProfileFirstName() :null;
                 String _getProfileLastName = (this.profile.getLastName() != null )?this.getEncProfileLastName() :null;
@@ -416,6 +482,7 @@ public class User implements CloneableObject<User> {
                 this.userSecret = HexCodingTools.bytesToHex(passwordHashForEncryption);
                 if ( _email != null) this.setEncEmail(_email);
                 if ( _getRegistrationIP != null) this.setEncRegistrationIP(_getRegistrationIP);
+                if ( _getCustomFields != null) this.setEncCustomFields(_getCustomFields);
                 if ( _getProfileGender != null) this.setEncProfileGender(_getProfileGender);
                 if ( _getProfileFirstName != null) this.setEncProfileFirstName(_getProfileFirstName);
                 if ( _getProfileLastName != null) this.setEncProfileLastName(_getProfileLastName);
@@ -533,6 +600,30 @@ public class User implements CloneableObject<User> {
      */
     public void setEncTwoFASecret(String _twoFASecret)  throws ITParseException {
         this.twoFASecret = EncryptionHelper.encrypt(_twoFASecret, IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+    }
+
+    public ArrayList<CustomField> getEncCustomFields() throws ITParseException {
+        ArrayList<CustomField> customFields = new ArrayList<>();
+        if ( this.customFields == null ) this.customFields = new ArrayList<>();
+        for ( CustomField cf : this.getCustomFields() ) {
+            CustomField _cf = new CustomField();
+            _cf.setName(cf.getName());
+            _cf.setValue(EncryptionHelper.decrypt(cf.getValue(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+            customFields.add(_cf);
+        }
+        return customFields;
+    }
+
+    public void setEncCustomFields(ArrayList<CustomField> _value)  throws ITParseException {
+        ArrayList<CustomField> customFields = new ArrayList<>();
+        if ( this.customFields == null ) this.customFields = new ArrayList<>();
+        for ( CustomField cf : _value ) {
+            CustomField _cf = new CustomField();
+            _cf.setName(cf.getName());
+            _cf.setValue(EncryptionHelper.encrypt(cf.getValue(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+            customFields.add(_cf);
+        }
+        this.setCustomFields(customFields);
     }
 
     // --------------------
@@ -828,6 +919,15 @@ public class User implements CloneableObject<User> {
         }
         u.setAcls(_acls);
 
+        // Create & copy Custom Fields
+        if (this.customFields != null) {
+            ArrayList<CustomField> cf = new ArrayList<>();
+            for (CustomField c : this.customFields) {
+                cf.add(c.clone());
+            }
+            u.setCustomFields(cf);
+        }
+
         u.setAlertPreference(this.alertPreference.clone());
         u.setProfile(this.profile.clone());
         u.setBillingProfile(this.billingProfile.clone());
@@ -1100,5 +1200,13 @@ public class User implements CloneableObject<User> {
 
     public void setDeletionDate(long deletionDate) {
         this.deletionDate = deletionDate;
+    }
+
+    public ArrayList<CustomField> getCustomFields() {
+        return customFields;
+    }
+
+    public void setCustomFields(ArrayList<CustomField> customFields) {
+        this.customFields = customFields;
     }
 }

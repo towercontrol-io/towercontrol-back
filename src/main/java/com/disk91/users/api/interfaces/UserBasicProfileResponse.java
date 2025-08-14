@@ -19,6 +19,8 @@
  */
 package com.disk91.users.api.interfaces;
 
+import com.disk91.common.tools.CustomField;
+import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.users.mdb.entities.User;
 import com.disk91.users.mdb.entities.sub.UserAcl;
@@ -96,6 +98,14 @@ public class UserBasicProfileResponse {
     )
     protected List<UserAcl> acls;
 
+    @Schema(
+            description = "List of profile custom fields starting by basic_ as a key, decrypted",
+            example = "[ { name : basic_xxx, value : xxxx }, ...  ]",
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED
+    )
+    protected List<CustomField> customFields;
+
+
     // ==========================
     // Build from User Object
     public void buildFromUser(User u) {
@@ -115,6 +125,16 @@ public class UserBasicProfileResponse {
         this.roles = new ArrayList<>(u.getRoles());
         this.lastComMessageSeen = u.getLastComMessageSeen();
         this.passwordExpirationMs = u.getExpiredPassword();
+        this.customFields = new ArrayList<>();
+        for ( CustomField cf : u.getCustomFields() ) {
+            if ( cf.getName().startsWith("basic_") ) {
+                try {
+                    this.customFields.add(u.getEncCustomField(cf.getName()));
+                } catch (ITParseException | ITNotFoundException x) {
+                    // In this case just not return the custom field, this should not happen btw
+                }
+            }
+        }
     }
 
 
@@ -192,5 +212,13 @@ public class UserBasicProfileResponse {
 
     public void setAcls(List<UserAcl> acls) {
         this.acls = acls;
+    }
+
+    public List<CustomField> getCustomFields() {
+        return customFields;
+    }
+
+    public void setCustomFields(List<CustomField> customFields) {
+        this.customFields = customFields;
     }
 }

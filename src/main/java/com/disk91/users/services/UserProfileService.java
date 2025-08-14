@@ -24,10 +24,7 @@ import com.disk91.common.config.CommonConfig;
 import com.disk91.common.config.ModuleCatalog;
 import com.disk91.common.pdb.entities.Param;
 import com.disk91.common.pdb.repositories.ParamRepository;
-import com.disk91.common.tools.EmailTools;
-import com.disk91.common.tools.HexCodingTools;
-import com.disk91.common.tools.Now;
-import com.disk91.common.tools.Tools;
+import com.disk91.common.tools.*;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITRightException;
@@ -141,6 +138,60 @@ public class UserProfileService {
             r.buildFromUser(_user);
             _user.cleanKeys();
             return r;
+
+        } catch (ITNotFoundException x) {
+            log.error("[users] Requestor does not exists", x);
+            throw new ITRightException("user-profile-user-not-found");
+        }
+    }
+
+    /**
+     * Upsert / Delete a customField for a user in the user profile section.
+     * When the value is empty, the custom field is deleted.
+     * @param requestor - who is requesting the upsert
+     * @param user - what user profile is updated
+     * @param body - list of expected modifications in the profile custom fields
+     * @throws ITRightException - when the modifications are not allowed
+     */
+    public void upsertUserProfileCustomFields(
+            String requestor,
+            String user,
+            UserProfileCustomFieldBody body
+    ) throws ITRightException {
+
+        try {
+            User _requestor = userCache.getUser(requestor);
+
+            if ( !this.isLegitAccessRead(_requestor,user,false) ) {
+                log.warn("[users] Requestor {} does not have access right to user {} profile", requestor, user);
+                throw new ITRightException("user-profile-no-access");
+            }
+
+            User _user = _requestor;
+            if ( requestor.compareTo(user) != 0 ) {
+                try {
+                    _user = userCache.getUser(user);
+                } catch (ITNotFoundException x){
+                    log.warn("[users] Searched user does not exists", x);
+                    throw new ITRightException("user-profile-user-not-found");
+                }
+            }
+            _user.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
+            boolean userObjectUpdated = false;
+            for (CustomField cf : body.getCustomFields()) {
+                try {
+                   if ( _user.upsertEncCustomField(cf) ) {
+                        userObjectUpdated = true; // at least one field has been updated
+                    }
+                } catch (ITParseException x) {
+                    // we don't know what to do, better skip this field
+                    log.warn("[users] Custom field {} generate a parsing error for user {}", cf.getName(), _user.getLogin());
+                }
+            }
+            // commit the user modification
+            if ( userObjectUpdated ) {
+                userCache.saveUser(_user);                      // save & flush caches
+            }
 
         } catch (ITNotFoundException x) {
             log.error("[users] Requestor does not exists", x);

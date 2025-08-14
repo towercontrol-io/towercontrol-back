@@ -71,6 +71,41 @@ public class ApiUsersProfile {
         }
     }
 
+    /**
+     * Upsert Custom Fields endpoint
+     *
+     * This endpoints allows to add a custom field to the user profile. When the field already exists, it is updated.
+     * When the value is empty, the field is removed from the user profile.
+     *
+     * This endpoint needs to have a completed signup process
+     */
+    @Operation(
+            summary = "Upsert Custom Fields to the user profile",
+            description = "allows to add a custom field to the user profile. When the field already exists, it is updated. " +
+                    "When the value is empty, the field is removed from the user profile.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Custom profile updated", content = @Content(schema = @Schema(implementation = ActionResult.class))),
+                    @ApiResponse(responseCode = "400", description = "Failure", content = @Content(schema = @Schema(implementation = ActionResult.class)))
+            }
+    )
+    @RequestMapping(
+            value = "/customfield",
+            produces = "application/json",
+            method = RequestMethod.PUT
+    )
+    @PreAuthorize("hasAnyRole('ROLE_LOGIN_COMPLETE')")
+    // ----------------------------------------------------------------------
+    public ResponseEntity<?> putProfileCustomField(
+            HttpServletRequest request,
+            @RequestBody(required = true) UserProfileCustomFieldBody body
+    ) {
+        try {
+             userProfileService.upsertUserProfileCustomFields(request.getUserPrincipal().getName(),request.getUserPrincipal().getName(), body);
+            return new ResponseEntity<>(ActionResult.OK("user-profile-customfields-upserted"), HttpStatus.OK);
+        } catch ( ITRightException e) {
+            return new ResponseEntity<>(ActionResult.BADREQUEST(e.getMessage()), HttpStatus.BAD_REQUEST);
+        }
+    }
 
 
     /**

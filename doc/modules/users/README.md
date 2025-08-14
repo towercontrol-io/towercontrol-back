@@ -140,6 +140,16 @@ user data will be made inaccessible. This is done by removing the userSecret val
 this key the data can't be restored anymore. When the user decides to reconnect the system, the `userSecret` is restored from the plain text password and the 
 data can be decrypted again. As the password is never stored, the `userSecret` can't be restored without the user action.
 
+### Super Administrator
+
+When the application is launched for the first time, an initial user is created if the `users.superadmin.email` and 
+`users.superadmin.password` parameters are provided. This user will be created with the `ROLE_GOD_ADMIN` role and 
+will be the super administrator of the application. The password must be changed during the first login.
+
+For security reasons, this creation will only occur during the first launch of the application. Afterwards, it will 
+no longer be possible to automatically create the super administrator unless the `users.superadmin.created` parameter 
+is deleted from the database.
+
 ### traceability
 Event on user service are logged into an audit table. It includes
 - Self registration request

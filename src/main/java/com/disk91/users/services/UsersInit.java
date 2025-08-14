@@ -41,6 +41,9 @@ public class UsersInit {
     protected UsersConfig usersConfig;
 
     @Autowired
+    protected  UserCreationService userCreationService;
+
+    @Autowired
     protected ParamRepository paramRepository;
 
     @PostConstruct
@@ -73,7 +76,11 @@ public class UsersInit {
 
         // We need to create the default ROLES when not existing
 
-
+        // Create the super admin user if not existing (executed only a single time)
+        p = paramRepository.findByParamKey("users.superadmin.creation");
+        if ( p == null ) {
+            userCreationService.createSuperAdmin();
+        }
 
     }
 }

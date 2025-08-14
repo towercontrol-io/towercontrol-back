@@ -51,6 +51,22 @@ public class UsersConfig {
     }
 
     // ----------------------------------------------
+    // Super admin user
+    // ----------------------------------------------
+
+    @Value("${users.superadmin.email:''}")
+    protected String usersSuperAdminEmail;
+    public String getUsersSuperAdminEmail() {
+        return usersSuperAdminEmail;
+    }
+
+    @Value("${users.superadmin.password:''}")
+    protected String usersSuperAdminPassword;
+    public String getUsersSuperAdminPassword() {
+        return usersSuperAdminPassword;
+    }
+
+    // ----------------------------------------------
     // Users registration
     // ----------------------------------------------
 

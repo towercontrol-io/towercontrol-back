@@ -334,6 +334,46 @@ public class UserCreationService {
 
     }
 
+    /**
+     * Create the super admin user on the first application start
+     * this is done only once to make sure someone with access to the file system can't create a second super admin or
+     * a first one when the setup was not made previously.
+     */
+    public void createSuperAdmin() {
+        log.info("[users][creation] Creating super admin user");
+
+        // Check if the super admin user is already created
+        Param p = paramRepository.findByParamKey("users.superadmin.creation");
+        if ( p != null ) {
+            log.info("[users][creation] Super admin user already created");
+            return;
+        } else {
+            p = new Param();
+            p.setParamKey("users.superadmin.creation");
+            p.setStringValue("created");
+        }
+        if ( usersConfig.getUsersSuperAdminEmail().isEmpty() || usersConfig.getUsersSuperAdminPassword().isEmpty() ) {
+            log.error("[users][creation] Super admin email or password not configured, user will never created");
+            paramRepository.save(p);
+            return;
+        }
+
+        // Create the super admin user
+        UserAccountCreationBody body = new UserAccountCreationBody();
+        body.setEmail(usersConfig.getUsersSuperAdminEmail());
+        body.setPassword(usersConfig.getUsersSuperAdminPassword());
+        body.setConditionValidation(true);
+        body.setValidationID(null);
+
+        try {
+            createUser_unsecured(body, null, true);
+            paramRepository.save(p);
+            log.info("[users][creation] Super admin user created successfully");
+        } catch (ITRightException | ITParseException | ITTooManyException e) {
+            log.error("[users][creation] Error creating super admin user : {}", e.getMessage());
+        }
+    }
+
 
     // ==========================================================================
     // Metrics

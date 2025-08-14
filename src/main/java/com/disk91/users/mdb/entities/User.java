@@ -614,6 +614,70 @@ public class User implements CloneableObject<User> {
         return customFields;
     }
 
+    /**
+     * Get the custom field value from the root ; decrypt the value
+     * @param name
+     * @return
+     * @throws ITNotFoundException
+     * @throws ITParseException
+     */
+    public CustomField getEncCustomField(String name) throws ITParseException, ITNotFoundException {
+        if ( this.customFields == null ) throw new ITNotFoundException("custom-field-nod-found");
+        for ( CustomField cf : this.getCustomFields() ) {
+            if ( cf.getName().equals(name) ) {
+                CustomField _cf = new CustomField();
+                _cf.setName(cf.getName());
+                _cf.setValue(EncryptionHelper.decrypt(cf.getValue(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+                return _cf;
+            }
+        }
+        throw new ITNotFoundException("custom-field-nod-found");
+    }
+
+    /**
+     * Set the custom field value in the root, encrypt the value. If the value is null, remove the field
+     * @param _cf - CustomField to be upserted / deleted
+     * @return somethingHasChanged - true when the custom field list has been modified
+     * @throws ITParseException
+     */
+    public boolean upsertEncCustomField(CustomField _cf) throws ITParseException {
+        boolean somethingHasChanged = false;
+        if ( this.customFields == null ) this.customFields = new ArrayList<>();
+        CustomField toRemove = null;
+        boolean exists = false;
+        for ( CustomField cf : this.getCustomFields() ) {
+            if ( cf.getName().equals(_cf.getName()) ) {
+                exists = true;
+                if ( _cf.getValue() == null || _cf.getValue().isEmpty() ) {
+                    // remove the field
+                    toRemove = cf;
+                } else {
+                    // found, update it if the value has changed
+                    String encValue = EncryptionHelper.encrypt(_cf.getValue(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+                    if ( encValue != null && ! encValue.equals(cf.getValue()) ) {
+                        cf.setValue(EncryptionHelper.encrypt(_cf.getValue(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+                        somethingHasChanged = true;
+                    }
+                }
+                break; // name is unique, so we can stop here
+            }
+        }
+        if ( toRemove != null ) {
+            this.customFields.remove(toRemove);
+            somethingHasChanged = true;
+        } else {
+            if (!exists && _cf.getValue() != null && _cf.getValue().isEmpty()) {
+                CustomField cf = new CustomField();
+                cf.setName(_cf.getName());
+                cf.setValue(EncryptionHelper.encrypt(_cf.getValue(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+                this.customFields.add(cf);
+                somethingHasChanged = true;
+            }
+        }
+        return somethingHasChanged;
+    }
+
+
     public void setEncCustomFields(ArrayList<CustomField> _value)  throws ITParseException {
         ArrayList<CustomField> customFields = new ArrayList<>();
         if ( this.customFields == null ) this.customFields = new ArrayList<>();

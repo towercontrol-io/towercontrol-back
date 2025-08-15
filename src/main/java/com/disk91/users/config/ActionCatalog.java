@@ -12,7 +12,9 @@ public class ActionCatalog {
         PASSWORD_RESET,
         PASSWORD_CHANGE,
         TWOFACTOR_CHANGE,
-        UNKNOWN,
+        PROFILE_UPDATE,
+
+        UNKNOWN
     }
 
     public static String getActionName(Actions action) {
@@ -37,6 +39,8 @@ public class ActionCatalog {
                 return "password_change";
             case TWOFACTOR_CHANGE:
                 return "twofactor_change";
+            case PROFILE_UPDATE:
+                return "profile_update";
             case UNKNOWN:
             default:
                 return "unknown";

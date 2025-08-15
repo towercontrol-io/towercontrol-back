@@ -100,9 +100,9 @@ public class ApiUsersProfile {
             @RequestBody(required = true) UserProfileCustomFieldBody body
     ) {
         try {
-             userProfileService.upsertUserProfileCustomFields(request.getUserPrincipal().getName(),request.getUserPrincipal().getName(), body);
+             userProfileService.upsertUserProfileCustomFields(request.getUserPrincipal().getName(), body);
             return new ResponseEntity<>(ActionResult.OK("user-profile-customfields-upserted"), HttpStatus.OK);
-        } catch ( ITRightException e) {
+        } catch ( ITRightException | ITParseException e) {
             return new ResponseEntity<>(ActionResult.BADREQUEST(e.getMessage()), HttpStatus.BAD_REQUEST);
         }
     }
@@ -349,6 +349,55 @@ public class ApiUsersProfile {
             return new ResponseEntity<>(ActionResult.OK("user-profile-eula-accepted"), HttpStatus.OK);
         } catch (ITParseException | ITRightException e ) {
             return new ResponseEntity<>(ActionResult.BADREQUEST(e.getMessage()), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    // -----------------------------------------
+    // User Profile Update
+
+    /**
+     * User profile change
+     *
+     * This endpoint allows a user with the rights, to update a user profile. Focus on the basic information
+     * of the profile.
+     *
+     * This endpoint requires to have LOGIN_COMPLETED first
+     */
+    @Operation(
+            summary = "User profile basic information update",
+            description = "This endpoint allows a user with the rights to update a user profile. " +
+                    "Focus on the basic information of the profile. The user must have the LOGIN_COMPLETED to use this endpoint.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "User profile updated", content = @Content(schema = @Schema(implementation = ActionResult.class))),
+                    @ApiResponse(responseCode = "400", description = "Profile update failed", content = @Content(schema = @Schema(implementation = ActionResult.class))),
+                    @ApiResponse(responseCode = "403", description = "Unauthorized", content = @Content(schema = @Schema(implementation = ActionResult.class))),
+                    @ApiResponse(responseCode = "404", description = "User Not Found", content = @Content(schema = @Schema(implementation = ActionResult.class)))
+            }
+    )
+    @RequestMapping(
+            value = "/basic",
+            consumes = "application/json",
+            method = RequestMethod.PUT
+    )
+    @PreAuthorize("hasAnyRole('ROLE_LOGIN_COMPLETE')")
+    // ----------------------------------------------------------------------
+    public ResponseEntity<?> userBasicProfileUpdate(
+            HttpServletRequest request,
+            @RequestBody(required = true) UserBasicProfileBody body
+    ) {
+        try {
+            userProfileService.userBasicProfileUpdate(
+                    request.getUserPrincipal().getName(),
+                    body,
+                    request
+            );
+            return new ResponseEntity<>(ActionResult.OK("user-profile-updated"), HttpStatus.OK);
+        } catch (ITParseException  e ) {
+            return new ResponseEntity<>(ActionResult.BADREQUEST(e.getMessage()), HttpStatus.BAD_REQUEST);
+        } catch (ITRightException e ) {
+            return new ResponseEntity<>(ActionResult.FORBIDDEN(e.getMessage()), HttpStatus.FORBIDDEN);
+        } catch (ITNotFoundException e ) {
+            return new ResponseEntity<>(ActionResult.NOTFOUND(e.getMessage()), HttpStatus.NOT_FOUND);
         }
     }
 

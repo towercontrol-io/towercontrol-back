@@ -16,6 +16,13 @@ The user data structure is defined as follows:
   ],
   "salt": [ "numbers" ],          // encryption salt 
   "sessionSecret" :  "string",    // session signature salt for token repudiation
+  "apiSession": [                 // List of API session secrets for API accounts, used to sign JWTs and repudiation
+    {
+      "id": "string",             // API key id, used to identify the right key, 6 hex char, random, unique for a user
+      "name": "string",           // API key name, given by user, used to identify the key
+      "secret": "string",         // API key secret, used to sign JWTs
+      "expiration": "number"      // API key expiration date in MS since epoch
+    }], 
   "userSecret" : "string",        // secret key computed from password allowing to deactivate user data without removing user
   "lastLogin": "date",            // last login date in MS since epoch
   "countLogin": "number",         // login count
@@ -79,7 +86,7 @@ The user data structure is defined as follows:
  
     "lastComMessageSeen": "number",     // last communication message seen
     "customFields": [{                  // user custom fields
-        "name": "string",               // custom field key [clear]
+        "name": "string",               // custom field key [clear], the one starting with `basic_` are returned in the basic API
         "value": "string"               // custom field value [Base64(encrypted)]
     }]
 }
@@ -130,6 +137,13 @@ generated from the password with PBKDF2 with salt.
 JWT signature depends on
 - a Server key from parameter `users.session.key` from configuration file, randomly generated
 - a User key from the `sessionSecret` field, randomly generated at user creation and modified after every user signout.
+
+API keys use a specific sessionSecret so as not to be affected by the signout mechanism and to allow individual
+repudiation of API keys. For this purpose, an array of `apiSession` is used, and to retrieve them, 
+the API key contains a reference key corresponding to the 6 hex characters used as the secret identifier.
+When a JWT is received, if it is an API key, the subject allows to find the user and the Id field allows 
+to identify the correct entry in `apiSession` to verify the signature with the specific secret for this 
+API key.
 
 ### Password change
 On password change, the data encryption need to be recreated as the `userSecret` will be different.

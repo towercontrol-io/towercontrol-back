@@ -20,13 +20,18 @@
 package com.disk91.users.api.interfaces;
 
 import com.disk91.common.tools.CustomField;
+import com.disk91.common.tools.exceptions.ITNotFoundException;
+import com.disk91.common.tools.exceptions.ITParseException;
+import com.disk91.users.mdb.entities.User;
+import com.disk91.users.mdb.entities.sub.UserAcl;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.util.ArrayList;
+import java.util.List;
 
-@Tag(name = "User Profile CustomField", description = "Upsert user profile custom fields")
-public class UserProfileCustomFieldBody {
+@Tag(name = "User Basic Profile Update", description = "User profile with minimum information for front display")
+public class UserBasicProfileBody {
 
     @Schema(
             description = "User to be modified login (hash)",
@@ -36,11 +41,32 @@ public class UserProfileCustomFieldBody {
     protected String login;
 
     @Schema(
-            description = "Array of custom fields to be updated (upsert) or deleted when the value is empty",
-            example = "[{name: 'customField1', value: 'value1'}, {name: 'customField2', value: 'value2'}]",
+            description = "First Name",
+            example = "John",
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED
+    )
+    protected String firstName;
+
+    @Schema(
+            description = "Last Name",
+            example = "Doe",
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED
+    )
+    protected String lastName;
+
+    @Schema(
+            description = "User language",
+            example = "en",
             requiredMode = Schema.RequiredMode.REQUIRED
     )
-    protected ArrayList<CustomField> customFields;
+    protected String language;
+
+    @Schema(
+            description = "List of profile custom fields decrypted",
+            example = "[ { name : basic_xxx, value : xxxx }, ...  ]",
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED
+    )
+    protected List<CustomField> customFields;
 
 
     // ==========================
@@ -55,11 +81,35 @@ public class UserProfileCustomFieldBody {
         this.login = login;
     }
 
-    public ArrayList<CustomField> getCustomFields() {
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    public String getLanguage() {
+        return language;
+    }
+
+    public void setLanguage(String language) {
+        this.language = language;
+    }
+
+    public List<CustomField> getCustomFields() {
         return customFields;
     }
 
-    public void setCustomFields(ArrayList<CustomField> customFields) {
+    public void setCustomFields(List<CustomField> customFields) {
         this.customFields = customFields;
     }
 }

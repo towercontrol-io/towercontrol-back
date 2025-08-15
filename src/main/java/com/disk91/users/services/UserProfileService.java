@@ -91,8 +91,8 @@ public class UserProfileService {
         if ( ! _requestor.isInRole(UsersRolesCache.StandardRoles.ROLE_REGISTERED_USER.getRoleName())) return false;
 
         if (    _requestor.isInRole(UsersRolesCache.StandardRoles.ROLE_GOD_ADMIN.getRoleName())
-                ||  _requestor.isInRole(UsersRolesCache.StandardRoles.ROLE_USER_ADMIN.getRoleName())
-                ||  _requestor.getLogin().compareTo(user) == 0
+            ||  _requestor.isInRole(UsersRolesCache.StandardRoles.ROLE_USER_ADMIN.getRoleName())
+            ||  _requestor.getLogin().compareTo(user) == 0
         ) {
             // the requestion is the user searched himself or it have admin / user admin global right
             // so we can hase the information
@@ -148,17 +148,20 @@ public class UserProfileService {
      * Upsert / Delete a customField for a user in the user profile section.
      * When the value is empty, the custom field is deleted.
      * @param requestor - who is requesting the upsert
-     * @param user - what user profile is updated
      * @param body - list of expected modifications in the profile custom fields
      * @throws ITRightException - when the modifications are not allowed
      */
     public void upsertUserProfileCustomFields(
             String requestor,
-            String user,
             UserProfileCustomFieldBody body
-    ) throws ITRightException {
+    ) throws ITRightException, ITParseException {
+        if ( body.getLogin() == null || body.getLogin().isEmpty() ) {
+            throw new ITParseException("user-profile-login-invalid");
+        }
 
         try {
+            String user = body.getLogin();
+
             User _requestor = userCache.getUser(requestor);
 
             if ( !this.isLegitAccessRead(_requestor,user,false) ) {
@@ -187,6 +190,8 @@ public class UserProfileService {
                     log.warn("[users] Custom field {} generate a parsing error for user {}", cf.getName(), _user.getLogin());
                 }
             }
+            _user.cleanKeys();
+
             // commit the user modification
             if ( userObjectUpdated ) {
                 userCache.saveUser(_user);                      // save & flush caches
@@ -197,6 +202,101 @@ public class UserProfileService {
             throw new ITRightException("user-profile-user-not-found");
         }
     }
+
+    /**
+     * Update the user basic profile information. This can be executed by the user itself or by an admin
+     * This only concerns the basic profile information like first name, last name, language and profile custom fields.
+     * @param requestor - who is requesting the update
+     * @param body - the body of the request containing the user login and the profile information to update
+     * @param req - for tracing IP and audit log
+     * @throws ITRightException
+     * @throws ITParseException
+     * @throws ITNotFoundException
+     */
+    public void userBasicProfileUpdate(
+            String requestor,
+            UserBasicProfileBody body,
+            HttpServletRequest req
+    ) throws ITRightException, ITParseException, ITNotFoundException {
+
+        if ( body.getLogin() == null || body.getLogin().isEmpty() ) {
+            throw new ITParseException("user-profile-login-invalid");
+        }
+        if ( !body.getLanguage().isEmpty() && body.getLanguage().length() != 2) {
+            throw new ITParseException("user-profile-language-invalid");
+        }
+
+        try {
+            User _requestor = userCache.getUser(requestor);
+            String user = body.getLogin();
+
+            if ( !this.isLegitAccessRead(_requestor,user,true) ) {
+                log.warn("[users] Requestor {} does not have access right to user {} profile", requestor, user);
+                throw new ITRightException("user-profile-no-access");
+            }
+
+            User _user = _requestor;
+            if ( requestor.compareTo(user) != 0 ) {
+                try {
+                    _user = userCache.getUser(user);
+                } catch (ITNotFoundException x){
+                    log.warn("[users] Searched user does not exists", x);
+                    throw new ITNotFoundException("user-profile-user-not-found");
+                }
+            }
+            _user.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
+
+            boolean userObjectUpdated = false;
+
+            if ( body.getLanguage() != null && !body.getLanguage().equals(_user.getLanguage())) {
+                _user.setLanguage(body.getLanguage());
+                userObjectUpdated = true;
+            }
+
+            if ( body.getFirstName() != null && !body.getFirstName().equals(_user.getEncProfileFirstName())) {
+                _user.setEncProfileFirstName(body.getFirstName());
+                userObjectUpdated = true;
+            }
+            if ( body.getLastName() != null && !body.getLastName().equals(_user.getEncProfileLastName())) {
+                _user.setEncProfileLastName(body.getLastName());
+                userObjectUpdated = true;
+            }
+
+            for (CustomField cf : body.getCustomFields()) {
+                try {
+                    if ( _user.upsertEncCustomField(cf) ) {
+                        userObjectUpdated = true; // at least one field has been updated
+                    }
+                } catch (ITParseException x) {
+                    // we don't know what to do, better skip this field
+                    log.warn("[users] Custom field {} generate a parsing error for user {}", cf.getName(), _user.getLogin());
+                }
+            }
+            _user.cleanKeys();
+            // commit the user modification
+            if ( userObjectUpdated ) {
+                _user.setModificationDate(Now.NowUtcMs());
+                userCache.saveUser(_user);                      // save & flush caches
+                auditIntegration.auditLog(
+                        ModuleCatalog.Modules.USERS,
+                        ActionCatalog.getActionName(ActionCatalog.Actions.PROFILE_UPDATE),
+                        _user.getLogin(),
+                        "User profile modified by {0} from {1}",
+                        new String[]{
+                                _requestor.getLogin(),
+                                (req != null && req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"
+                        }
+                );
+            }
+
+        } catch (ITNotFoundException x) {
+            log.error("[users] Requestor does not exists", x);
+            throw new ITRightException("user-profile-user-not-found");
+        } catch (ITParseException x) {
+            throw new ITRightException("user-profile-encryption-error");
+        }
+    }
+
 
 
     /**

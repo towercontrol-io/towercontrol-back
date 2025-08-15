@@ -666,7 +666,7 @@ public class User implements CloneableObject<User> {
             this.customFields.remove(toRemove);
             somethingHasChanged = true;
         } else {
-            if (!exists && _cf.getValue() != null && _cf.getValue().isEmpty()) {
+            if (!exists && _cf.getValue() != null && !_cf.getValue().isEmpty()) {
                 CustomField cf = new CustomField();
                 cf.setName(_cf.getName());
                 cf.setValue(EncryptionHelper.encrypt(_cf.getValue(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));

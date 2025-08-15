@@ -126,12 +126,14 @@ public class UserBasicProfileResponse {
         this.lastComMessageSeen = u.getLastComMessageSeen();
         this.passwordExpirationMs = u.getExpiredPassword();
         this.customFields = new ArrayList<>();
-        for ( CustomField cf : u.getCustomFields() ) {
-            if ( cf.getName().startsWith("basic_") ) {
-                try {
-                    this.customFields.add(u.getEncCustomField(cf.getName()));
-                } catch (ITParseException | ITNotFoundException x) {
-                    // In this case just not return the custom field, this should not happen btw
+        if ( u.getCustomFields() != null) {
+            for (CustomField cf : u.getCustomFields()) {
+                if (cf.getName().startsWith("basic_")) {
+                    try {
+                        this.customFields.add(u.getEncCustomField(cf.getName()));
+                    } catch (ITParseException | ITNotFoundException x) {
+                        // In this case just not return the custom field, this should not happen btw
+                    }
                 }
             }
         }

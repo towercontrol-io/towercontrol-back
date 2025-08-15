@@ -100,16 +100,16 @@ public class UsersConfig {
         return usersRegistrationLinkExpiration;
     }
 
-    @Value("${user.registration.link.byemail:true}")
-    protected boolean userRegistrationLinkByEmail;
-    public boolean isUserRegistrationLinkByEmail() {
-        return userRegistrationLinkByEmail;
+    @Value("${users.registration.link.byemail:true}")
+    protected boolean usersRegistrationLinkByEmail;
+    public boolean isUsersRegistrationLinkByEmail() {
+        return usersRegistrationLinkByEmail;
     }
 
-    @Value("${user.registration.path:registration/!0!/confirm}")
-    protected String userRegistrationPath;
-    public String getUserRegistrationPath() {
-        return userRegistrationPath;
+    @Value("${users.registration.path:registration/!0!/confirm}")
+    protected String usersRegistrationPath;
+    public String getUsersRegistrationPath() {
+        return usersRegistrationPath;
     }
 
     // --------------------------------------------
@@ -187,10 +187,10 @@ public class UsersConfig {
         return usersLostPasswordLinkExpiration;
     }
 
-    @Value("${user.lostpassword.path:/lostpassword/!0!/confirm}")
-    protected String userLostPasswordPath;
-    public String getUserLostPasswordPath() {
-        return userLostPasswordPath;
+    @Value("${users.lostpassword.path:/lostpassword/!0!/confirm}")
+    protected String usersLostPasswordPath;
+    public String getUsersLostPasswordPath() {
+        return usersLostPasswordPath;
     }
 
     @Value("${users.deletion.purgatory.duration_h:0}")
@@ -237,10 +237,10 @@ public class UsersConfig {
         return usersSessionApiTimeoutSec;
     }
 
-    @Value("${user.session.2fa.timeout.sec:600}")
-    protected long userSession2faTimeoutSec;
-    public long getUserSession2faTimeoutSec() {
-        return userSession2faTimeoutSec;
+    @Value("${users.session.2fa.timeout.sec:600}")
+    protected long usersSession2faTimeoutSec;
+    public long getUsersSession2faTimeoutSec() {
+        return usersSession2faTimeoutSec;
     }
 
     @Value("${users.session.key:9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a}")

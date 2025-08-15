@@ -28,7 +28,6 @@ import com.disk91.common.tools.*;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITRightException;
-import com.disk91.common.tools.exceptions.ITTooManyException;
 import com.disk91.users.api.interfaces.*;
 import com.disk91.users.config.ActionCatalog;
 import com.disk91.users.config.UserMessages;
@@ -431,7 +430,7 @@ public class UserProfileService {
         userCache.saveUser(u);
 
         // Send email
-        String _path = usersConfig.getUserLostPasswordPath().replace("!0!", u.getPasswordResetId());
+        String _path = usersConfig.getUsersLostPasswordPath().replace("!0!", u.getPasswordResetId());
         String _link = commonConfig.getCommonServiceUrl(_path, true);
 
         Locale locale = emailTools.extractLocale(req, Locale.forLanguageTag(commonConfig.getCommonLangDefault()));

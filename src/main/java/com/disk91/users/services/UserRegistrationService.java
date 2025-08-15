@@ -170,17 +170,17 @@ public class UserRegistrationService {
         // and send an email if needed
 
         userRegistrationRepository.save(ur);
-        if (usersConfig.isUserRegistrationLinkByEmail()) {
+        if (usersConfig.isUsersRegistrationLinkByEmail()) {
             Locale locale = emailTools.extractLocale(req, Locale.forLanguageTag(commonConfig.getCommonLangDefault()));
             // In case the registration path is empty, the validation code is directly printed in the email, in the other case,
             // the email contains the link to the frontend.
-            if ( usersConfig.getUserRegistrationPath().isEmpty() ) {
+            if ( usersConfig.getUsersRegistrationPath().isEmpty() ) {
                 Object[] args = {commonConfig.getCommonServiceName(), ur.getValidationId()};
                 String _subject = userMessages.messageSource().getMessage("users.messages.registration.subject", args, locale);
                 String _body = userMessages.messageSource().getMessage("users.messages.registration.code.body", args, locale);
                 emailTools.send(body.getEmail(), _body, _subject, commonConfig.getCommonMailSender());
             } else {
-                String _path = usersConfig.getUserRegistrationPath().replace("!0!", ur.getValidationId());
+                String _path = usersConfig.getUsersRegistrationPath().replace("!0!", ur.getValidationId());
                 String _link = commonConfig.getCommonServiceUrl(_path, true);
 
                 Object[] args = {commonConfig.getCommonServiceName(), _link};

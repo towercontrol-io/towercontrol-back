@@ -61,7 +61,6 @@ import javax.crypto.spec.SecretKeySpec;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.util.*;
 import java.util.function.Supplier;
 
@@ -464,8 +463,8 @@ public class UserService {
     protected String generateJWTForUser(User u, ArrayList<String> roles, boolean twoSession, boolean renewal) {
         long exp;
         if ( twoSession ) {
-            if ( usersConfig.getUserSession2faTimeoutSec() > 0 ) {
-                exp = Now.NowUtcMs() + usersConfig.getUserSession2faTimeoutSec() * 1000;
+            if ( usersConfig.getUsersSession2faTimeoutSec() > 0 ) {
+                exp = Now.NowUtcMs() + usersConfig.getUsersSession2faTimeoutSec() * 1000;
             } else {
                 exp = Now.NowUtcMs() + 10 * Now.ONE_MINUTE; // 10 minutes minium
             }
@@ -575,7 +574,7 @@ public class UserService {
                     long time = Long.parseLong(codes[0]);
                     if (code != null               // we have a code provided
                             && !code.isEmpty()            // not empty
-                            && (time + usersConfig.getUserSession2faTimeoutSec() * 1000) > Now.NowUtcMs() // in the validity period
+                            && (time + usersConfig.getUsersSession2faTimeoutSec() * 1000) > Now.NowUtcMs() // in the validity period
                             && code.equals(codes[1])      // with a correct value
                     ) {
                         return true; // The 2FA code is Validated
@@ -854,7 +853,7 @@ public class UserService {
             userConfigResponse.setEulaRequired(usersConfig.isUsersCreationNeedEula());
             userConfigResponse.setInvitationCodeRequired(usersConfig.isUsersRegistrationWithInviteCode());
             userConfigResponse.setSelfRegistration(usersConfig.isUsersRegistrationSelf());
-            userConfigResponse.setRegistrationLinkByEmail(usersConfig.isUserRegistrationLinkByEmail());
+            userConfigResponse.setRegistrationLinkByEmail(usersConfig.isUsersRegistrationLinkByEmail());
             userConfigResponse.setPasswordMinSize(usersConfig.getUsersPasswordMinSize());
             userConfigResponse.setPasswordMinUpperCase(usersConfig.getUsersPasswordMinUppercase());
             userConfigResponse.setPasswordMinLowerCase(usersConfig.getUsersPasswordMinLowercase());

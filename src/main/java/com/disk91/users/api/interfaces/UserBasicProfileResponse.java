@@ -23,6 +23,7 @@ import com.disk91.common.tools.CustomField;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.users.mdb.entities.User;
+import com.disk91.users.mdb.entities.sub.TwoFATypes;
 import com.disk91.users.mdb.entities.sub.UserAcl;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -105,6 +106,14 @@ public class UserBasicProfileResponse {
     )
     protected List<CustomField> customFields;
 
+    @Schema(
+            description = "User 2FA configuration",
+            example = "NONE | EMAIL | SMS | AUTHENTICATOR",
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED
+    )
+    protected TwoFATypes twoFAConfig;
+
+
 
     // ==========================
     // Build from User Object
@@ -125,6 +134,7 @@ public class UserBasicProfileResponse {
         this.roles = new ArrayList<>(u.getRoles());
         this.lastComMessageSeen = u.getLastComMessageSeen();
         this.passwordExpirationMs = u.getExpiredPassword();
+        this.twoFAConfig = u.getTwoFAType();
         this.customFields = new ArrayList<>();
         if ( u.getCustomFields() != null) {
             for (CustomField cf : u.getCustomFields()) {
@@ -222,5 +232,13 @@ public class UserBasicProfileResponse {
 
     public void setCustomFields(List<CustomField> customFields) {
         this.customFields = customFields;
+    }
+
+    public TwoFATypes getTwoFAConfig() {
+        return twoFAConfig;
+    }
+
+    public void setTwoFAConfig(TwoFATypes twoFAConfig) {
+        this.twoFAConfig = twoFAConfig;
     }
 }

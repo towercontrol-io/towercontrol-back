@@ -20,14 +20,9 @@
 package com.disk91.users.api.interfaces;
 
 import com.disk91.common.tools.CustomField;
-import com.disk91.common.tools.exceptions.ITNotFoundException;
-import com.disk91.common.tools.exceptions.ITParseException;
-import com.disk91.users.mdb.entities.User;
-import com.disk91.users.mdb.entities.sub.UserAcl;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Tag(name = "User Basic Profile Update", description = "User profile with minimum information for front display")
@@ -112,4 +107,5 @@ public class UserBasicProfileBody {
     public void setCustomFields(List<CustomField> customFields) {
         this.customFields = customFields;
     }
+
 }

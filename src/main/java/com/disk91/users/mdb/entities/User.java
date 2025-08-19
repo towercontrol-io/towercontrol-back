@@ -116,9 +116,11 @@ public class User implements CloneableObject<User> {
     protected long expiredPassword;
 
     // This Account is an API account and not a human account, it can't login but we can have existing JWT
+    // This is for a API account not attached to a user (different than api key approach)
     protected boolean apiAccount;
 
     // User who own the apiAccount, here we have the Id of the user entry corresponding
+    // This is for a API account not attached to a user (different than api key approach)
     protected String apiAccountOwner;
 
     // language to be used for the user, 2x2 letters country code (fr-fr)

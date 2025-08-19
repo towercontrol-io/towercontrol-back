@@ -19,19 +19,26 @@
  */
 package com.disk91.users.api.interfaces;
 
+import com.disk91.users.mdb.entities.sub.TwoFATypes;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-@Tag(name = "User 2FA setup", description = "Setup the Two Factor Authentication for the user")
+@Tag(name = "User 2FA setup", description = "Setup the Two Factor Authentication for the user, one of the type is required")
 public class UserTwoFaBody {
 
     @Schema(
-            description = "Set the 2FA method to be used (0 - none, 1 - email, 2 - sms, 3 - authenticator app)",
+            description = "Set the 2FA method to be used (0 - none, 1 - email, 2 - sms, 3 - authenticator app, -1 unset)",
             example = "1",
-            requiredMode = Schema.RequiredMode.REQUIRED
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED
     )
-    protected int twoFaMethod;
+    protected int twoFaMethod = -1;
 
+    @Schema(
+            description = "Set the 2FA method to be used ('NONE', 'EMAIL', 'SMS', 'AUTHENTICATOR')",
+            example = "AUTHENTICATOR",
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED
+    )
+    protected TwoFATypes twoFaType;
 
     // ==========================
     // Getters & Setters
@@ -45,4 +52,11 @@ public class UserTwoFaBody {
         this.twoFaMethod = twoFaMethod;
     }
 
+    public TwoFATypes getTwoFaType() {
+        return twoFaType;
+    }
+
+    public void setTwoFaType(TwoFATypes twoFaType) {
+        this.twoFaType = twoFaType;
+    }
 }

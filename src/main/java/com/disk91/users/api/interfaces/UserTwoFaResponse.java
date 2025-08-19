@@ -19,6 +19,7 @@
  */
 package com.disk91.users.api.interfaces;
 
+import com.disk91.users.mdb.entities.sub.TwoFATypes;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
@@ -32,6 +33,12 @@ public class UserTwoFaResponse {
     )
     protected int twoFaMethod;
 
+    @Schema(
+            description = "Set the 2FA method to be used ('NONE', 'EMAIL', 'SMS', 'AUTHENTICATOR')",
+            example = "AUTHENTICATOR",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    protected TwoFATypes twoFaType;
 
     @Schema(
             description = "Two Factor secret, used to generate the 2FA code (authenticator app only)",
@@ -59,5 +66,13 @@ public class UserTwoFaResponse {
 
     public void setSecret(String secret) {
         this.secret = secret;
+    }
+
+    public TwoFATypes getTwoFaType() {
+        return twoFaType;
+    }
+
+    public void setTwoFaType(TwoFATypes twoFaType) {
+        this.twoFaType = twoFaType;
     }
 }

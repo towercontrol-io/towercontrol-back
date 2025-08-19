@@ -717,6 +717,24 @@ public class UserProfileService {
             UserTwoFaResponse response = new UserTwoFaResponse();
             response.setTwoFaMethod(body.getTwoFaMethod());
             response.setSecret("");
+            if ( body.getTwoFaMethod() == -1 ) {
+                switch (body.getTwoFaType()) {
+                    case NONE:
+                        body.setTwoFaMethod(0);
+                        break;
+                    case EMAIL:
+                        body.setTwoFaMethod(1);
+                        break;
+                    case SMS:
+                        body.setTwoFaMethod(2);
+                        break;
+                    case AUTHENTICATOR:
+                        body.setTwoFaMethod(3);
+                        break;
+                    default:
+                        throw new ITParseException("user-profile-2fa-method-not-valid");
+                }
+            }
             // We setup the 2FA with the given method
             switch (body.getTwoFaMethod()) {
                 case 0:
@@ -747,6 +765,7 @@ public class UserProfileService {
                 default:
                     throw new ITParseException("user-profile-2fa-method-not-valid");
             }
+            response.setTwoFaType(_user.getTwoFAType());
             _user.cleanKeys();
             userCache.saveUser(_user);                      // save & flush caches
             auditIntegration.auditLog(

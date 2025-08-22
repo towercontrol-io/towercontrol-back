@@ -16,7 +16,7 @@ public class UserProfile implements CloneableObject<UserProfile> {
     // User gender (free text, front decides) encrypted
     private String gender;
 
-    // phone number (encrypted)
+    // phone number (encrypted) - e164 format, ex: +33601020304
     private String phoneNumber;
 
     // address (encrypted)
@@ -28,7 +28,7 @@ public class UserProfile implements CloneableObject<UserProfile> {
     // zip code (encrypted)
     private String zipCode;
 
-    // country (encrypted)
+    // iso country code (encrypted) - expl : FR, US, etc.
     private String country;
 
     // Custom fields, contains key / value pairs, encrypted

@@ -160,6 +160,9 @@ public class User implements CloneableObject<User> {
     // Custom fields, contains key / value pairs, encrypted
     private ArrayList<CustomField> customFields;
 
+    // List of API session secrets for API accounts, used to sign JWTs and repudiation
+    private ArrayList<UserApiKeys> apiKeys;
+
     // ================================================================================================
     // Get Group List ( another way to get acls but adding the virtual groups )
     // ================================================================================================
@@ -416,6 +419,16 @@ public class User implements CloneableObject<User> {
     public void renewSessionSecret() {
         this.sessionSecret = HexCodingTools.getRandomHexString(64);
     }
+
+    /**
+     * Clear the API Session Secret, so the API can't be used anymore
+     */
+    public void clearApiSessionSecret() {
+        if ( this.apiKeys != null ) {
+            this.apiKeys.forEach(UserApiKeys::disable);
+        }
+    }
+
 
     /**
      * When the password is changed, it is necessary to rekey all information, as the password is used as a key
@@ -994,6 +1007,15 @@ public class User implements CloneableObject<User> {
             u.setCustomFields(cf);
         }
 
+        // Create & copy Api Keys
+        if (this.apiKeys != null) {
+            ArrayList<UserApiKeys> cf = new ArrayList<>();
+            for (UserApiKeys c : this.apiKeys) {
+                cf.add(c.clone());
+            }
+            u.setApiKeys(cf);
+        }
+
         u.setAlertPreference(this.alertPreference.clone());
         u.setProfile(this.profile.clone());
         u.setBillingProfile(this.billingProfile.clone());
@@ -1274,5 +1296,13 @@ public class User implements CloneableObject<User> {
 
     public void setCustomFields(ArrayList<CustomField> customFields) {
         this.customFields = customFields;
+    }
+
+    public ArrayList<UserApiKeys> getApiKeys() {
+        return apiKeys;
+    }
+
+    public void setApiKeys(ArrayList<UserApiKeys> apiKeys) {
+        this.apiKeys = apiKeys;
     }
 }

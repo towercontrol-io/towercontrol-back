@@ -63,6 +63,20 @@ public class UserBasicProfileResponse {
     protected String lastName;
 
     @Schema(
+            description = "Mobile Phone number",
+            example = "+33601020304",
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED
+    )
+    protected String mobileNumber;
+
+    @Schema(
+            description = "Iso 2 country code (used for mobile phone number)",
+            example = "FR",
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED
+    )
+    protected String isoCountryCode;
+
+    @Schema(
             description = "The password expiration date, in epoch ms",
             example = "172545052000",
             requiredMode = Schema.RequiredMode.REQUIRED
@@ -122,10 +136,14 @@ public class UserBasicProfileResponse {
             this.email = u.getEncEmail();
             this.firstName = u.getEncProfileFirstName();
             this.lastName = u.getEncProfileLastName();
+            this.mobileNumber = u.getEncProfilePhone();
+            this.isoCountryCode = u.getEncProfileCountry();
         } catch (ITParseException x) {
             this.email = "";
             this.firstName = "";
             this.lastName = "";
+            this.mobileNumber = "";
+            this.isoCountryCode = "";
         }
         this.login = u.getLogin();
         this.language = u.getLanguage();
@@ -240,5 +258,21 @@ public class UserBasicProfileResponse {
 
     public void setTwoFAConfig(TwoFATypes twoFAConfig) {
         this.twoFAConfig = twoFAConfig;
+    }
+
+    public String getMobileNumber() {
+        return mobileNumber;
+    }
+
+    public void setMobileNumber(String mobileNumber) {
+        this.mobileNumber = mobileNumber;
+    }
+
+    public String getIsoCountryCode() {
+        return isoCountryCode;
+    }
+
+    public void setIsoCountryCode(String isoCountryCode) {
+        this.isoCountryCode = isoCountryCode;
     }
 }

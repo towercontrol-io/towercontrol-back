@@ -859,6 +859,7 @@ public class UserService {
             userConfigResponse.setPasswordMinLowerCase(usersConfig.getUsersPasswordMinLowercase());
             userConfigResponse.setPasswordMinSymbols(usersConfig.getUsersPasswordMinSymbols());
             userConfigResponse.setPasswordMinDigits(usersConfig.getUsersPasswordMinNumbers());
+            userConfigResponse.setDeletionPurgatoryDelayHours(usersConfig.getUsersDeletionPurgatoryDuration());
         }
         return userConfigResponse;
     }

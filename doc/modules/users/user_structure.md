@@ -16,12 +16,15 @@ The user data structure is defined as follows:
   ],
   "salt": [ "numbers" ],          // encryption salt 
   "sessionSecret" :  "string",    // session signature salt for token repudiation
-  "apiSession": [                 // List of API session secrets for API accounts, used to sign JWTs and repudiation
+  "apiKeys": [                   // List of API session secrets for API accounts, used to sign JWTs and repudiation
     {
       "id": "string",             // API key id, used to identify the right key, 6 hex char, random, unique for a user
       "name": "string",           // API key name, given by user, used to identify the key
       "secret": "string",         // API key secret, used to sign JWTs
-      "expiration": "number"      // API key expiration date in MS since epoch
+      "expiration": "number",     // API key expiration date in MS since epoch
+      "acls": [                   // API key ACLs, same structure as user acls
+        { "group": "string", "localName" : "string", "roles" : [ "string"] }
+      ]
     }], 
   "userSecret" : "string",        // secret key computed from password allowing to deactivate user data without removing user
   "lastLogin": "date",            // last login date in MS since epoch
@@ -51,11 +54,11 @@ The user data structure is defined as follows:
         "gender": "string",           // user gender to be used [Base64(encrypted)]
         "firstname": "string",        // user first name [Base64(encrypted)]
         "lastname": "string",         // user last name [Base64(encrypted)]
-        "phone": "string",            // user phone number [Base64(encrypted)]
+        "phone": "string",            // user phone number e164 format [Base64(encrypted)]
         "address": "string",          // user address [Base64(encrypted)]
         "city": "string",             // user city [Base64(encrypted)]
         "zip": "string",              // user zip code [Base64(encrypted)]
-        "country": "string",          // user country [Base64(encrypted)]
+        "country": "string",          // user country ISO code [Base64(encrypted)]
         "customFields": [{            // user custom fields
            "name": "string",          // custom field key [clear]
            "value": "string"          // custom field value [Base64(encrypted)]

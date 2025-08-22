@@ -261,6 +261,14 @@ public class UserProfileService {
                 _user.setEncProfileLastName(body.getLastName());
                 userObjectUpdated = true;
             }
+            if ( body.getMobileNumber() != null && !body.getMobileNumber().equals(_user.getEncProfilePhone())) {
+                _user.setEncProfilePhone(body.getMobileNumber());
+                userObjectUpdated = true;
+            }
+            if ( body.getIsoCountryCode() != null && !body.getIsoCountryCode().equals(_user.getEncProfileCountry())) {
+                _user.setEncProfileCountry(body.getIsoCountryCode());
+                userObjectUpdated = true;
+            }
 
             for (CustomField cf : body.getCustomFields()) {
                 try {
@@ -636,14 +644,15 @@ public class UserProfileService {
             }
 
             _user.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
-            if ( usersConfig.getUserDeletionPurgatoryDuration() > 0 ) {
+            if ( usersConfig.getUsersDeletionPurgatoryDuration() > 0 ) {
                 if (_user.getDeletionDate() == 0) {
-                    _user.setDeletionDate(Now.NowUtcMs()+(usersConfig.getUserDeletionPurgatoryDuration()*Now.ONE_HOUR));
+                    _user.setDeletionDate(Now.NowUtcMs()+(usersConfig.getUsersDeletionPurgatoryDuration()*Now.ONE_HOUR));
                                                                 // prepare for future physical deletion
                     _user.setActive(false);                     // make sure it is not reconnecting later
                     _user.setLocked(true);                      // ...
                     _user.clearUserSecret();                    // make sure personal data won't be accessible
                     _user.renewSessionSecret();                 // disconnect the existing sessions
+                    _user.clearApiSessionSecret();              // disconnect the existing API sessions
                 }
                 _user.cleanKeys();
                 userCache.saveUser(_user);                      // save & flush caches

@@ -50,6 +50,20 @@ public class UserBasicProfileBody {
     protected String lastName;
 
     @Schema(
+            description = "Mobile Phone number",
+            example = "+33601020304",
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED
+    )
+    protected String mobileNumber;
+
+    @Schema(
+            description = "Iso 2 country code (used for mobile phone number)",
+            example = "FR",
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED
+    )
+    protected String isoCountryCode;
+
+    @Schema(
             description = "User language",
             example = "en",
             requiredMode = Schema.RequiredMode.REQUIRED
@@ -108,4 +122,19 @@ public class UserBasicProfileBody {
         this.customFields = customFields;
     }
 
+    public String getMobileNumber() {
+        return mobileNumber;
+    }
+
+    public void setMobileNumber(String mobileNumber) {
+        this.mobileNumber = mobileNumber;
+    }
+
+    public String getIsoCountryCode() {
+        return isoCountryCode;
+    }
+
+    public void setIsoCountryCode(String isoCountryCode) {
+        this.isoCountryCode = isoCountryCode;
+    }
 }

@@ -96,6 +96,14 @@ public class UserConfigResponse {
     )
     protected int passwordMinSymbols;
 
+    @Schema(
+            description = "Account deletion, purgatory delay in hours (0 means immediate deletion)",
+            example = "24",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    protected long deletionPurgatoryDelayHours;
+
+
     // ==========================
     // Getters & Setters
 
@@ -178,5 +186,13 @@ public class UserConfigResponse {
 
     public void setPasswordMinSymbols(int passwordMinSymbols) {
         this.passwordMinSymbols = passwordMinSymbols;
+    }
+
+    public long getDeletionPurgatoryDelayHours() {
+        return deletionPurgatoryDelayHours;
+    }
+
+    public void setDeletionPurgatoryDelayHours(long deletionPurgatoryDelayHours) {
+        this.deletionPurgatoryDelayHours = deletionPurgatoryDelayHours;
     }
 }

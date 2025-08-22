@@ -194,9 +194,9 @@ public class UsersConfig {
     }
 
     @Value("${users.deletion.purgatory.duration_h:0}")
-    protected long userDeletionPurgatoryDuration;
-    public long getUserDeletionPurgatoryDuration() {
-        return userDeletionPurgatoryDuration;
+    protected long usersDeletionPurgatoryDuration;
+    public long getUsersDeletionPurgatoryDuration() {
+        return usersDeletionPurgatoryDuration;
     }
 
     // --------------------------------------------

@@ -366,7 +366,9 @@ public class UserCreationService {
         body.setValidationID(null);
 
         try {
-            createUser_unsecured(body, null, true);
+            User u = createUser_unsecured(body, null, true);
+            u.addRole(UsersRolesCache.StandardRoles.ROLE_GOD_ADMIN);
+            u = userRepository.save(u);
             paramRepository.save(p);
             log.info("[users][creation] Super admin user created successfully");
         } catch (ITRightException | ITParseException | ITTooManyException e) {

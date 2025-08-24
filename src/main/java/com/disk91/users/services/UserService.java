@@ -150,7 +150,7 @@ public class UserService {
             }
 
             // Verify the user as the minimum role to login.
-            if ( ! u.isInRole(UsersRolesCache.StandardRoles.ROLE_REGISTERED_USER.getRoleName()) ) {
+            if ( ! u.isInRole(UsersRolesCache.StandardRoles.ROLE_REGISTERED_USER) ) {
                 log.info("[users][service] User {} does not have the right role to login", u.getLogin());
                 this.incLoginFailed();
                 throw new ITRightException("User does not have the right role");

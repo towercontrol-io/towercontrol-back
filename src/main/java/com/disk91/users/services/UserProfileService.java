@@ -79,32 +79,8 @@ public class UserProfileService {
     @Autowired
     protected ParamRepository paramRepository;
 
-    /**
-     * Verify a requestor can access a user profile for read or write. Currently, the detailed ACL are not managed
-     * so R/W access is not supported and only global admin can access foreign accounts
-     * @param _requestor
-     * @param user
-     * @return true when requestor can R/W access the user profile
-     */
-    protected boolean isLegitAccessRead(User _requestor, String user, boolean writeAccess) {
-        if ( ! _requestor.isActive() || _requestor.isLocked() ) return false;
-        if ( ! _requestor.isInRole(UsersRolesCache.StandardRoles.ROLE_REGISTERED_USER.getRoleName())) return false;
-
-        if (    _requestor.isInRole(UsersRolesCache.StandardRoles.ROLE_GOD_ADMIN.getRoleName())
-            ||  _requestor.isInRole(UsersRolesCache.StandardRoles.ROLE_USER_ADMIN.getRoleName())
-            ||  _requestor.getLogin().compareTo(user) == 0
-        ) {
-            // the requestion is the user searched himself or it have admin / user admin global right
-            // so we can hase the information
-            return true;
-        } else {
-            // The user is not a global user admin. We may verify if the user can be a local user admin
-            // for a group where this user is...
-            // @TODO - manage the group ACL
-            return false;
-        }
-    }
-
+    @Autowired
+    protected UserCommon userCommon;
 
     /**
      * Return user basic profile for a given user. Only Admin can acces user information or you can access for yourself
@@ -117,7 +93,7 @@ public class UserProfileService {
         try {
             User _requestor = userCache.getUser(requestor);
 
-            if ( !this.isLegitAccessRead(_requestor,user,false) ) {
+            if ( !userCommon.isLegitAccessRead(_requestor,user,false) ) {
                 log.warn("[users] Requestor {} does not have access right to user {} profile", requestor, user);
                 throw new ITRightException("user-profile-no-access");
             }
@@ -164,7 +140,7 @@ public class UserProfileService {
 
             User _requestor = userCache.getUser(requestor);
 
-            if ( !this.isLegitAccessRead(_requestor,user,false) ) {
+            if ( !userCommon.isLegitAccessRead(_requestor,user,false) ) {
                 log.warn("[users] Requestor {} does not have access right to user {} profile", requestor, user);
                 throw new ITRightException("user-profile-no-access");
             }
@@ -230,7 +206,7 @@ public class UserProfileService {
             User _requestor = userCache.getUser(requestor);
             String user = body.getLogin();
 
-            if ( !this.isLegitAccessRead(_requestor,user,true) ) {
+            if ( !userCommon.isLegitAccessRead(_requestor,user,true) ) {
                 log.warn("[users] Requestor {} does not have access right to user {} profile", requestor, user);
                 throw new ITRightException("user-profile-no-access");
             }
@@ -324,7 +300,7 @@ public class UserProfileService {
         try {
             User _requestor = userCache.getUser(requestor);
 
-            if ( !this.isLegitAccessRead(_requestor,user,true) ) {
+            if ( !userCommon.isLegitAccessRead(_requestor,user,true) ) {
                 log.warn("[users] Requestor {} does not have write access right to user {} profile", requestor, user);
                 throw new ITRightException("user-profile-no-access");
             }
@@ -384,7 +360,7 @@ public class UserProfileService {
         try {
             User _requestor = userCache.getUser(requestor);
 
-            if ( !this.isLegitAccessRead(_requestor,user,true) ) {
+            if ( !userCommon.isLegitAccessRead(_requestor,user,true) ) {
                 log.warn("[users] Requestor {} does not have write access right to user {} profile", requestor, user);
                 throw new ITRightException("user-profile-no-access");
             }
@@ -568,7 +544,7 @@ public class UserProfileService {
 
         try {
             User _requestor = userCache.getUser(requestor);
-            if ( !this.isLegitAccessRead(_requestor,user,true) ) {
+            if ( !userCommon.isLegitAccessRead(_requestor,user,true) ) {
                 log.warn("[users] Requestor {} does not have access right to user {} profile", requestor, user);
                 throw new ITRightException("user-profile-no-access");
             }
@@ -628,7 +604,7 @@ public class UserProfileService {
         try {
             User _requestor = userCache.getUser(requestor);
 
-            if ( !this.isLegitAccessRead(_requestor,user,true) ) {
+            if ( !userCommon.isLegitAccessRead(_requestor,user,true) ) {
                 log.warn("[users] Requestor {} does not have write access right to user {} profile", requestor, user);
                 throw new ITRightException("user-profile-no-access");
             }
@@ -665,6 +641,7 @@ public class UserProfileService {
                 );
             } else {
                 // delete immediately
+                // @TODO - delete all the user related data in other services (devices, groups, data, etc.)
                 userRepository.delete(_user);
             }
         } catch (ITNotFoundException x) {
@@ -707,7 +684,7 @@ public class UserProfileService {
         try {
             User _requestor = userCache.getUser(requestor);
 
-            if ( !this.isLegitAccessRead(_requestor,user,true) ) {
+            if ( !userCommon.isLegitAccessRead(_requestor,user,true) ) {
                 log.warn("[users] Requestor {} does not have write access right to user {} profile", requestor, user);
                 throw new ITRightException("user-profile-no-access");
             }
@@ -795,6 +772,11 @@ public class UserProfileService {
         }
 
     }
+
+    // ==========================================================================
+    // Admin functions
+    // ==========================================================================
+
 
 
 }

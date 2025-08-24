@@ -27,6 +27,7 @@ import com.disk91.common.tools.HexCodingTools;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.users.mdb.entities.sub.*;
+import com.disk91.users.services.UsersRolesCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.annotation.Id;
@@ -939,12 +940,25 @@ public class User implements CloneableObject<User> {
      * Check if a given role has been attributed to the user
      * @param role
      */
-    public boolean isInRole(String role) {
+    protected boolean isInRole(String role) {
         if ( this.roles == null ) return false;
         for ( String r : this.roles ) {
             if ( r.compareTo(role) == 0 ) return true;
         }
         return false;
+    }
+
+    public boolean isInRole(UsersRolesCache.StandardRoles role) {
+        return isInRole(role.getRoleName());
+    }
+
+    /**
+     * Add a role to the user, if not already present
+     * @param role
+     */
+    public void addRole(UsersRolesCache.StandardRoles role) {
+        if ( this.roles == null ) this.roles = new ArrayList<>();
+        if ( ! this.isInRole(role) ) this.roles.add(role.getRoleName());
     }
 
 

@@ -131,6 +131,7 @@ public class UserBasicProfileResponse {
 
     // ==========================
     // Build from User Object
+    // (encryption key must be injected)
     public void buildFromUser(User u) {
         try {
             this.email = u.getEncEmail();

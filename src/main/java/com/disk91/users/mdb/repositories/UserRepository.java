@@ -43,7 +43,7 @@ public interface UserRepository extends MongoRepository<User,String> {
         public void deleteUserByDeletionDate(long now);
 
         // Find all the user in the purgatory ( deletionDate > 0 && < Now  )
-        @Query(value = "{ 'deletionDate': { $exists: true, $gt : 0, $lt: ?0 } }")
+        @Query(value = "{ 'deletionDate': { $exists: true, $gt: ?0 } }")
         public List<User> findUserInPurgatory(long now);
 
 

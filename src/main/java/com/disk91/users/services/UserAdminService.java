@@ -20,19 +20,31 @@
 package com.disk91.users.services;
 
 import com.disk91.audit.integration.AuditIntegration;
+import com.disk91.common.api.interfaces.ActionResult;
 import com.disk91.common.config.CommonConfig;
 import com.disk91.common.tools.*;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
+import com.disk91.common.tools.exceptions.ITParseException;
+import com.disk91.common.tools.exceptions.ITRightException;
 import com.disk91.users.api.interfaces.*;
 import com.disk91.users.config.UserMessages;
 import com.disk91.users.config.UsersConfig;
 import com.disk91.users.mdb.entities.User;
 import com.disk91.users.mdb.repositories.UserRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -75,6 +87,13 @@ public class UserAdminService {
     // Search functions
     // ==========================================================================
 
+    /**
+     * Get the list of users in purgatory
+     * @param requester
+     * @param req
+     * @return
+     * @throws ITNotFoundException
+     */
     public List<UserListElementResponse> searchUsersInPurgatory(
             String requester,
             HttpServletRequest req
@@ -97,6 +116,36 @@ public class UserAdminService {
 
         return response;
     }
+
+    /**
+     * Get the list of users based on email search
+     * @param requester
+     * @param req
+     * @return
+     * @throws ITNotFoundException
+     */
+    public List<UserListElementResponse> searchUsersByEmail(
+            String requester,
+            UserSearchBody body,
+            HttpServletRequest req
+    ) throws ITNotFoundException {
+        ArrayList<UserListElementResponse> response = new ArrayList<>();
+
+        /* TODO
+        List<User> users = userRepository.findUserInPurgatory(Now.NowUtcMs());
+        if ( users.isEmpty() ) throw new ITNotFoundException("user-none-in-purgatory");
+
+        for(User u : users) {
+            u.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
+            UserListElementResponse r = new UserListElementResponse();
+            r.buildFromUser(u);
+            response.add(r);
+            u.cleanKeys();
+        }
+*/
+        return response;
+    }
+
 
 
 }

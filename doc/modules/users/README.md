@@ -34,11 +34,13 @@ A user can be created manually by an administrator or after a self registration.
     - On first login, user will have to change its password.
     - User can be redirected to profile configuration or will do it later on its own base on boolean parameter `user.pending.forceprofile`
     - The user can then be validated by an administrator to assign the `ROLE_REGISTERED_USER` role or automatically moved to that status depending on the configuration boolean parameter `user.pending.autovalidation`
-
+- Super Administrator:
+    - See above in the Super Administrator section. The super adminstrator is able to manage the user and all other modules.
+  
 User can delete his account, also after a given period of inactivity, the user account will be frozen by removing the `userSecret` value. This value is used for encrypting user information,
 as a consequence, without a new login of the user with the right password, the data will stay encrypted and not accessible, even for the platform administrator.  The frozen period is decided by the `user.max.inactivity` parameter.
 
-* User signout updates the `sessionSecret` value for token repudiation ; all running session for that user are canceled.
+* User sign out updates the `sessionSecret` value for token repudiation ; all running session for that user are canceled.
 * User session JWT token have an expiration defined by `users.session.timeout.sec` default 10 hours.
 * API accounts have a long life JWT token, the expiration is set to 30 years by default (value 0) defined by `users.session.api.timeout.sec`.
   ROLE_USER_ADMIN can create apiAccount and generate JWT for them with an API endpoint.
@@ -139,6 +141,14 @@ when a user stopped to use the service. Practically, `users.data.privacy.expirat
 user data will be made inaccessible. This is done by removing the userSecret value. The userSecret is used for encrypting user information, so without
 this key the data can't be restored anymore. When the user decides to reconnect the system, the `userSecret` is restored from the plain text password and the 
 data can be decrypted again. As the password is never stored, the `userSecret` can't be restored without the user action.
+
+### Search user in encryption context
+
+Due to the encryption of personal data, it is not possible to perform searches on fields such as email. 
+However, to allow minimal searching, the first three letters of the email are stored in a field as a hash 
+that is not linked to the user's key. This approach allows searching based on this hash, which meets part 
+of the need. Searches on other fields are possible but require a full scan of the database, which is not 
+recommended and is limited to users whose key remains active.
 
 ### Super Administrator
 

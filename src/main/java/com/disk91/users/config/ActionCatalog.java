@@ -13,6 +13,7 @@ public class ActionCatalog {
         PASSWORD_CHANGE,
         TWOFACTOR_CHANGE,
         PROFILE_UPDATE,
+        RESTORATION,                // Restore from logical deletion
 
         UNKNOWN
     }
@@ -41,6 +42,8 @@ public class ActionCatalog {
                 return "twofactor_change";
             case PROFILE_UPDATE:
                 return "profile_update";
+            case RESTORATION:
+                return "restore";
             case UNKNOWN:
             default:
                 return "unknown";

@@ -591,14 +591,15 @@ public class UserProfileService {
      * a full destroy. User login won't be possible after this action until admin restore.
      * When the deletion purgatory period is set to 0, the account is immediately destroyed.
      *
-     * @param requestor
-     * @param user
-     * @param req
+     * @param requestor - user requesting the deletion
+     * @param user - user to delete
+     * @param immediate - when true, the user is immediately deleted, no purgatory period
+     * @param req - for tracing IP and audit log
      * @throws ITRightException
      * @throws ITNotFoundException
      * @throws ITParseException
      */
-    public void deleteUser(String requestor, String user, HttpServletRequest req )
+    public void deleteUser(String requestor, String user, boolean immediate, HttpServletRequest req )
     throws ITRightException, ITNotFoundException, ITParseException {
 
         try {
@@ -620,12 +621,10 @@ public class UserProfileService {
             }
 
             _user.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
-            if ( usersConfig.getUsersDeletionPurgatoryDuration() > 0 ) {
+            if ( usersConfig.getUsersDeletionPurgatoryDuration() > 0 && !immediate ) {
                 if (_user.getDeletionDate() == 0) {
                     _user.setDeletionDate(Now.NowUtcMs()+(usersConfig.getUsersDeletionPurgatoryDuration()*Now.ONE_HOUR));
                                                                 // prepare for future physical deletion
-                    _user.setActive(false);                     // make sure it is not reconnecting later
-                    _user.setLocked(true);                      // ...
                     _user.clearUserSecret();                    // make sure personal data won't be accessible
                     _user.renewSessionSecret();                 // disconnect the existing sessions
                     _user.clearApiSessionSecret();              // disconnect the existing API sessions
@@ -643,6 +642,13 @@ public class UserProfileService {
                 // delete immediately
                 // @TODO - delete all the user related data in other services (devices, groups, data, etc.)
                 userRepository.delete(_user);
+                auditIntegration.auditLog(
+                        ModuleCatalog.Modules.USERS,
+                        ActionCatalog.getActionName(ActionCatalog.Actions.DELETION),
+                        _user.getLogin(),
+                        "User immediate deletion by {0} from {1}",
+                        new String[]{_requestor.getLogin(), (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+                );
             }
         } catch (ITNotFoundException x) {
             log.error("[users] Requestor does not exists", x);
@@ -657,9 +663,60 @@ public class UserProfileService {
      */
     @Scheduled(fixedRate = 300000)
     void processUserPhysicalDeletion() {
-        // remove all the expired registrations
-        long now = Now.NowUtcMs();
-        userRepository.deleteUserByDeletionDate(Now.NowUtcMs());
+        try {
+            // remove all the expired registrations
+            // @TODO - delete all the user related data in other services (devices, groups, data, etc.)
+            // @TODO - add an audit log for each deletions
+            userRepository.deleteUserByDeletionDate(Now.NowUtcMs());
+        } catch (Exception x) {
+            // catch exception to avoid scheduler blocking
+            log.error("[users] Unable to proceed to physical user deletion", x);
+        }
+    }
+
+    /**
+     * Resume a user account currently in purgatory. Only Admin can do this action
+     */
+    public void restoreUser(String requestor, String user, HttpServletRequest req )
+            throws ITRightException, ITNotFoundException, ITParseException {
+        User _requestor;
+        try {
+            _requestor = userCache.getUser(requestor);
+        } catch (ITNotFoundException x) {
+            log.error("[users] Requestor does not exists", x);
+            throw new ITRightException("user-profile-user-not-found");
+        }
+
+        if ( !userCommon.isLegitAccessRead(_requestor,user,true) ) {
+            log.warn("[users] Requestor {} does not have write access right to user {} profile", requestor, user);
+            throw new ITRightException("user-profile-no-access");
+        }
+
+        User _user = _requestor;
+        if ( requestor.compareTo(user) != 0 ) {
+            try {
+                _user = userCache.getUser(user);
+            } catch (ITNotFoundException x){
+                log.warn("[users] Searched user does not exists", x);
+                throw new ITNotFoundException("user-profile-user-not-found");
+            }
+        }
+
+        // restore the user if in purgatory
+        if ( _user.getDeletionDate() > 0  && _user.getDeletionDate() > Now.NowUtcMs()) {
+            _user.setDeletionDate(0);
+            userCache.saveUser(_user);
+            auditIntegration.auditLog(
+                    ModuleCatalog.Modules.USERS,
+                    ActionCatalog.getActionName(ActionCatalog.Actions.RESTORATION),
+                    _user.getLogin(),
+                    "User restored form purgatory by {0} from {1}",
+                    new String[]{_requestor.getLogin(), (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+            );
+
+        } else {
+            throw new ITParseException("user-profile-not-to-restore");
+        }
     }
 
 

@@ -256,6 +256,7 @@ public class ApiUsersProfile {
             userProfileService.deleteUser(
                     request.getUserPrincipal().getName(),
                     request.getUserPrincipal().getName(),
+                    false,
                     request);
             return new ResponseEntity<>(ActionResult.OK("user-profile-delete-done"), HttpStatus.OK);
         } catch (ITParseException | ITRightException | ITNotFoundException e ) {

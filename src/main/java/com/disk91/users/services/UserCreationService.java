@@ -141,6 +141,7 @@ public class UserCreationService {
         u = new User();
         u.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
         u.setEncLogin(body.getEmail());
+        u.setEncLoginSearch(body.getEmail());
         u.changePassword(_password,true);
         u.setCountLogin(0);
         u.setRegistrationDate(now);

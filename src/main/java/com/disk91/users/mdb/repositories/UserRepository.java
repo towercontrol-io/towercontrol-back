@@ -46,5 +46,4 @@ public interface UserRepository extends MongoRepository<User,String> {
         @Query(value = "{ 'deletionDate': { $exists: true, $gt: ?0 } }")
         public List<User> findUserInPurgatory(long now);
 
-
 }

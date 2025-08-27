@@ -34,7 +34,9 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
@@ -65,6 +67,11 @@ public class User implements CloneableObject<User> {
 
     // hash of user login, usually the password of the user
     protected String login;
+
+    // hash of the 3 first letters of the email + hash of 3 first letters of the domain to allow searching
+    @Indexed(name = "idx_user_search")
+    @Field("userSearch")
+    protected ArrayList<String> userSearch;
 
     // hash of the user password
     protected String password;
@@ -107,7 +114,7 @@ public class User implements CloneableObject<User> {
     // Password Reset String expiration date (Ms since epoch)
     protected long passwordResetExp;
 
-    // Accout Status, active can login.
+    // Account Status, active can login.
     protected boolean active;
 
     // Account locked status, user can't login but has been validated
@@ -559,12 +566,53 @@ public class User implements CloneableObject<User> {
         }
     }
 
+    /**
+     * Encode the email for search purpose, we use the 3 first letters of the email and the 3 first letters of the domain
+     * as key that will be hashed and substring for search purpose.
+     * @param email
+     * @return
+     * @throws ITParseException
+     */
+    public static ArrayList<String> encodeSearch(String email) throws ITParseException {
+        String[] parts = email.split("@");
+        ArrayList<String> ret = new ArrayList<>();
+        String localPart = parts[0].substring(0, Math.min(parts[0].length(), 3));
+        ret.add(encodeLogin(localPart).substring(0,8));
+        if ( parts.length >= 2 ) {
+            String domainPart = parts[1].substring(0, Math.min(parts[1].length(), 3));
+            ret.add(encodeLogin(domainPart).substring(0,8));
+        }
+        return ret;
+    }
+
     public void setEncLogin(String login) throws ITParseException {
         try {
             this.login = encodeLogin(login);
         } catch (ITParseException e) {
             log.error("[users] Error while hashing login", e);
             throw new ITParseException("Unsupported hashing algorithm");
+        }
+    }
+
+    /**
+     * Set the userSearch of the user, this is used to search for a user based on its login (email)
+     * We use a Hash of the 3 first letters of the email and a hash of 3 first letters of the domain
+     * to avoid storing the login in clear text. The hash uses the same salt as login. We only keep the 8 first letters
+     * of the 2 hashes.
+     * @param login
+     * @throws ITParseException
+     */
+    public void setEncLoginSearch(String login) throws ITParseException {
+        try {
+            String[] parts = login.split("@");
+            if ( parts.length != 2 ) throw new ITParseException("user-login-is-not-an-email");
+            String localPart = parts[0].substring(0, Math.min(parts[0].length(), 3));
+            String domainPart = parts[1].substring(0, Math.min(parts[1].length(), 3));
+            this.userSearch = new ArrayList<>();
+            this.userSearch.add(encodeLogin(localPart).substring(0,8));
+            this.userSearch.add(encodeLogin(domainPart).substring(0,8));
+        } catch (ITParseException e) {
+            throw new ITParseException("user-login-hashing-issue");
         }
     }
 
@@ -1012,6 +1060,13 @@ public class User implements CloneableObject<User> {
         }
         u.setAcls(_acls);
 
+        // Create a copy the search keys
+        ArrayList<String> _userSearch = new ArrayList<String>();
+        if ( this.userSearch != null ) {
+            _userSearch.addAll(this.userSearch);
+        }
+        u.setUserSearch(_userSearch);
+
         // Create & copy Custom Fields
         if (this.customFields != null) {
             ArrayList<CustomField> cf = new ArrayList<>();
@@ -1318,5 +1373,13 @@ public class User implements CloneableObject<User> {
 
     public void setApiKeys(ArrayList<UserApiKeys> apiKeys) {
         this.apiKeys = apiKeys;
+    }
+
+    public ArrayList<String> getUserSearch() {
+        return userSearch;
+    }
+
+    public void setUserSearch(ArrayList<String> userSearch) {
+        this.userSearch = userSearch;
     }
 }

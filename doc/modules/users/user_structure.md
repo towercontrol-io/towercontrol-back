@@ -6,6 +6,7 @@ The user data structure is defined as follows:
   "id": "string",                 // technical uniq identifier
   "version": "number",            // user structure version
   "login": "string",              // user name for login, this is a hash of the email
+  "userSearch": ["string" ],      // Hashes of the 3 first letter of the email + domain for search optimization, can be later extended with other keywords
   "password": "string",           // password hash
   "email": "string",              // user email [Base64(encrypted)]
   "roles": [

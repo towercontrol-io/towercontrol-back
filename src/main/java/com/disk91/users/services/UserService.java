@@ -131,6 +131,9 @@ public class UserService {
             throw new ITParseException("Password is empty");
         }
 
+        // Make sure the email is in lowercase
+        body.setEmail(body.getEmail().toLowerCase());
+
         // Get the hash of the user login
         String loginHash = User.encodeLogin(body.getEmail());
 
@@ -145,6 +148,11 @@ public class UserService {
             // Check if authorized
             if ( u.isLocked() || !u.isActive() ) {
                 log.info("[users][service] Inactive user {} attempted ot login", u.getLogin());
+                this.incLoginFailed();
+                throw new ITRightException("User is not authorized");
+            }
+            if ( u.getDeletionDate() > 0 ) {
+                log.info("[users][service] User in purgatory {} attempted ot login", u.getLogin());
                 this.incLoginFailed();
                 throw new ITRightException("User is not authorized");
             }
@@ -172,6 +180,10 @@ public class UserService {
             if ( u.getUserSecret() == null || u.getUserSecret().isEmpty() ) {
                 log.info("[users][service] User {} reactivated", u.getLogin());
                 u.restoreUserSecret(body.getPassword());
+                // in case the search key was not set, set it now
+                if ( u.getUserSearch() == null || u.getUserSearch().isEmpty() ) {
+                    u.setEncLoginSearch(body.getEmail());
+                }
                 u.setModificationDate(Now.NowUtcMs());
                 // add a trace of this action in the Audit Log
                 auditIntegration.auditLog(

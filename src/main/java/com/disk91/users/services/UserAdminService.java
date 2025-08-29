@@ -128,24 +128,58 @@ public class UserAdminService {
             String requester,
             UserSearchBody body,
             HttpServletRequest req
-    ) throws ITNotFoundException {
+    ) throws ITParseException, ITNotFoundException {
+        if ( body.getSearch() == null || body.getSearch().length() < 3 )
+            throw new ITNotFoundException("user-search-invalid-input");
+
         ArrayList<UserListElementResponse> response = new ArrayList<>();
 
-        /* TODO
-        List<User> users = userRepository.findUserInPurgatory(Now.NowUtcMs());
-        if ( users.isEmpty() ) throw new ITNotFoundException("user-none-in-purgatory");
-
-        for(User u : users) {
-            u.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
-            UserListElementResponse r = new UserListElementResponse();
-            r.buildFromUser(u);
-            response.add(r);
-            u.cleanKeys();
+        try {
+            List<String> keys = User.encodeSearch(body.getSearch());
+            List<User> users = userRepository.findByUserSearchAll(keys);
+            if ( users != null && !users.isEmpty() ) {
+                for ( User u : users ) {
+                    u.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
+                    UserListElementResponse r = new UserListElementResponse();
+                    r.buildFromUser(u);
+                    response.add(r);
+                    u.cleanKeys();
+                }
+            }
+        } catch (ITParseException e) {
+            throw new ITParseException("user-search-invalid-input");
         }
-*/
         return response;
     }
 
+    /**
+     * Get the 10 last connected users, excluding the requester
+     * @param requester
+     * @param req
+     * @return
+     * @throws ITNotFoundException
+     */
+    public List<UserListElementResponse> searchLastConnectecUsers(
+            String requester,
+            HttpServletRequest req
+    ){
+
+        ArrayList<UserListElementResponse> response = new ArrayList<>();
+        List<User> users = userRepository.findTop11ByOrderByLastLoginDesc();
+        if ( users != null && !users.isEmpty() ) {
+            for ( User u : users ) {
+                if ( u.getLogin().compareTo(requester) != 0 ) {
+                    u.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
+                    UserListElementResponse r = new UserListElementResponse();
+                    r.buildFromUser(u);
+                    response.add(r);
+                    u.cleanKeys();
+                }
+            }
+        }
+        return response;
+
+    }
 
 
 }

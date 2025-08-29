@@ -30,20 +30,31 @@ import java.util.List;
 
 @Repository
 public interface UserRepository extends MongoRepository<User,String> {
-        public User findOneUserByLogin(String login);
+    public User findOneUserByLogin(String login);
 
-        @Query(value = "{ 'lastLogin': { $lt: ?0 }, 'userSecret': { $ne: '', $ne: null }, 'apiAccount': { $ne: true } }")
-        public List<User> findExpiratedUsers(long lastLoginLimit);
+    @Query(value = "{ 'lastLogin': { $lt: ?0 }, 'userSecret': { $ne: '', $ne: null }, 'apiAccount': { $ne: true } }")
+    public List<User> findExpiratedUsers(long lastLoginLimit);
 
-        // Return "the" User with the corresponding password reset id and a expiration date in the future
-        public User findOneUserByPasswordResetIdAndPasswordResetExpGreaterThan(String passwordResetId, long expirationDate);
+    // Return "the" User with the corresponding password reset id and a expiration date in the future
+    public User findOneUserByPasswordResetIdAndPasswordResetExpGreaterThan(String passwordResetId, long expirationDate);
 
-        // Delete the User when the deletionDate > 0 && < Now
-        @Query(value = "{ 'deletionDate': { $exists: true, $gt : 0, $lt: ?0 } }", delete = true)
-        public void deleteUserByDeletionDate(long now);
+    // Delete the User when the deletionDate > 0 && < Now
+    @Query(value = "{ 'deletionDate': { $exists: true, $gt : 0, $lt: ?0 } }", delete = true)
+    public void deleteUserByDeletionDate(long now);
 
-        // Find all the user in the purgatory ( deletionDate > 0 && < Now  )
-        @Query(value = "{ 'deletionDate': { $exists: true, $gt: ?0 } }")
-        public List<User> findUserInPurgatory(long now);
+    // Find all the user in the purgatory ( deletionDate > 0 && < Now  )
+    @Query(value = "{ 'deletionDate': { $exists: true, $gt: ?0 } }")
+    public List<User> findUserInPurgatory(long now);
+
+    // Find all users with one of the given keys
+    @Query("{ 'userSearch': { $in: ?0 } }")
+    public List<User> findByUserSearchIn(List<String> keys);
+
+    // Find all users with all the given keys
+    @Query("{ 'userSearch': { $all: ?0 } }")
+    public List<User> findByUserSearchAll(List<String> keys);
+
+    // Find the 10 Last connected users
+    public List<User> findTop11ByOrderByLastLoginDesc();
 
 }

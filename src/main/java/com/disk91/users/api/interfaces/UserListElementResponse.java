@@ -116,7 +116,7 @@ public class UserListElementResponse {
         try {
             this.email = u.getEncEmail();
         } catch (ITParseException x) {
-            this.email = "Not available";
+            this.email = "encrypted";
         }
         this.login = u.getLogin();
         this.lastLogin = u.getLastLogin();

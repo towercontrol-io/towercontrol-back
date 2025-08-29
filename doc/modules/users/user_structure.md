@@ -37,8 +37,8 @@ The user data structure is defined as follows:
   "passwordResetId" : "string",   // randomly generated secret key for password reset
   "passwordResetExp" : "number",  // Expiration for password reset in MS since epoch
   
-  "active": "boolean",            // user active flag
-  "locked": "boolean",            // user locked flag
+  "active": "boolean",            // user active flag, means the user is activated, validated by admin or by email confirmation
+  "locked": "boolean",            // user locked flag, means we decided after to lock this user, for example after too many bad login
   "expiredPassword": "long",      // password expriration date in MS since epoch
   "apiAccount" : "boolean",       // flag to indicate if user is an API account
   "apiAccountOwner" : "string",   // user login of the owner of the API account

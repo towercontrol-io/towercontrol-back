@@ -4,9 +4,7 @@ import com.disk91.common.api.interfaces.ActionResult;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITRightException;
-import com.disk91.users.api.interfaces.UserAccountCreationBody;
-import com.disk91.users.api.interfaces.UserListElementResponse;
-import com.disk91.users.api.interfaces.UserRestoreBody;
+import com.disk91.users.api.interfaces.*;
 import com.disk91.users.services.UserAdminService;
 import com.disk91.users.services.UserProfileService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -78,6 +76,87 @@ public class ApiUsersAdmin {
         } catch (ITNotFoundException x) {
             return new ResponseEntity<>(new ArrayList<UserListElementResponse>(), HttpStatus.OK);
         }
+    }
+
+    /**
+     * Get the list of users based on a search criteria
+     *
+     * Return the list of users based on a search criteria, no filter on the user profile is done.
+     * The input is an email, as the email is encrypted, search is based on hash of group of 3 characters
+     * from the beginning of the email and the domain name if provided. A minimum of 3 characters is required.
+     *
+     */
+    @Operation(
+            summary = "Get the list of users based on a search criteria",
+            description = "Return the list of users based on a search criteria, no filter on the user profile is done. " +
+                    "The input is an email, as the email is encrypted, search is based on hash of group of 3 characters " +
+                    "from the beginning of the email and the domain name if provided. A minimum of 3 characters is required. " +
+                    "Returns an empty list when no user are found." +
+                    "Only god admin and user admin can get that list, API sessions not allowed.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "List of user in purgatory",
+                            content = @Content(array = @ArraySchema(schema = @Schema( implementation = UserListElementResponse.class)))),
+                    @ApiResponse(responseCode = "400", description = "Parse Error", content = @Content(schema = @Schema(implementation = ActionResult.class))),
+                    @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content(schema = @Schema(implementation = ActionResult.class))),
+            }
+    )
+    @RequestMapping(
+            value = "/search",
+            produces = "application/json",
+            method = RequestMethod.POST
+    )
+    @PreAuthorize("hasRole('ROLE_LOGIN_COMPLETE') and hasAnyRole('ROLE_GOD_ADMIN','ROLE_USER_ADMIN')")
+    // ----------------------------------------------------------------------
+    public ResponseEntity<?> postUserSearch(
+            HttpServletRequest request,
+            @RequestBody(required = true) UserSearchBody body
+    ) {
+        try {
+            List<UserListElementResponse> r = userAdminService.searchUsersByEmail(
+                    request.getUserPrincipal().getName(),
+                    body,
+                    request
+            );
+            return new ResponseEntity<>(r, HttpStatus.OK);
+        } catch (ITNotFoundException x) {
+            return new ResponseEntity<>(new ArrayList<UserListElementResponse>(), HttpStatus.OK);
+        } catch (ITParseException x) {
+            return new ResponseEntity<>(ActionResult.BADREQUEST(x.getMessage()), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    /**
+     * Get the list of last connected users
+     *
+     * Return the list of 10-11 last connected users excluding the requestor when present.
+     *
+     */
+    @Operation(
+            summary = "Get the list of last connected users",
+            description = "Return the list of 10-11 last connected users excluding the requestor when present. " +
+                    "Returns an empty list when no user are found." +
+                    "Only god admin and user admin can get that list, API sessions not allowed.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "List of user in purgatory",
+                            content = @Content(array = @ArraySchema(schema = @Schema( implementation = UserListElementResponse.class)))),
+                    @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content(schema = @Schema(implementation = ActionResult.class))),
+            }
+    )
+    @RequestMapping(
+            value = "/search",
+            produces = "application/json",
+            method = RequestMethod.GET
+    )
+    @PreAuthorize("hasRole('ROLE_LOGIN_COMPLETE') and hasAnyRole('ROLE_GOD_ADMIN','ROLE_USER_ADMIN')")
+    // ----------------------------------------------------------------------
+    public ResponseEntity<?> getUserSearch(
+            HttpServletRequest request
+    ) {
+        List<UserListElementResponse> r = userAdminService.searchLastConnectecUsers(
+                request.getUserPrincipal().getName(),
+                request
+        );
+        return new ResponseEntity<>(r, HttpStatus.OK);
     }
 
     // ==========================================================================
@@ -171,6 +250,146 @@ public class ApiUsersAdmin {
                     true,
                     request);
             return new ResponseEntity<>(ActionResult.OK("user-profile-delete-done"), HttpStatus.OK);
+        } catch (ITParseException | ITNotFoundException e ) {
+            return new ResponseEntity<>(ActionResult.BADREQUEST(e.getMessage()), HttpStatus.BAD_REQUEST);
+        } catch (ITRightException e ) {
+            return new ResponseEntity<>(ActionResult.FORBIDDEN(e.getMessage()), HttpStatus.FORBIDDEN);
+        }
+    }
+
+    // ==========================================================================
+    // User modification by admin
+    // ==========================================================================
+
+    /**
+     * Switch a user active mode (activate / deactivate)
+     *
+     * This endpoint allows an admin user set a user as active or not active.
+     * A user with self registration with admin validation will be initially not active.
+     * A non active user cannot login.
+     *
+     * This endpoint is private
+     */
+    @Operation(
+            summary = "Switch a user active mode (activate / deactivate)",
+            description = "This endpoint allows an admin user set a user as active or not active. " +
+                    "A user with self registration with admin validation will be initially not active. " +
+                    "A non active user cannot login. " +
+                    "Only god admin and user admin can get that list, API sessions not allowed.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "User state changed", content = @Content(schema = @Schema(implementation = ActionResult.class))),
+                    @ApiResponse(responseCode = "400", description = "State change failed", content = @Content(schema = @Schema(implementation = ActionResult.class))),
+                    @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content(schema = @Schema(implementation = ActionResult.class)))
+            }
+    )
+    @RequestMapping(
+            value = "/active",
+            produces = "application/json",
+            consumes = "application/json",
+            method = RequestMethod.PUT
+    )
+    @PreAuthorize("hasRole('ROLE_LOGIN_COMPLETE') and hasAnyRole('ROLE_GOD_ADMIN','ROLE_USER_ADMIN')")
+    // ----------------------------------------------------------------------
+    public ResponseEntity<?> activeUserByAdmin(
+            HttpServletRequest request,
+            @RequestBody(required = true) UserStateSwitchBody body
+    ) {
+        try {
+            userProfileService.activStateChangeUser(
+                    request.getUserPrincipal().getName(),
+                    body,
+                    request);
+            return new ResponseEntity<>(ActionResult.OK("user-profile-activation-done"), HttpStatus.OK);
+        } catch (ITParseException | ITNotFoundException e ) {
+            return new ResponseEntity<>(ActionResult.BADREQUEST(e.getMessage()), HttpStatus.BAD_REQUEST);
+        } catch (ITRightException e ) {
+            return new ResponseEntity<>(ActionResult.FORBIDDEN(e.getMessage()), HttpStatus.FORBIDDEN);
+        }
+    }
+
+
+    /**
+     * Switch a user lock mode (activate / deactivate)
+     *
+     * This endpoint allows an admin user set a user as locked or not locked.
+     * A locked user cannot login but all the data stays available.
+     *
+     * This endpoint is private
+     */
+    @Operation(
+            summary = "Switch a user lock mode (activate / deactivate)",
+            description = "This endpoint allows an admin user set a user as locked or not locked. " +
+                    "A locked user cannot login but all the data stays available. " +
+                    "Only god admin and user admin can get that list, API sessions not allowed.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "User state changed", content = @Content(schema = @Schema(implementation = ActionResult.class))),
+                    @ApiResponse(responseCode = "400", description = "State change failed", content = @Content(schema = @Schema(implementation = ActionResult.class))),
+                    @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content(schema = @Schema(implementation = ActionResult.class)))
+            }
+    )
+    @RequestMapping(
+            value = "/lock",
+            produces = "application/json",
+            consumes = "application/json",
+            method = RequestMethod.PUT
+    )
+    @PreAuthorize("hasRole('ROLE_LOGIN_COMPLETE') and hasAnyRole('ROLE_GOD_ADMIN','ROLE_USER_ADMIN')")
+    // ----------------------------------------------------------------------
+    public ResponseEntity<?> lockUserByAdmin(
+            HttpServletRequest request,
+            @RequestBody(required = true) UserStateSwitchBody body
+    ) {
+        try {
+            userProfileService.lockStateChangeUser(
+                    request.getUserPrincipal().getName(),
+                    body,
+                    request);
+            return new ResponseEntity<>(ActionResult.OK("user-profile-lock-state-done"), HttpStatus.OK);
+        } catch (ITParseException | ITNotFoundException e ) {
+            return new ResponseEntity<>(ActionResult.BADREQUEST(e.getMessage()), HttpStatus.BAD_REQUEST);
+        } catch (ITRightException e ) {
+            return new ResponseEntity<>(ActionResult.FORBIDDEN(e.getMessage()), HttpStatus.FORBIDDEN);
+        }
+    }
+
+
+    /**
+     * Disable user two factor authentication
+     *
+     * This endpoint allows to manually disable a user two factor authentication when that user
+     * is not able to restore the two factor by himself.
+     *
+     * This endpoint is private
+     */
+    @Operation(
+            summary = "Disable user two factor authentication",
+            description = "This endpoint allows to manually disable a user two factor authentication when that user " +
+                    "is not able to restore the two factor by himself. " +
+                    "Only god admin and user admin can get that list, API sessions not allowed.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "User 2fa disabled", content = @Content(schema = @Schema(implementation = ActionResult.class))),
+                    @ApiResponse(responseCode = "400", description = "2fa change failed", content = @Content(schema = @Schema(implementation = ActionResult.class))),
+                    @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content(schema = @Schema(implementation = ActionResult.class)))
+            }
+    )
+    @RequestMapping(
+            value = "/2fa/disable",
+            produces = "application/json",
+            consumes = "application/json",
+            method = RequestMethod.PUT
+    )
+    @PreAuthorize("hasRole('ROLE_LOGIN_COMPLETE') and hasAnyRole('ROLE_GOD_ADMIN','ROLE_USER_ADMIN')")
+    // ----------------------------------------------------------------------
+    public ResponseEntity<?> diable2faUserByAdmin(
+            HttpServletRequest request,
+            @RequestBody(required = true) UserStateSwitchBody body
+    ) {
+        try {
+            userProfileService.twoFaStateChangeUser(
+                    request.getUserPrincipal().getName(),
+                    body,
+                    request);
+            return new ResponseEntity<>(ActionResult.OK("user-two-fa-deactivated"), HttpStatus.OK);
         } catch (ITParseException | ITNotFoundException e ) {
             return new ResponseEntity<>(ActionResult.BADREQUEST(e.getMessage()), HttpStatus.BAD_REQUEST);
         } catch (ITRightException e ) {

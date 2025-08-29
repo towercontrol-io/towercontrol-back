@@ -834,6 +834,160 @@ public class UserProfileService {
     // Admin functions
     // ==========================================================================
 
+    /**
+     * Change the user state to active or not active. Only Admin can do this action
+     *
+     * @param requestor - user requesting the change
+     * @param body - user and state requested
+     * @param req - for tracing IP and audit log
+     * @throws ITRightException
+     * @throws ITNotFoundException
+     * @throws ITParseException
+     */
+    public void activStateChangeUser(String requestor, UserStateSwitchBody body, HttpServletRequest req )
+            throws ITRightException, ITNotFoundException, ITParseException {
 
+        if ( body.getLogin() == null || body.getLogin().isEmpty() ) {
+            throw new ITParseException("user-profile-login-invalid");
+        }
+
+        try {
+            User _requestor = userCache.getUser(requestor);
+
+            if ( !userCommon.isLegitAccessRead(_requestor,body.getLogin(),true) ) {
+                log.warn("[users] Requestor {} does not have write access right to user {} profile", requestor, body.getLogin());
+                throw new ITRightException("user-profile-no-access");
+            }
+
+            User _user = null;
+            try {
+                _user = userCache.getUser(body.getLogin());
+            } catch (ITNotFoundException x){
+                log.warn("[users] Searched user does not exists", x);
+                throw new ITRightException("user-profile-user-not-found");
+            }
+
+            // user found, rights verified, we can proceed
+            _user.setActive(body.isState());
+            userCache.saveUser(_user);                      // save & flush caches
+            auditIntegration.auditLog(
+                        ModuleCatalog.Modules.USERS,
+                        ActionCatalog.getActionName(ActionCatalog.Actions.PROFILE_UPDATE),
+                        _user.getLogin(),
+                        (body.isState()?"User actived by {0} from {1}":"User de-activated by {0} from {1}"),
+                        new String[]{_requestor.getLogin(), (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+            );
+        } catch (ITNotFoundException x) {
+            log.error("[users] Requestor does not exists", x);
+            throw new ITRightException("user-profile-user-not-found");
+        }
+    }
+
+
+    /**
+     * Change the user state to lock or unlock. Only Admin can do this action
+     *
+     * @param requestor - user requesting the change
+     * @param body - user and state requested
+     * @param req - for tracing IP and audit log
+     * @throws ITRightException
+     * @throws ITNotFoundException
+     * @throws ITParseException
+     */
+    public void lockStateChangeUser(String requestor, UserStateSwitchBody body, HttpServletRequest req )
+            throws ITRightException, ITNotFoundException, ITParseException {
+
+        if ( body.getLogin() == null || body.getLogin().isEmpty() ) {
+            throw new ITParseException("user-profile-login-invalid");
+        }
+
+        try {
+            User _requestor = userCache.getUser(requestor);
+
+            if ( !userCommon.isLegitAccessRead(_requestor,body.getLogin(),true) ) {
+                log.warn("[users] Requestor {} does not have write access right to user {} profile", requestor, body.getLogin());
+                throw new ITRightException("user-profile-no-access");
+            }
+
+            User _user = null;
+            try {
+                _user = userCache.getUser(body.getLogin());
+            } catch (ITNotFoundException x){
+                log.warn("[users] Searched user does not exists", x);
+                throw new ITRightException("user-profile-user-not-found");
+            }
+
+            // user found, rights verified, we can proceed
+            _user.setLocked(body.isState());
+            userCache.saveUser(_user);                      // save & flush caches
+            auditIntegration.auditLog(
+                    ModuleCatalog.Modules.USERS,
+                    ActionCatalog.getActionName(ActionCatalog.Actions.PROFILE_UPDATE),
+                    _user.getLogin(),
+                    (body.isState()?"User locked by {0} from {1}":"User un-locked by {0} from {1}"),
+                    new String[]{_requestor.getLogin(), (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+            );
+        } catch (ITNotFoundException x) {
+            log.error("[users] Requestor does not exists", x);
+            throw new ITRightException("user-profile-user-not-found");
+        }
+    }
+
+    /**
+     * Disable the user 2FA when active. Only Admin can do this action
+     *
+     * @param requestor - user requesting the change
+     * @param body - user and state requested
+     * @param req - for tracing IP and audit log
+     * @throws ITRightException
+     * @throws ITNotFoundException
+     * @throws ITParseException
+     */
+    public void twoFaStateChangeUser(String requestor, UserStateSwitchBody body, HttpServletRequest req )
+            throws ITRightException, ITNotFoundException, ITParseException {
+
+        if ( body.getLogin() == null || body.getLogin().isEmpty() ) {
+            throw new ITParseException("user-profile-login-invalid");
+        }
+
+        if (body.isState()) {
+            throw new ITParseException("user-profile-2fa-enable-not-allowed");
+        }
+
+        try {
+            User _requestor = userCache.getUser(requestor);
+
+            if ( !userCommon.isLegitAccessRead(_requestor,body.getLogin(),true) ) {
+                log.warn("[users] Requestor {} does not have write access right to user {} profile", requestor, body.getLogin());
+                throw new ITRightException("user-profile-no-access");
+            }
+
+            User _user = null;
+            try {
+                _user = userCache.getUser(body.getLogin());
+            } catch (ITNotFoundException x){
+                log.warn("[users] Searched user does not exists", x);
+                throw new ITRightException("user-profile-user-not-found");
+            }
+
+            if ( _user.getTwoFAType() == TwoFATypes.NONE ) {
+                throw new ITParseException("user-profile-2fa-not-enabled");
+            }
+
+            // user found, rights verified, we can proceed
+            _user.setTwoFAType(TwoFATypes.NONE);
+            userCache.saveUser(_user);                      // save & flush caches
+            auditIntegration.auditLog(
+                    ModuleCatalog.Modules.USERS,
+                    ActionCatalog.getActionName(ActionCatalog.Actions.TWOFACTOR_CHANGE),
+                    _user.getLogin(),
+                    "User {0} has deactivate second factor from {1}",
+                    new String[]{_requestor.getLogin(), (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+            );
+        } catch (ITNotFoundException x) {
+            log.error("[users] Requestor does not exists", x);
+            throw new ITRightException("user-profile-user-not-found");
+        }
+    }
 
 }

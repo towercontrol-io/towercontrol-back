@@ -131,7 +131,7 @@ public class JWTAuthorizationFilter extends GenericFilterBean {
             String user = claims.getSubject();
             try {
                 User u = userCache.getUser(user);
-                if ( u.isActive() && !u.isLocked() ) {
+                if ( u.isActive() && !u.isLocked() && u.getDeletionDate() == 0 ) {
                     // @TODO - Lets see if we have some other verification ?
                     // accept the authentication
                     SecurityContextHolder
@@ -158,9 +158,9 @@ public class JWTAuthorizationFilter extends GenericFilterBean {
             //log.warn("[users] Invalid token: "+token);
         } catch (MalformedJwtException x) {
             // sounds like signature problem
-            log.warn("[users] Invalid token: "+token);
+            if ( token != null ) log.warn("[users] Invalid token: {}", token);
         } catch (Exception x) {
-            log.error("[users] Invalid token: "+token);
+            log.error("[users] Invalid token: {}", token);
         }
         chain.doFilter(request, response);
 

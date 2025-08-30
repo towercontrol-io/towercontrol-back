@@ -195,7 +195,7 @@ public class ApiUsersAdmin {
     // ----------------------------------------------------------------------
     public ResponseEntity<?> deleteUserByAdmin(
             HttpServletRequest request,
-            @RequestBody(required = true) UserRestoreBody body
+            @RequestBody(required = true) UserIdentificationBody body
     ) {
         try {
             userProfileService.restoreUser(
@@ -241,7 +241,7 @@ public class ApiUsersAdmin {
     // ----------------------------------------------------------------------
     public ResponseEntity<?> purgeUserByAdmin(
             HttpServletRequest request,
-            @RequestBody(required = true) UserRestoreBody body
+            @RequestBody(required = true) UserIdentificationBody body
     ) {
         try {
             userProfileService.deleteUser(
@@ -256,6 +256,51 @@ public class ApiUsersAdmin {
             return new ResponseEntity<>(ActionResult.FORBIDDEN(e.getMessage()), HttpStatus.FORBIDDEN);
         }
     }
+
+    /**
+     * Request to delete user account
+     *
+     * This endpoint allows an admin to request the deletion of a user account. The account is logically
+     * deleted immediately, user won't be able to connect and the session are canceled, personal data
+     * access is locked. The user account will be physically deleted based on the purgatory parameter.
+     *
+     * This endpoint is public
+     */
+    @Operation(
+            summary = "User deletion request",
+            description = "Request for admin user deletion. The user account is logically deleted and the data access is locked. " +
+                    "The user account will be physically deleted based on the purgatory parameter. It can't be reactivated by the administrator " +
+                    "during this period of time. User personal data are all locked and will require user login to be reactivated. " +
+                    "Only god admin and user admin can get that list, API sessions not allowed.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "User deleted", content = @Content(schema = @Schema(implementation = ActionResult.class))),
+                    @ApiResponse(responseCode = "400", description = "Deletion failed", content = @Content(schema = @Schema(implementation = ActionResult.class)))
+            }
+    )
+    @RequestMapping(
+            value = "/delete",
+            produces = "application/json",
+            consumes = "application/json",
+            method = RequestMethod.DELETE
+    )
+    @PreAuthorize("hasRole('ROLE_LOGIN_COMPLETE') and hasAnyRole('ROLE_GOD_ADMIN','ROLE_USER_ADMIN')")
+    // ----------------------------------------------------------------------
+    public ResponseEntity<?> deleteUserSelf(
+            HttpServletRequest request,
+            @RequestBody(required = true) UserIdentificationBody body
+    ) {
+        try {
+            userProfileService.deleteUser(
+                    request.getUserPrincipal().getName(),
+                    body.getLogin(),
+                    false,
+                    request);
+            return new ResponseEntity<>(ActionResult.OK("user-profile-delete-done"), HttpStatus.OK);
+        } catch (ITParseException | ITRightException | ITNotFoundException e ) {
+            return new ResponseEntity<>(ActionResult.BADREQUEST("user-profile-delete-failed"), HttpStatus.BAD_REQUEST);
+        }
+    }
+
 
     // ==========================================================================
     // User modification by admin

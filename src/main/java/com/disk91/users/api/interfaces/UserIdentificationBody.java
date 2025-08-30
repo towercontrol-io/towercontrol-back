@@ -23,10 +23,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @Tag(name = "User restore", description = "Restore user account request body")
-public class UserRestoreBody {
+public class UserIdentificationBody {
 
     @Schema(
-            description = "The user login (hash) to be restored for purgatory",
+            description = "The user login (hash) to be used for the action",
             example = "E5C35687AF...",
             requiredMode = Schema.RequiredMode.REQUIRED
     )

@@ -602,6 +602,10 @@ public class UserProfileService {
     public void deleteUser(String requestor, String user, boolean immediate, HttpServletRequest req )
     throws ITRightException, ITNotFoundException, ITParseException {
 
+        if ( user == null || user.isEmpty() ) {
+            throw new ITParseException("user-profile-login-invalid");
+        }
+
         try {
             User _requestor = userCache.getUser(requestor);
 

@@ -178,8 +178,34 @@ public class UserAdminService {
             }
         }
         return response;
-
     }
 
+    /**
+     * Get the 50 last registered users, excluding the requester
+     * @param requester
+     * @param req
+     * @return
+     * @throws ITNotFoundException
+     */
+    public List<UserListElementResponse> searchLastRegisteredUsers(
+            String requester,
+            HttpServletRequest req
+    ){
+
+        ArrayList<UserListElementResponse> response = new ArrayList<>();
+        List<User> users = userRepository.findTop11ByOrderByRegistrationDateDesc();
+        if ( users != null && !users.isEmpty() ) {
+            for ( User u : users ) {
+                if ( u.getLogin().compareTo(requester) != 0 ) {
+                    u.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
+                    UserListElementResponse r = new UserListElementResponse();
+                    r.buildFromUser(u);
+                    response.add(r);
+                    u.cleanKeys();
+                }
+            }
+        }
+        return response;
+    }
 
 }

@@ -94,7 +94,7 @@ public class ApiUsersAdmin {
                     "Returns an empty list when no user are found." +
                     "Only god admin and user admin can get that list, API sessions not allowed.",
             responses = {
-                    @ApiResponse(responseCode = "200", description = "List of user in purgatory",
+                    @ApiResponse(responseCode = "200", description = "List of user corresponding to the search",
                             content = @Content(array = @ArraySchema(schema = @Schema( implementation = UserListElementResponse.class)))),
                     @ApiResponse(responseCode = "400", description = "Parse Error", content = @Content(schema = @Schema(implementation = ActionResult.class))),
                     @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content(schema = @Schema(implementation = ActionResult.class))),
@@ -137,7 +137,7 @@ public class ApiUsersAdmin {
                     "Returns an empty list when no user are found." +
                     "Only god admin and user admin can get that list, API sessions not allowed.",
             responses = {
-                    @ApiResponse(responseCode = "200", description = "List of user in purgatory",
+                    @ApiResponse(responseCode = "200", description = "List of users ordered by last connection date",
                             content = @Content(array = @ArraySchema(schema = @Schema( implementation = UserListElementResponse.class)))),
                     @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content(schema = @Schema(implementation = ActionResult.class))),
             }
@@ -158,6 +158,42 @@ public class ApiUsersAdmin {
         );
         return new ResponseEntity<>(r, HttpStatus.OK);
     }
+
+
+    /**
+     * Get the list of last registered users
+     *
+     * Return the list of 50 last registered users excluding the requestor when present.
+     *
+     */
+    @Operation(
+            summary = "Get the list of last registered users",
+            description = "Return the list of ~50 last registered users excluding the requestor when present. " +
+                    "Returns an empty list when no user registered." +
+                    "Only god admin and user admin can get that list, API sessions not allowed.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "List of users ordered on last registration",
+                            content = @Content(array = @ArraySchema(schema = @Schema( implementation = UserListElementResponse.class)))),
+                    @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content(schema = @Schema(implementation = ActionResult.class))),
+            }
+    )
+    @RequestMapping(
+            value = "/registered",
+            produces = "application/json",
+            method = RequestMethod.GET
+    )
+    @PreAuthorize("hasRole('ROLE_LOGIN_COMPLETE') and hasAnyRole('ROLE_GOD_ADMIN','ROLE_USER_ADMIN')")
+    // ----------------------------------------------------------------------
+    public ResponseEntity<?> getUserLastRegistered(
+            HttpServletRequest request
+    ) {
+        List<UserListElementResponse> r = userAdminService.searchLastRegisteredUsers(
+                request.getUserPrincipal().getName(),
+                request
+        );
+        return new ResponseEntity<>(r, HttpStatus.OK);
+    }
+
 
     // ==========================================================================
     // User restoration / deletion by admin

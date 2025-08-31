@@ -57,4 +57,7 @@ public interface UserRepository extends MongoRepository<User,String> {
     // Find the 10 Last connected users
     public List<User> findTop11ByOrderByLastLoginDesc();
 
+    // Find the 50 Last registered users
+    public List<User> findTop11ByOrderByRegistrationDateDesc();
+
 }

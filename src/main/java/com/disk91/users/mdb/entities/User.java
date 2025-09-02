@@ -988,7 +988,7 @@ public class User implements CloneableObject<User> {
      * Check if a given role has been attributed to the user
      * @param role
      */
-    protected boolean isInRole(String role) {
+    public boolean isInRole(String role) {
         if ( this.roles == null ) return false;
         for ( String r : this.roles ) {
             if ( r.compareTo(role) == 0 ) return true;

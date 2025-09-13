@@ -14,7 +14,7 @@ This module is responsible for managing users in the system. It provides the fol
 - [User roles attribution](./dynrole_structure.md)
 - [User specific i18n keys](./i18n.md)
 
-### User life cycle
+## User life cycle
 A user can be created manually by an administrator or after a self registration. User creation have different steps depending on the selected path:
 - self registration, enabled by `users.registration.self` property:
     - User is registering with an email, until the email has been confirmed, the user does not exist in the system but the
@@ -29,13 +29,16 @@ A user can be created manually by an administrator or after a self registration.
     - User can be redirected to profile configuration or will do it later on its own base on boolean parameter `user.pending.forceprofile`
     - The user can then be validated by an administrator to assign the `ROLE_REGISTERED_USER` role or automatically moved to that status
       depending on the configuration boolean parameter `users.pending.autovalidation`
+    - Self created user have `users.default.roles` affected on creation. The commercial version allows to have a specific role template based on the
+      the invitation code used. The templates are dynamic and modifiable with the UI. In commercial version, `user.default.roles` is used to setup the
+      `default` template.
 - Administrator registration:
     - User is created by an administrator with a `ROLE_PENDING_USER` role.
     - On first login, user will have to change its password.
     - User can be redirected to profile configuration or will do it later on its own base on boolean parameter `user.pending.forceprofile`
     - The user can then be validated by an administrator to assign the `ROLE_REGISTERED_USER` role or automatically moved to that status depending on the configuration boolean parameter `user.pending.autovalidation`
 - Super Administrator:
-    - See above in the Super Administrator section. The super adminstrator is able to manage the user and all other modules.
+    - See above in the Super Administrator section. The super administrator is able to manage the user and all other modules.
   
 User can delete his account, also after a given period of inactivity, the user account will be frozen by removing the `userSecret` value. This value is used for encrypting user information,
 as a consequence, without a new login of the user with the right password, the data will stay encrypted and not accessible, even for the platform administrator.  The frozen period is decided by the `user.max.inactivity` parameter.
@@ -83,7 +86,7 @@ a database attack exposing the salt and the hash of the password, the password c
 and a post-string `users.password.footer` to be added to the password before hashing. The pre-string and post-string are stored in configuration
 file not be exposed to database attack.
 
-#### User login
+## User login
 
 When a user logs in, their login and password will be verified, and it must be ensured that the account is active 
 and has at least the role `ROLE_REGISTERED_USER`. If the user has not logged in for a very long period, determined 
@@ -109,7 +112,7 @@ and allows the authentication token to be renewed without having all functional 
 
 For being used, the JWT token must be preceded by the `Bearer` keyword. 
 
-#### Brute force protection on user login
+### Brute force protection on user login
 
 When a new login or session upgrade is received, we verify the login attempt is
 lower than the limit fixed by `users.session.security.max.login.failed` for the user and
@@ -121,14 +124,14 @@ If the hashmap size limit `users.session.security.hashmap.size` has been reached
 the 2fa to be reset. On every 5 minutes, the cache is cleaned to remove the old entries, the one with
 the last access time lower than `users.session.security.block.period_s`
 
-#### Email 2FA
+### Email 2FA
 
 When a user has their 2FA enabled with email, during login, a 4-digit hexadecimal code will be randomly 
 generated and sent by email. The user must then enter this code within the 2FA session time 
 `user.session.2fa.timeout.sec`, even if the session is extended. After this duration, the code will be 
 invalidated. The **brute force** protections described above apply to prevent this type of attack.
 
-### Personal data protection
+## Personal data protection
 
 The user personal data are encrypted into the database with AES encryption. The encryption key is composed of 3 parts:
 - a Server key from parameter `common.encryption.key` from configuration (common.properties) file, randomly generated
@@ -150,17 +153,40 @@ that is not linked to the user's key. This approach allows searching based on th
 of the need. Searches on other fields are possible but require a full scan of the database, which is not 
 recommended and is limited to users whose key remains active.
 
-### Super Administrator
+## Super Administrator
 
 When the application is launched for the first time, an initial user is created if the `users.superadmin.email` and 
 `users.superadmin.password` parameters are provided. This user will be created with the `ROLE_GOD_ADMIN` role and 
 will be the super administrator of the application. The password must be changed during the first login.
 
-For security reasons, this creation will only occur during the first launch of the application. Afterwards, it will 
+For security reasons, this creation will only occur during the first launch of the application. Afterward, it will 
 no longer be possible to automatically create the super administrator unless the `users.superadmin.created` parameter 
 is deleted from the database.
 
-### traceability
+## Right Management
+
+### Right Management mechanism
+Access rights management is based on several restrictive mechanisms and is associated with two concepts:
+- Roles that define authorized actions on the platform.
+- Groups that define the scope of these roles.
+
+These concepts can be global or scoped; in the latter case, the scopes are called ACLs. A user therefore has these rights
+in two scopes:
+- The global scope: rights attached to the platform associated with the user profile. For example, a user with the
+  ROLE_DEVICE_READ right will be able to access object data functions on the platform (without this right, regardless 
+  of their ACLs, they will not be able to). These roles are applicable to groups that are owned by the user, either 
+  created by the user or delegated without limit by the creator. ROLE_DEVICE_READ will therefore only allow access 
+  to data of objects that the user owns or that have been delegated to them without limit; it should be noted
+  that a user with full delegation and ROLES higher than those of the group owner may then have rights
+  superior to those of the initial owner. With this approach, deleting the user account that owns the group 
+  will not result in the deletion of the group, as it may have other owners.
+- The ACL scope: rights are then specifically assigned to groups that the user does not own; the user will then 
+  have rights on the group defined by the group owner. These rights (roles) will be at most those of the owner  
+  and cannot be higher than the rights the user has globally. Any change in the rights of the group owner must 
+  be reflected in the ACLs (in case of reduction), and the deletion of the group or the group owner will trigger
+  a cascade of rights adaptation.
+
+## traceability
 Event on user service are logged into an audit table. It includes
 - Self registration request
 - User Account creation

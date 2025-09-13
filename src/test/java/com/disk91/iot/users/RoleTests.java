@@ -87,12 +87,12 @@ public class RoleTests {
         // Make sure role creation fails when the description is not respecting the
         // lower-case format.
         assertThrows(ITParseException.class, () -> {
-            usersRolesCache.addRole("ROLE_TEST", "Test Role", "Test Role Description", "test");
+            usersRolesCache.addRole(1,"ROLE_TEST", "Test Role", "Test Role Description", "test", true);
         });
 
         // Make sure role creation fails when the role already exists
         assertThrows(ITTooManyException.class, () -> {
-            usersRolesCache.addRole("ROLE_GOD_ADMIN", "role-duplication-test", "Role duplication test", "test");
+            usersRolesCache.addRole(1,"ROLE_GOD_ADMIN", "role-duplication-test", "Role duplication test", "test", true);
         });
 
 

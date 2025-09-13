@@ -40,3 +40,4 @@ directory at the root of the java execution.
 - `users.session.security.max.login.failed`: number of accepted failures on a given LOGIN before locking it.
 - `users.superadmin.email`: email of the super admin, first user created in the system automatically when set.
 - `users.superadmin.password`: password of the super admin, will be asked for change on first login.
+- `users.default.roles` : list of ROLE_ affected by default on user creation, used to fill the default template on non-community version.

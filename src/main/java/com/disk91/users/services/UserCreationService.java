@@ -32,6 +32,7 @@ import com.disk91.common.tools.exceptions.ITTooManyException;
 import com.disk91.users.api.interfaces.UserAccountCreationBody;
 import com.disk91.users.config.ActionCatalog;
 import com.disk91.users.config.UsersConfig;
+import com.disk91.users.mdb.entities.Role;
 import com.disk91.users.mdb.entities.User;
 import com.disk91.users.mdb.entities.UserRegistration;
 import com.disk91.users.mdb.entities.sub.TwoFATypes;
@@ -47,6 +48,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Supplier;
 
 @Service
@@ -83,6 +85,9 @@ public class UserCreationService {
     @Autowired
     protected AuditIntegration auditIntegration;
 
+    @Autowired
+    protected UserGroupRolesService userGroupRolesService;
+
     /**
      * Once the validity of the request has been verified, the user is created
      * When a validation ID has been provided, email field is ignored if present
@@ -101,6 +106,7 @@ public class UserCreationService {
         boolean forceResetPass
     ) throws ITRightException, ITParseException, ITTooManyException {
 
+        String registrationCode = null;
         if ( body.getValidationID() != null && ! body.getValidationID().isEmpty() ) {
             // Request from Self Service
             UserRegistration ur = userRegistrationRepository.findOneUserRegistrationByValidationId(body.getValidationID());
@@ -121,6 +127,8 @@ public class UserCreationService {
                 throw new ITRightException("user-creation-refused");
             }
 
+            // get the invitation code
+            registrationCode = ur.getRegistrationCode();
         }
 
         // The Request has a valid email
@@ -222,8 +230,12 @@ public class UserCreationService {
         }
 
         // Registration Code management
-        // @TODO Registration code verification and management
-        // @TODO The registration code will give rights to the user to specific Groups or Create own group ... to be detailed
+        // @TODO - propagate the Registration Code to other modules
+
+        List<Role> roles = userGroupRolesService.getInvitationCodeRoles(registrationCode);
+        for ( Role r : roles ) {
+            u.getRoles().add(r.getName());
+        }
 
         // User is ready
         u.cleanKeys();

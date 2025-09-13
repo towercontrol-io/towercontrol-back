@@ -9,6 +9,8 @@ Any module can register roles on startup, role can be added to users
   name: "string",          // role name ROLE_EX_MODULENAME_ROLENAME
   description: "string",   // role description for front-end internationalisation role-ex-modulename-rolename-desc
   enDescription: "string", // role description in english for reference
+  platform: "string",      // true when the role is declared by platform (not custom, user)
+  assignable: "boolean",   // true if the role can be assigned to users, false if the role is assigned dynmically like LOGIN
 
   "creationBy": "string",   // id of the user who created the role (in particular for custom roles)
   "creationMs": "number"    // creation date in MS since epoch

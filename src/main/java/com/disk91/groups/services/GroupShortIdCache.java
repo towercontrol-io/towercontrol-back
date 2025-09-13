@@ -25,6 +25,7 @@ import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.groups.config.GroupsConfig;
 import com.disk91.groups.mdb.entities.Group;
 import com.disk91.groups.mdb.repositories.GroupRepository;
+import com.disk91.groups.tools.GroupList;
 import com.disk91.users.mdb.entities.User;
 import com.disk91.users.services.UserCache;
 import io.micrometer.core.instrument.Gauge;
@@ -42,7 +43,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
-public class GroupCache {
+public class GroupShortIdCache {
 
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
@@ -68,25 +69,27 @@ public class GroupCache {
     // CACHE SERVICE
     // ================================================================================================================
 
-    private ObjectCache<String, Group> groupCache;
+
+
+    private ObjectCache<String, GroupList> groupCache;
 
     protected boolean serviceEnable = false;
 
     @PostConstruct
     private void initGroupsCache() {
-        log.info("[groups] initGroupsCache");
+        log.info("[groups] initGroupsShortIdCache");
         if ( groupsConfig.getGroupsCacheMaxSize() > 0 ) {
-            this.groupCache = new ObjectCache<String, Group>(
+            this.groupCache = new ObjectCache<String,GroupList>(
                     "GroupsROCache",
                     groupsConfig.getGroupsCacheMaxSize(),
                     groupsConfig.getGroupsCacheExpiration()*1000
             ) {
                 @Override
-                synchronized public void onCacheRemoval(String key, Group obj, boolean batch, boolean last) {
+                synchronized public void onCacheRemoval(String key, GroupList obj, boolean batch, boolean last) {
                     // read only cache, do nothing
                 }
                 @Override
-                public void bulkCacheUpdate(List<Group> objects) {
+                public void bulkCacheUpdate(List<GroupList> objects) {
                     // read only cache, do nothing
                 }
             };
@@ -94,28 +97,28 @@ public class GroupCache {
 
         this.serviceEnable = true;
 
-        Gauge.builder("common.service.groups.cache_total_time", this.groupCache.getTotalCacheTime())
-                .description("[Groups] total time cache execution")
+        Gauge.builder("common.service.groupsshort.cache_total_time", this.groupCache.getTotalCacheTime())
+                .description("[Groups short] total time cache execution")
                 .register(meterRegistry);
-        Gauge.builder("common.service.groups.cache_total", this.groupCache.getTotalCacheTry())
-                .description("[Groups] total cache try")
+        Gauge.builder("common.service.groupsshort.cache_total", this.groupCache.getTotalCacheTry())
+                .description("[Groups short] total cache try")
                 .register(meterRegistry);
-        Gauge.builder("common.service.groups.cache_miss", this.groupCache.getCacheMissStat())
-                .description("[Groups] total cache miss")
+        Gauge.builder("common.service.groupsshort.cache_miss", this.groupCache.getCacheMissStat())
+                .description("[Groups short] total cache miss")
                 .register(meterRegistry);
     }
 
     @PreDestroy
     public void destroy() {
-        log.info("[groups] GroupCache stopping");
+        log.info("[groups] GroupShortIdCache stopping");
         this.serviceEnable = false;
         if ( groupsConfig.getGroupsCacheMaxSize() > 0 ) {
             groupCache.deleteCache();
         }
-        log.info("[groups] UserCache stopped");
+        log.info("[groups] GroupShortIdCache stopped");
     }
 
-    @Scheduled(fixedRateString = "${groups.cache.log.period:PT24H}", initialDelay = 3600_000)
+    @Scheduled(fixedRateString = "${groups.cache.log.period:PT24H}", initialDelay = 3601_000)
     protected void groupCacheStatus() {
         try {
             Duration duration = Duration.parse(groupsConfig.getGroupsCacheLogPeriod());
@@ -137,47 +140,8 @@ public class GroupCache {
      * @return the group object
      * @throws ITNotFoundException if not found
      */
-    public Group getGroup(String groupId) throws ITNotFoundException {
-        if ( groupId.startsWith("user_") ) {
-            // virtual group, build it from the user object
-            String userId = groupId.substring(5);
-            try {
-                User u = userCache.getUser(userId);
-                Group g = new Group();
-                g.setId(groupId);
-                g.setVersion(Group.GROUP_VERSION);
-                g.setName("group-default-group");
-                g.setDescription("group-default-group-description");
-                g.setLanguage(u.getLanguage());
-                g.setActive(u.isActive());
-                g.setVirtual(true);
-                g.setCreationDateMs(u.getRegistrationDate());
-                g.setCreationBy(u.getLogin());
-                g.setModificationDateMs(u.getRegistrationDate());
-                g.setAttributes(new ArrayList<>());
-                g.setReferringGroups(new ArrayList<>());
-                return g;
-            } catch (ITNotFoundException x) {
-                // Group does not exist
-                throw new ITNotFoundException("group-get-not-found");
-            }
-        } else {
-            if (!this.serviceEnable || groupsConfig.getGroupsCacheMaxSize() == 0) {
-                // direct access from database
-                Group u = groupRepository.findOneGroupById(groupId);
-                if (u == null) throw new ITNotFoundException("Group not found");
-                return u.clone();
-            } else {
-                Group u = this.groupCache.get(groupId);
-                if (u == null) {
-                    // not in cache, get it from the database
-                    u = groupRepository.findOneGroupById(groupId);
-                    if (u == null) throw new ITNotFoundException("Group not found");
-                    this.groupCache.put(u, u.getId());
-                }
-                return u.clone();
-            }
-        }
+    public GroupList getGroup(String groupId) throws ITNotFoundException {
+        throw new ITNotFoundException();
     }
 
     /**
@@ -186,10 +150,6 @@ public class GroupCache {
      * @return
      */
     public void flushGroup(String groupId) {
-        if ( groupId.startsWith("user_") ) return; // virtual group, do nothing
-        if ( this.serviceEnable && groupsConfig.getGroupsCacheMaxSize() > 0 ) {
-            this.groupCache.remove(groupId,false);
-        }
     }
 
     /**
@@ -198,11 +158,7 @@ public class GroupCache {
      * @param u Group to be saved
      */
     public void saveGroup(Group u) {
-        if ( u.getId().startsWith("user_") ) return; // virtual group, do nothing
-        groupRepository.save(u);
-        this.flushGroup(u.getId());
     }
 
-    // @TODO - manage the broadcast request for user flush and scan for flush trigger on each of the instances
 
 }

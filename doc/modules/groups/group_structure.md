@@ -4,6 +4,7 @@ The group data structure is defined as follows:
 ```json
 {
   "id": "string",                 // technical uniq identifier
+  "shortId": "string",            // short unique identifier, used for reference
   "version": "number",            // group structure version
   "name": "string",               // group name
   "description": "string",        // group description the user can setup
@@ -26,11 +27,9 @@ The group data structure is defined as follows:
     }
   ],
   
-  "referringGroups": [             // list of groups that are referring this group
-    { 
-      "groupId": "string",        // group id
-      "priority" : "number"       // priority of the group, start search from the group with the highest priority, stop on first match
-    }
+  "referringGroups": [             // list of groups that are referring this group, this group will be part of the reffering Hierarchy
+                                   // it means anyone having a right on the reffering group will have the same right on this group.
+      "string"                     // group shortId
   ]
 }
 ```

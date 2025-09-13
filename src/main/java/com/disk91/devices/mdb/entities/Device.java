@@ -34,8 +34,6 @@ import com.disk91.devices.mdb.entities.sub.DevAttribute;
 import com.disk91.devices.mdb.entities.sub.DevGroupAssociated;
 import com.disk91.devices.mdb.entities.sub.DevHardwareId;
 import com.disk91.devices.mdb.entities.sub.DevLocation;
-import com.disk91.groups.mdb.entities.sub.GroupAttribute;
-import com.disk91.groups.mdb.entities.sub.GroupReferring;
 import com.uber.h3core.H3Core;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

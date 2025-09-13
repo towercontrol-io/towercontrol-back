@@ -19,6 +19,9 @@
  */
 package com.disk91.common.tools;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+
 /**
  * Tools for the common library
  */
@@ -63,6 +66,16 @@ public class Tools {
             if (ip.matches(filter)) return true;
         }
         return false;
+    }
+
+    /**
+     * From a parameter like xxxx,yyyy,zzzz get an arraylist [ xxxx, yyyy, zzzz ]
+     * @param param
+     * @return
+     */
+    public static ArrayList<String> getStringListFromParam(String param) {
+        String[] _params = param.split(",");
+        return new ArrayList<>(Arrays.asList(_params));
     }
 
 

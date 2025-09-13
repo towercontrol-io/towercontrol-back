@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -54,21 +55,22 @@ public class UsersRolesCache {
 
     // Platform roles to setup for database init
     private final String [] pfRoles = {
-        "{'version':1, 'platform':true, 'name':'ROLE_GOD_ADMIN','description':'role-god-admin-desc', 'enDescription':'super administrator', 'creationBy':'system', 'creationMs':0}",
-        "{'version':1, 'platform':true, 'name':'ROLE_USER_ADMIN','description':'role-user-admin-desc', 'enDescription':'user administrator', 'creationBy':'system', 'creationMs':0}",
-        "{'version':1, 'platform':true, 'name':'ROLE_GROUP_ADMIN','description':'role-group-admin-desc', 'enDescription':'group administrator', 'creationBy':'system', 'creationMs':0}",
-        "{'version':1, 'platform':true, 'name':'ROLE_GROUP_LADMIN','description':'role-group-ladmin-desc', 'enDescription':'local group administrator', 'creationBy':'system', 'creationMs':0}",
-        "{'version':1, 'platform':true, 'name':'ROLE_DEVICE_ADMIN','description':'role-device-admin-desc', 'enDescription':'device administrator', 'creationBy':'system', 'creationMs':0}",
-        "{'version':1, 'platform':true, 'name':'ROLE_DEVICE_READ','description':'role-device-read-desc', 'enDescription':'device reader', 'creationBy':'system', 'creationMs':0}",
-        "{'version':1, 'platform':true, 'name':'ROLE_DEVICE_WRITE','description':'role-device-write-desc', 'enDescription':'device writer', 'creationBy':'system','creationMs':0}",
-        "{'version':1, 'platform':true, 'name':'ROLE_DEVICE_CONFIG','description':'role-device-config-desc', 'enDescription':'device configurator', 'creationBy':'system','creationMs':0}",
-        "{'version':1, 'platform':true, 'name':'ROLE_DEVICE_ALERTING','description':'role-device-alerting-desc', 'enDescription':'device alert receiver', 'creationBy':'system','creationMs':0}",
-        "{'version':1, 'platform':true, 'name':'ROLE_BACKEND_CAPTURE','description':'role-backend-capture-desc', 'enDescription':'backend capture authorized member', 'creationBy':'system','creationMs':0}",
-        "{'version':1, 'platform':true, 'name':'ROLE_PENDING_USER','description':'role-pending-user-desc', 'enDescription':'not yet registered user', 'creationBy':'system', 'creationMs':0}",
-        "{'version':1, 'platform':true, 'name':'ROLE_REGISTERED_USER','description':'role-registered-user-desc', 'enDescription':'registered user', 'creationBy':'system','creationMs':0}",
-        "{'version':1, 'platform':true, 'name':'ROLE_LOGIN_1FA','description':'role-login-1fa-desc', 'enDescription':'logged user with 1 factor authentication', 'creationBy':'system','creationMs':0}",
-        "{'version':1, 'platform':true, 'name':'ROLE_LOGIN_2FA','description':'role-login-2fa-desc', 'enDescription':'logged user with 2 factor authentication', 'creationBy':'system','creationMs':0}",
-        "{'version':1, 'platform':true, 'name':'ROLE_LOGIN_COMPLETE','description':'role-login-complete-desc', 'enDescription':'login completed', 'creationBy':'system','creationMs':0}"
+        "{'version':2, 'platform':true, 'name':'ROLE_GOD_ADMIN','description':'role-god-admin-desc', 'enDescription':'super administrator', 'creationBy':'system', 'creationMs':0, 'assignable':false}",
+        "{'version':2, 'platform':true, 'name':'ROLE_USER_ADMIN','description':'role-user-admin-desc', 'enDescription':'user administrator', 'creationBy':'system', 'creationMs':0, 'assignable':true}",
+        "{'version':2, 'platform':true, 'name':'ROLE_GROUP_ADMIN','description':'role-group-admin-desc', 'enDescription':'group administrator', 'creationBy':'system', 'creationMs':0, 'assignable':true}",
+        "{'version':2, 'platform':true, 'name':'ROLE_GROUP_LADMIN','description':'role-group-ladmin-desc', 'enDescription':'local group administrator', 'creationBy':'system', 'creationMs':0, 'assignable':true}",
+        "{'version':2, 'platform':true, 'name':'ROLE_DEVICE_ADMIN','description':'role-device-admin-desc', 'enDescription':'device administrator', 'creationBy':'system', 'creationMs':0, 'assignable':true}",
+        "{'version':2, 'platform':true, 'name':'ROLE_DEVICE_READ','description':'role-device-read-desc', 'enDescription':'device reader', 'creationBy':'system', 'creationMs':0, 'assignable':true}",
+        "{'version':2, 'platform':true, 'name':'ROLE_DEVICE_WRITE','description':'role-device-write-desc', 'enDescription':'device writer', 'creationBy':'system','creationMs':0, 'assignable':true}",
+        "{'version':2, 'platform':true, 'name':'ROLE_DEVICE_CONFIG','description':'role-device-config-desc', 'enDescription':'device configurator', 'creationBy':'system','creationMs':0, 'assignable':true}",
+        "{'version':2, 'platform':true, 'name':'ROLE_DEVICE_ALERTING','description':'role-device-alerting-desc', 'enDescription':'device alert receiver', 'creationBy':'system','creationMs':0, 'assignable':true}",
+        "{'version':2, 'platform':true, 'name':'ROLE_BACKEND_CAPTURE','description':'role-backend-capture-desc', 'enDescription':'backend capture authorized member', 'creationBy':'system','creationMs':0, 'assignable':true}",
+        "{'version':2, 'platform':true, 'name':'ROLE_PENDING_USER','description':'role-pending-user-desc', 'enDescription':'not yet registered user', 'creationBy':'system', 'creationMs':0, 'assignable':false}",
+        "{'version':2, 'platform':true, 'name':'ROLE_REGISTERED_USER','description':'role-registered-user-desc', 'enDescription':'registered user', 'creationBy':'system','creationMs':0, 'assignable':false}",
+        "{'version':2, 'platform':true, 'name':'ROLE_LOGIN_1FA','description':'role-login-1fa-desc', 'enDescription':'logged user with 1 factor authentication', 'creationBy':'system','creationMs':0, 'assignable':false}",
+        "{'version':2, 'platform':true, 'name':'ROLE_LOGIN_2FA','description':'role-login-2fa-desc', 'enDescription':'logged user with 2 factor authentication', 'creationBy':'system','creationMs':0, 'assignable':false}",
+        "{'version':2, 'platform':true, 'name':'ROLE_LOGIN_COMPLETE','description':'role-login-complete-desc', 'enDescription':'login completed', 'creationBy':'system','creationMs':0, 'assignable':false}",
+        "{'version':2, 'platform':true, 'name':'ROLE_LOGIN_API','description':'role-login-api-desc', 'enDescription':'login from API', 'creationBy':'system','creationMs':0, 'assignable':false}"
     };
 
     // Standard roles strings
@@ -87,7 +89,8 @@ public class UsersRolesCache {
         ROLE_REGISTERED_USER("ROLE_REGISTERED_USER"),
         ROLE_LOGIN_1FA("ROLE_LOGIN_1FA"),
         ROLE_LOGIN_2FA("ROLE_LOGIN_2FA"),
-        ROLE_LOGIN_COMPLETE("ROLE_LOGIN_COMPLETE");
+        ROLE_LOGIN_COMPLETE("ROLE_LOGIN_COMPLETE"),
+        ROLE_LOGIN_API("ROLE_LOGIN_API");
 
         private String roleName;
         StandardRoles(String roleName) {
@@ -113,6 +116,10 @@ public class UsersRolesCache {
     public void initRolesCache() {
         log.debug("[users] Roles init");
         this.loadRoles();
+        if ( this.verifyDefaultRoles() ) {
+            // some modification have been made, better reloading.
+            this.loadRoles();
+        }
     }
 
     /**
@@ -137,10 +144,12 @@ public class UsersRolesCache {
      * It's not possible to add an already existing role, in this cas it returns ITTooManyException
      */
     public void addRole(
+        int version,
         String name,
         String description,
         String enDescription,
-        String userName
+        String userName,
+        boolean assignable
     ) throws ITTooManyException, ITParseException {
         if ( rolesCache.containsKey(name) ) {
             log.error("[users] Role creation impossible: {} already exists", name);
@@ -155,9 +164,10 @@ public class UsersRolesCache {
         role.setDescription(description);
         role.setEnDescription(enDescription);
         role.setPlatform(false);
-        role.setVersion(1);
+        role.setVersion(version);
         role.setCreationBy(userName);
         role.setCreationMs(Now.NowUtcMs());
+        role.setAssignable(assignable);
         rolesRepository.save(role);
         rolesCache.put(role.getName(), role);
         // @TODO - send message to other instances to reload roles.
@@ -189,7 +199,54 @@ public class UsersRolesCache {
         log.info("[users] {} Roles (re)loaded", rolesCache.size());
     }
 
+    /**
+     * Resync the role database with the static definition in pfRoles
+     * this is used when the static definition has changed, and we need to update it.
+     * It uses the version for this.
+     * The static roles defined in pfRole are not persisting in the database so this is
+     * normally not doing many things ... but the function is here for later update
+     * structure and may be improved when necessary.
+     * Return true if at least one role has been updated and the cache need to be reloaded
+     */
+    synchronized private boolean verifyDefaultRoles() {
 
+        boolean modified = false;
+        List<Role> all = rolesRepository.findAll();
+
+        // load the platform role from String structure
+        HashMap<String,Role> defaultRoles = new HashMap<>();
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        for ( String r : pfRoles ) {
+            try {
+                Role role = mapper.readValue(r.replace("'", "\""), Role.class);
+                role.setCreationMs(Now.NowUtcMs());
+                defaultRoles.put(role.getName(),role);
+            } catch (JsonProcessingException e) {
+                log.error("[users] Error processing platform role {} due to {}", r, e.getMessage());
+            }
+        }
+
+        // process the db comparison
+        for (Role r : all ) {
+            Role _r = defaultRoles.get(r.getName());
+            if ( _r != null ) {
+                // role exists in default, check versions
+                if (r.getVersion() < _r.getVersion()) {
+                    // need to update the role
+                    r.setVersion(_r.getVersion());
+                    r.setDescription(_r.getDescription());
+                    r.setEnDescription(_r.getEnDescription());
+                    r.setPlatform(_r.isPlatform());
+                    r.setAssignable(_r.isAssignable());
+                    rolesRepository.save(r);
+                    log.info("[users] Role {} updated to version {}", r.getName(), r.getVersion());
+                    modified = true;
+                }
+            }
+        }
+        return modified;
+    }
 
 
 }

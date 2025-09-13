@@ -199,6 +199,11 @@ public class UsersConfig {
         return usersDeletionPurgatoryDuration;
     }
 
+    @Value("${users.default.roles:")
+    protected String userDefaultRoles;
+    public String getUserDefaultRoles() {
+        return userDefaultRoles;
+    }
     // --------------------------------------------
     // User Cache
     // --------------------------------------------

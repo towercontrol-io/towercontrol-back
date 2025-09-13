@@ -2,7 +2,6 @@ package com.disk91.iot.users;
 
 import com.disk91.common.config.CommonConfig;
 import com.disk91.common.tools.CustomField;
-import com.disk91.common.tools.EncryptionHelper;
 import com.disk91.common.tools.HexCodingTools;
 import com.disk91.common.tools.Now;
 import com.disk91.common.tools.exceptions.ITNotFoundException;

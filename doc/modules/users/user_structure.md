@@ -23,6 +23,7 @@ The user data structure is defined as follows:
       "name": "string",           // API key name, given by user, used to identify the key
       "secret": "string",         // API key secret, used to sign JWTs
       "expiration": "number",     // API key expiration date in MS since epoch
+      "roles": ["string"],        // API key groups, list of group names (for quick search later)
       "acls": [                   // API key ACLs, same structure as user acls
         { "group": "string", "localName" : "string", "roles" : [ "string"] }
       ]
@@ -111,6 +112,7 @@ session token to avoid verifications on every call. As a consequence, the role r
 - `ROLE_DEVICE_ALERTING`: this role allows to receive device alerts
 - `ROLE_BACKEND_CAPTURE`: this role is dedicated to technical account allowed to report device data to the platform
 
+Following roles are dynamically added to the user profile with the user creation process, they can't be assigned
 - `ROLE_PENDING_USER`: this role is assigned to a user not yet registered into the system
 - `ROLE_REGISTERED_USER`: this role is assigned to a user registered into the system (confirmed email)
 

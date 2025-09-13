@@ -62,6 +62,9 @@ public class Role implements CloneableObject<Role>  {
     // creation date in MS since epoch
     protected long creationMs;
 
+    // the role can be assigned statically to users when true or is only for dynamic assignment like "LOGIN_COMPLETE"
+    protected boolean assignable;
+
     // ---
 
     @Override
@@ -75,6 +78,7 @@ public class Role implements CloneableObject<Role>  {
         r.creationBy = this.creationBy;
         r.creationMs = this.creationMs;
         r.platform = this.platform;
+        r.assignable = this.assignable;
         return r;
     }
 
@@ -144,5 +148,13 @@ public class Role implements CloneableObject<Role>  {
 
     public void setCreationMs(long creationMs) {
         this.creationMs = creationMs;
+    }
+
+    public boolean isAssignable() {
+        return assignable;
+    }
+
+    public void setAssignable(boolean assignable) {
+        this.assignable = assignable;
     }
 }

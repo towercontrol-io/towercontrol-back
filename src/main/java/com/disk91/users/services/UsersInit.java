@@ -130,7 +130,7 @@ public class UsersInit {
                     break;
                 case 2: // Current version
                     migrationCompleted = true;
-                    log.error("[users] [migration] [Mongo] Migration completed");
+                    log.info("[users] [migration] [Mongo] Migration completed");
                     break;
                 default:
                     log.error("[users] [migration] [Mongo] Database schema version is unknown, something is wrong !");

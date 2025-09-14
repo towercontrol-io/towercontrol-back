@@ -159,5 +159,18 @@ public class EncryptionHelper {
         return "unknown-sha256";
     }
 
+
+    /**
+     * Random string generator
+     */
+    private final static char[] charArray = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".toCharArray();
+    public static String getRandomString(int size) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < size; i++) {
+            sb.append(charArray[(int) (Math.random() * charArray.length)]);
+        }
+        return sb.toString();
+    }
+
 }
 

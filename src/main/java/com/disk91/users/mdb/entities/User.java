@@ -182,6 +182,7 @@ public class User implements CloneableObject<User> {
     public ArrayList<String> getGroups() {
         ArrayList<String> groups = new ArrayList<>();
         groups.add("user_"+this.getLogin());
+        groups.addAll(this.getGroups());
         for ( UserAcl acl : this.acls ) {
             groups.add(acl.getGroup());
         }

@@ -4,6 +4,8 @@ import com.disk91.common.tools.Tools;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITRightException;
+import com.disk91.groups.services.GroupsServices;
+import com.disk91.groups.tools.GroupsHierarchySimplified;
 import com.disk91.users.api.interfaces.UserAccessibleRolesResponse;
 import com.disk91.users.config.UsersConfig;
 import com.disk91.users.mdb.entities.Role;
@@ -34,6 +36,9 @@ public class UserGroupRolesService {
 
     @Autowired
     private UsersRolesCache usersRolesCache;
+
+    @Autowired
+    private GroupsServices groupsServices;
 
     // =====================================================================
     // ROLE MANAGEMENT
@@ -114,6 +119,21 @@ public class UserGroupRolesService {
     // GROUP RIGHT MANAGEMENT
     // =====================================================================
 
+    public List<GroupsHierarchySimplified> getAvailableGroups(String u)
+        throws ITParseException {
+
+        try {
+            User user = userCache.getUser(u);
+            // compose the user group list (head of the hierarchy)
+            // this includes the user default group and the standard groups and acls
+            ArrayList<String> userGroups = user.getGroups();
+            return groupsServices.getGroupsForDisplay(userGroups);
+        } catch (ITNotFoundException x) {
+            log.warn("[users] user or some of the groups assigned to user {} do not exist : {}", u, x.getMessage());
+            throw new ITParseException("user-group-missing-elements");
+        }
+
+    }
 
 
 }

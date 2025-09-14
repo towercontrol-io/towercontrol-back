@@ -50,7 +50,7 @@ Instead of having database records per user, it is simpler to have a virtual gro
 ID `user_` followed by the user's login. It is dynamically initialized by the software as if it were a user group. 
 The user's rights on this group are the same as the user's rights. No attributes can be attached to this type of group; 
 it is also identifiable through the `virtual` field in the group structure. Its name and description are internalized and 
-can be renamed in the front-end using `group-default-group` and `group-default-group-description`. A user can share 
+can be renamed in the front-end using `groups-default-group` and `groups-default-group-description`. A user can share 
 their personal group with other users using ACLs.
 
 ### Group hierarchy

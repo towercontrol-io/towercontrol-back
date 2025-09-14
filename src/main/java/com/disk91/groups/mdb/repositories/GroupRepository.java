@@ -31,5 +31,8 @@ import java.util.List;
 @Repository
 public interface GroupRepository extends MongoRepository<Group,String> {
         public Group findOneGroupByName(String name);
-        public Group findOneGroupById(String id);
+        public Group findOneGroupByShortId(String shortId);
+
+        @Query("{ '$or': [ { 'shortId': ?0 }, { 'referringGroups': ?0 } ] }")
+        public List<Group> findByShortIdOrReferringGroupsContains(String shortId);
 }

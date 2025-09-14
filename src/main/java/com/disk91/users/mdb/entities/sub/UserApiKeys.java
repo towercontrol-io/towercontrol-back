@@ -1,7 +1,6 @@
 package com.disk91.users.mdb.entities.sub;
 
 import com.disk91.common.tools.CloneableObject;
-import com.disk91.common.tools.CustomField;
 import com.disk91.common.tools.HexCodingTools;
 import com.disk91.common.tools.Now;
 
@@ -19,8 +18,13 @@ public class UserApiKeys implements CloneableObject<UserApiKeys> {
     // API key secret, used to sign JWTs
     private String secret;
 
-    // API key expiration date in MS since epoch
+    // API key expiration date in MS since epoch, 0 means the key has been disabled
+    // User choice to diable it or automatic removal due to user right change
     private long expiration;
+
+    // Store the roles associated to this key to easily identify the key to remove when the user
+    // right change.
+    private List<String> roles;
 
     // address (encrypted)
     private List<UserAcl> acls;
@@ -28,10 +32,18 @@ public class UserApiKeys implements CloneableObject<UserApiKeys> {
     // === FUNCTIONALITY ===
 
     /**
+     * Init the structure
+     */
+    public void init() {
+        this.roles = new ArrayList<String>();
+        this.acls = new ArrayList<UserAcl>();
+    }
+
+    /**
      * This will delete the ability to reuse the key and kill the current JWTs using his key
      */
     public void disable() {
-        this.expiration = Now.NowUtcMs(); // Set expiration at Now making user seen it expired
+        this.expiration = 0; // Set expiration at 0 means the key has been expired
         this.secret = HexCodingTools.getRandomHexString(64); // new random secret
     }
 
@@ -77,6 +89,13 @@ public class UserApiKeys implements CloneableObject<UserApiKeys> {
         this.acls = acls;
     }
 
+    public List<String> getRoles() {
+        return roles;
+    }
+
+    public void setRoles(List<String> roles) {
+        this.roles = roles;
+    }
 
     // === CLONE ===
 
@@ -92,6 +111,10 @@ public class UserApiKeys implements CloneableObject<UserApiKeys> {
                 cf.add(c.clone());
             }
             u.setAcls(cf);
+        }
+        if (this.roles != null) {
+            ArrayList<String> rf = new ArrayList<>(this.roles);
+            u.setRoles(rf);
         }
         return u;
     }

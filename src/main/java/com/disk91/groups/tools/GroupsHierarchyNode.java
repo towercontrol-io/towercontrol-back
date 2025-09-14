@@ -27,32 +27,32 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
-public class GroupHierarchyNode {
+public class GroupsHierarchyNode {
 
     /**
      * This structure is used to generate a hierarchy from a flat group list
-     * One nodes gives the links to the whole hierachy from this node
+     * One nodes gives the links to the whole hierarchy from this node
      */
 
     protected ArrayList<String> path;
     protected Group group;
-    protected LinkedList<GroupHierarchyNode> children;
+    protected LinkedList<GroupsHierarchyNode> children;
 
-    public GroupHierarchyNode(Group g, ArrayList<String> _path) {
+    public GroupsHierarchyNode(Group g, ArrayList<String> _path) {
         this.group = g;
         this.path = new ArrayList<>(_path);
         this.children = new LinkedList<>();
     }
 
-    public GroupHierarchyNode addChild(Group child)  {
+    public GroupsHierarchyNode addChild(Group child)  {
         ArrayList<String> newPath = new ArrayList<>(this.path);
         newPath.add(this.group.getShortId());
-        GroupHierarchyNode childNode = new GroupHierarchyNode(child, newPath);
+        GroupsHierarchyNode childNode = new GroupsHierarchyNode(child, newPath);
         this.children.add(childNode);
         return childNode;
     }
 
-    public void addChild(GroupHierarchyNode child) {
+    public void addChild(GroupsHierarchyNode child) {
         this.children.add(child);
     }
 
@@ -73,7 +73,7 @@ public class GroupHierarchyNode {
 
     // ==== Getters
 
-    public List<GroupHierarchyNode> getChildren() {
+    public List<GroupsHierarchyNode> getChildren() {
         return this.children;
     }
 

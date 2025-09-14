@@ -3,7 +3,7 @@ package com.disk91.iot.groups;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITTooManyException;
 import com.disk91.groups.mdb.entities.Group;
-import com.disk91.groups.tools.GroupList;
+import com.disk91.groups.tools.GroupsList;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.TestMethodOrder;
@@ -58,7 +58,7 @@ public class GroupHierarchyTests {
         E.getReferringGroups().add(Root.getShortId());
         E.getReferringGroups().add(D.getShortId());
 
-        GroupList gl = new GroupList(Root, 3);
+        GroupsList gl = new GroupsList(Root, 3);
         assertDoesNotThrow(() -> {
             gl.addElement(A);
             gl.addElement(B);
@@ -137,7 +137,7 @@ public class GroupHierarchyTests {
         E.getReferringGroups().add(Root.getShortId());
         E.getReferringGroups().add(D.getShortId());
 
-        GroupList gl = new GroupList(Root, 3);
+        GroupsList gl = new GroupsList(Root, 3);
         assertDoesNotThrow(() -> {
             gl.addElement(A);
             gl.addElement(B);
@@ -217,8 +217,8 @@ public class GroupHierarchyTests {
         B.getReferringGroups().add(Root2.getShortId());
 
 
-        GroupList gl = new GroupList(Root, 3);
-        GroupList gl2 = new GroupList(Root2, 3);
+        GroupsList gl = new GroupsList(Root, 3);
+        GroupsList gl2 = new GroupsList(Root2, 3);
         assertDoesNotThrow(() -> {
             gl.addElement(A);
             gl.addElement(B);
@@ -299,7 +299,7 @@ public class GroupHierarchyTests {
         B.getReferringGroups().add(D.getShortId());
 
 
-        GroupList gl = new GroupList(Root, 3);
+        GroupsList gl = new GroupsList(Root, 3);
         assertDoesNotThrow(() -> {
             gl.addElement(A);
             gl.addElement(B);
@@ -327,8 +327,8 @@ public class GroupHierarchyTests {
     public void testComplexHierarchy() {
         log.info("[groups][test] Running test with complex hierarchy");
 
-        LoggingSystem system = LoggingSystem.get(GroupList.class.getClassLoader());
-        system.setLogLevel(GroupList.class.getName(), LogLevel.DEBUG);
+        LoggingSystem system = LoggingSystem.get(GroupsList.class.getClassLoader());
+        system.setLogLevel(GroupsList.class.getName(), LogLevel.DEBUG);
 
         // Create a simple hierarchy
         // Root1
@@ -390,8 +390,8 @@ public class GroupHierarchyTests {
         J.getReferringGroups().add(K.getShortId());
 
 
-        GroupList gl1 = new GroupList(Root1, 5);
-        GroupList gl2 = new GroupList(Root2, 5);
+        GroupsList gl1 = new GroupsList(Root1, 5);
+        GroupsList gl2 = new GroupsList(Root2, 5);
         assertDoesNotThrow(() -> {
             gl1.addElement(A);
             gl1.addElement(C);
@@ -441,8 +441,8 @@ public class GroupHierarchyTests {
     public void testMutlipleHierarchy() {
         log.info("[groups][test] Running test with multiple hierarchy and addUnderGroup function");
 
-        LoggingSystem system = LoggingSystem.get(GroupList.class.getClassLoader());
-        system.setLogLevel(GroupList.class.getName(), LogLevel.DEBUG);
+        LoggingSystem system = LoggingSystem.get(GroupsList.class.getClassLoader());
+        system.setLogLevel(GroupsList.class.getName(), LogLevel.DEBUG);
 
         // Create a mixed hierarchy
         // Root1
@@ -494,7 +494,7 @@ public class GroupHierarchyTests {
             J.init("J", "Group J", "J", "en");
             J.addUnderGroup(E, maxDepth);
 
-            GroupList gl1 = new GroupList(Root1, 5);
+            GroupsList gl1 = new GroupsList(Root1, 5);
             gl1.addElement(A);
             gl1.addElement(C);
             gl1.addElement(D);

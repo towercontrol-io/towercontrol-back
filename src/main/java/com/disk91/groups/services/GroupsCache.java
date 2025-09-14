@@ -42,7 +42,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
-public class GroupCache {
+public class GroupsCache {
 
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
@@ -133,21 +133,22 @@ public class GroupCache {
      * Get the group from the cache or from the database if not in cache
      * Build the generic group from the user Objet when a User vitual group is requested
      * User Virtual group start with the prefix "user_"
-     * @param groupId - groupId to be retrieved
+     * @param shortId - shortId to be retrieved
      * @return the group object
      * @throws ITNotFoundException if not found
      */
-    public Group getGroup(String groupId) throws ITNotFoundException {
-        if ( groupId.startsWith("user_") ) {
+    protected Group getGroup(String shortId) throws ITNotFoundException {
+        if ( shortId.startsWith("user_") ) {
             // virtual group, build it from the user object
-            String userId = groupId.substring(5);
+            String userId = shortId.substring(5);
             try {
                 User u = userCache.getUser(userId);
                 Group g = new Group();
-                g.setId(groupId);
+                g.setId(shortId);
+                g.setShortId(shortId);
                 g.setVersion(Group.GROUP_VERSION);
-                g.setName("group-default-group");
-                g.setDescription("group-default-group-description");
+                g.setName("groups-default-group");
+                g.setDescription("groups-default-group-description");
                 g.setLanguage(u.getLanguage());
                 g.setActive(u.isActive());
                 g.setVirtual(true);
@@ -159,50 +160,45 @@ public class GroupCache {
                 return g;
             } catch (ITNotFoundException x) {
                 // Group does not exist
-                throw new ITNotFoundException("group-get-not-found");
+                throw new ITNotFoundException("groups-get-not-found");
             }
         } else {
             if (!this.serviceEnable || groupsConfig.getGroupsCacheMaxSize() == 0) {
                 // direct access from database
-                Group u = groupRepository.findOneGroupById(groupId);
+                Group u = groupRepository.findOneGroupByShortId(shortId);
                 if (u == null) throw new ITNotFoundException("Group not found");
                 return u.clone();
             } else {
-                Group u = this.groupCache.get(groupId);
+                Group u = this.groupCache.get(shortId);
                 if (u == null) {
                     // not in cache, get it from the database
-                    u = groupRepository.findOneGroupById(groupId);
+                    u = groupRepository.findOneGroupByShortId(shortId);
                     if (u == null) throw new ITNotFoundException("Group not found");
-                    this.groupCache.put(u, u.getId());
+                    this.groupCache.put(u, u.getShortId());
                 }
                 return u.clone();
             }
         }
     }
 
+    protected boolean isInCache(String shortId) {
+        if ( shortId.startsWith("user_") ) return false; // virtual group, do nothing
+        if ( this.serviceEnable && groupsConfig.getGroupsCacheMaxSize() > 0 ) {
+            return this.groupCache.get(shortId) != null;
+        }
+        return false;
+    }
+
     /**
      * Remove a group from the local cache if exists (this is when the user has been updated somewhere else
-     * @param groupId - groupId to be removed
+     * @param shortId - groupId to be removed
      * @return
      */
-    public void flushGroup(String groupId) {
-        if ( groupId.startsWith("user_") ) return; // virtual group, do nothing
+    protected void flushGroup(String shortId) {
+        if ( shortId.startsWith("user_") ) return; // virtual group, do nothing
         if ( this.serviceEnable && groupsConfig.getGroupsCacheMaxSize() > 0 ) {
-            this.groupCache.remove(groupId,false);
+            this.groupCache.remove(shortId,false);
         }
     }
-
-    /**
-     * Save the Group structure after an update. The cache is flushed for this user
-     * This is not protected against concurrent access on multiple cache service instance
-     * @param u Group to be saved
-     */
-    public void saveGroup(Group u) {
-        if ( u.getId().startsWith("user_") ) return; // virtual group, do nothing
-        groupRepository.save(u);
-        this.flushGroup(u.getId());
-    }
-
-    // @TODO - manage the broadcast request for user flush and scan for flush trigger on each of the instances
 
 }

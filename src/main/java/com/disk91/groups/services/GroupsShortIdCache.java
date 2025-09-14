@@ -22,10 +22,11 @@ package com.disk91.groups.services;
 import com.disk91.common.tools.Now;
 import com.disk91.common.tools.ObjectCache;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
+import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.groups.config.GroupsConfig;
 import com.disk91.groups.mdb.entities.Group;
 import com.disk91.groups.mdb.repositories.GroupRepository;
-import com.disk91.groups.tools.GroupList;
+import com.disk91.groups.tools.GroupsList;
 import com.disk91.users.mdb.entities.User;
 import com.disk91.users.services.UserCache;
 import io.micrometer.core.instrument.Gauge;
@@ -39,11 +40,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
-public class GroupShortIdCache {
+public class GroupsShortIdCache {
 
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
@@ -69,9 +69,7 @@ public class GroupShortIdCache {
     // CACHE SERVICE
     // ================================================================================================================
 
-
-
-    private ObjectCache<String, GroupList> groupCache;
+    private ObjectCache<String, GroupsList> groupCache;
 
     protected boolean serviceEnable = false;
 
@@ -79,17 +77,17 @@ public class GroupShortIdCache {
     private void initGroupsCache() {
         log.info("[groups] initGroupsShortIdCache");
         if ( groupsConfig.getGroupsCacheMaxSize() > 0 ) {
-            this.groupCache = new ObjectCache<String,GroupList>(
+            this.groupCache = new ObjectCache<String, GroupsList>(
                     "GroupsROCache",
                     groupsConfig.getGroupsCacheMaxSize(),
                     groupsConfig.getGroupsCacheExpiration()*1000
             ) {
                 @Override
-                synchronized public void onCacheRemoval(String key, GroupList obj, boolean batch, boolean last) {
+                synchronized public void onCacheRemoval(String key, GroupsList obj, boolean batch, boolean last) {
                     // read only cache, do nothing
                 }
                 @Override
-                public void bulkCacheUpdate(List<GroupList> objects) {
+                public void bulkCacheUpdate(List<GroupsList> objects) {
                     // read only cache, do nothing
                 }
             };
@@ -132,33 +130,85 @@ public class GroupShortIdCache {
     // Cache access
     // ================================================================================================================
 
+    protected GroupsList buildGroupListFromDb(String shortId) throws ITNotFoundException {
+        // direct access from database
+        List<Group> gs = groupRepository.findByShortIdOrReferringGroupsContains(shortId);
+        if (gs == null|| gs.isEmpty()) throw new ITNotFoundException("group-list-not-found");
+        // find head
+        Group head = null;
+        for ( Group g : gs ) {
+            if ( g.getShortId().compareTo(shortId) == 0 ) {
+                head = g;
+                break;
+            }
+        }
+        if ( head == null ) throw new ITNotFoundException("group-list-head-less");
+        GroupsList ret = new GroupsList(head,groupsConfig.getGroupsMaxDepth());
+        for ( Group g : gs ) {
+            if ( g.getShortId().compareTo(shortId) != 0 ) {
+                try {
+                    ret.addElement(g);
+                } catch (ITParseException e) {
+                    log.warn("[groups] group {} retrieved for hierarchy {} but not in hierarchy",g.getShortId(),shortId);
+                }
+            }
+        }
+        return ret;
+    }
+
     /**
-     * Get the group from the cache or from the database if not in cache
-     * Build the generic group from the user Objet when a User vitual group is requested
-     * User Virtual group start with the prefix "user_"
-     * @param groupId - groupId to be retrieved
+     * Get a Group object by a short ID this allows to have the whole hierarchy for this group
+     * @param shortId - shortId to be retrieved
      * @return the group object
      * @throws ITNotFoundException if not found
      */
-    public GroupList getGroup(String groupId) throws ITNotFoundException {
-        throw new ITNotFoundException();
+    protected GroupsList getGroupList(String shortId) throws ITNotFoundException {
+        // virtual group management
+        if ( shortId.startsWith("user_") ) {
+            String userId = shortId.substring(5);
+            try {
+                User u = userCache.getUser(userId);
+                Group g = new Group();
+                g.init("groups-default-group", "groups-default-group-description", shortId, u.getLanguage());
+                g.setId(shortId);
+                g.setActive(u.isActive());
+                g.setVirtual(true);
+                g.setCreationDateMs(u.getRegistrationDate());
+                g.setCreationBy(u.getLogin());
+                g.setModificationDateMs(u.getRegistrationDate());
+                return new GroupsList(g,groupsConfig.getGroupsMaxDepth());
+            } catch (ITNotFoundException x) {
+                // Group does not exist
+                throw new ITNotFoundException("groups-get-not-found");
+            }
+        }
+
+        // get from cache
+        if (!this.serviceEnable || groupsConfig.getGroupsCacheMaxSize() == 0) {
+            return buildGroupListFromDb(shortId);
+        } else {
+            GroupsList ret = this.groupCache.get(shortId);
+            if (ret != null) return ret.clone();
+            // not in cache, build it
+            ret = buildGroupListFromDb(shortId);
+            this.groupCache.put(ret, shortId);
+            return ret.clone();
+        }
     }
 
     /**
-     * Remove a group from the local cache if exists (this is when the user has been updated somewhere else
-     * @param groupId - groupId to be removed
-     * @return
+     * Remove a groupList from the local cache if exists (this is when the user has been updated somewhere else
+     * We also need to flush all the groups that are referring this one as they will be also modified
+     * @param g - group to be removed, flush all the referring groups as well
      */
-    public void flushGroup(String groupId) {
+    protected void flushGroup(Group g) {
+        if ( g.getShortId().startsWith("user_") ) return; // virtual group, do nothing
+        if ( this.serviceEnable && groupsConfig.getGroupsCacheMaxSize() > 0 ) {
+            for ( String shortId : g.getReferringGroups() ) {
+                this.groupCache.remove(shortId,false);
+            }
+            this.groupCache.remove(g.getShortId(),false);
+        }
     }
-
-    /**
-     * Save the Group structure after an update. The cache is flushed for this user
-     * This is not protected against concurrent access on multiple cache service instance
-     * @param u Group to be saved
-     */
-    public void saveGroup(Group u) {
-    }
-
 
 }

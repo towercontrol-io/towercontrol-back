@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
-public class GroupList implements CloneableObject<GroupList> {
+public class GroupsList implements CloneableObject<GroupsList> {
 
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
@@ -50,7 +50,7 @@ public class GroupList implements CloneableObject<GroupList> {
     protected int maxDepth;
 
 
-    public GroupList(Group _headElement, int _maxDepth) {
+    public GroupsList(Group _headElement, int _maxDepth) {
         this.list = new ArrayList<>();
         this.list.add(_headElement);
         this.head = _headElement.getShortId();
@@ -176,11 +176,11 @@ public class GroupList implements CloneableObject<GroupList> {
     /**
      * Build the hierarchy recursively
      */
-    protected void buildHierarchy(GroupHierarchyNode node, int depth, int maxDepth) throws ITTooManyException {
+    protected void buildHierarchy(GroupsHierarchyNode node, int depth, int maxDepth) throws ITTooManyException {
         if ( depth >= maxDepth ) throw new ITTooManyException("group-hierarchy-too-deep-possible-loop");
         List<Group> under = this.getNextLevel(node.getChildrenPath());
         for ( Group g : under ) {
-            GroupHierarchyNode child = node.addChild(g);
+            GroupsHierarchyNode child = node.addChild(g);
             this.buildHierarchy(child, depth+1, maxDepth);
         }
     }
@@ -189,8 +189,8 @@ public class GroupList implements CloneableObject<GroupList> {
      * Get the hierarchy of this group list
      * @return
      */
-    public GroupHierarchyNode getHierarchy() throws ITTooManyException {
-        GroupHierarchyNode root = new GroupHierarchyNode(this.headElement,new ArrayList<>());
+    public GroupsHierarchyNode getHierarchy() throws ITTooManyException {
+        GroupsHierarchyNode root = new GroupsHierarchyNode(this.headElement,new ArrayList<>());
         this.buildHierarchy(root,1,10);
         return root;
     }
@@ -207,12 +207,18 @@ public class GroupList implements CloneableObject<GroupList> {
 
     // ===========================================================================
 
-    public GroupList clone() {
-        GroupList c = new GroupList(this.headElement,this.maxDepth);
+    public GroupsList clone() {
+        GroupsList c = new GroupsList(this.headElement,this.maxDepth);
         for ( Group g : this.list ) {
             c.list.add(g.clone());
         }
         return c;
     }
 
+    // ===========================================================================
+
+
+    public ArrayList<Group> getList() {
+        return list;
+    }
 }

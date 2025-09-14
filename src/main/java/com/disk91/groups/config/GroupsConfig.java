@@ -50,6 +50,21 @@ public class GroupsConfig {
         return groupsIntracomMedium;
     }
 
+    // --------------------------------------------
+    // Group Parameters
+    // --------------------------------------------
+
+    @Value("${groups.max.depth:16}")
+    protected int groupsMaxDepth;
+    public int getGroupsMaxDepth() {
+        return groupsMaxDepth;
+    }
+
+    @Value("${groups.shortid.size:6}")
+    protected int groupsShortidSize;
+    public int getGroupsShortidSize() {
+        return groupsShortidSize;
+    }
 
     // --------------------------------------------
     // Group Cache

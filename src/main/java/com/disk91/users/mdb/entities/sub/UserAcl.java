@@ -2,6 +2,7 @@ package com.disk91.users.mdb.entities.sub;
 
 import com.disk91.common.tools.CloneableObject;
 import com.disk91.common.tools.CustomField;
+import com.disk91.users.services.UsersRolesCache;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
@@ -32,6 +33,24 @@ public class UserAcl implements CloneableObject<UserAcl> {
             example = "[ROLE_DEVICE_READ, ROLE_DEVICE_WRITE]",
             requiredMode = Schema.RequiredMode.REQUIRED
     ) protected ArrayList<String> roles;
+
+    // === FUNCTIONAL ===
+
+    /**
+     * Check if a given role has been attributed to the user
+     * @param role
+     */
+    public boolean isInRole(String role) {
+        if ( this.roles == null ) return false;
+        for ( String r : this.roles ) {
+            if ( r.compareTo(role) == 0 ) return true;
+        }
+        return false;
+    }
+
+    public boolean isInRole(UsersRolesCache.StandardRoles role) {
+        return isInRole(role.getRoleName());
+    }
 
     // === CLONE ===
 

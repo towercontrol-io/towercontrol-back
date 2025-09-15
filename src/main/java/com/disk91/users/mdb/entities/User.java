@@ -152,6 +152,9 @@ public class User implements CloneableObject<User> {
     // List the ACL associated to the user
     protected ArrayList<UserAcl> acls;
 
+    // List of groups owned or assimilated as owned
+    protected ArrayList<String> groups;
+
     // User Alerts preferences
     protected UserAlertPreference alertPreference;
 
@@ -170,32 +173,6 @@ public class User implements CloneableObject<User> {
 
     // List of API session secrets for API accounts, used to sign JWTs and repudiation
     private ArrayList<UserApiKeys> apiKeys;
-
-    // ================================================================================================
-    // Get Group List ( another way to get acls but adding the virtual groups )
-    // ================================================================================================
-
-    /**
-     * Returns the list of the groups the user have access, including the virtual group.
-     * @return
-     */
-    public ArrayList<String> getGroups() {
-        ArrayList<String> groups = new ArrayList<>();
-        groups.add("user_"+this.getLogin());
-        groups.addAll(this.getGroups());
-        for ( UserAcl acl : this.acls ) {
-            groups.add(acl.getGroup());
-        }
-        return groups;
-    }
-
-    /**
-     * Get user default group name, application does not focus on group management will prefer this method.
-     * @return
-     */
-    public String getDefaultGroupId() {
-        return "user_"+this.getLogin();
-    }
 
 
     // ================================================================================================
@@ -451,6 +428,7 @@ public class User implements CloneableObject<User> {
         // Make sure structure is complete
         if ( this.roles == null ) this.roles = new ArrayList<>();
         if ( this.acls == null ) this.acls = new ArrayList<>();
+        if ( this.groups == null ) this.groups = new ArrayList<>();
         if ( this.profile == null ) this.profile = new UserProfile();
         if ( this.billingProfile == null ) this.billingProfile = new UserBillingProfile();
         if ( this.alertPreference == null ) this.alertPreference = new UserAlertPreference();
@@ -982,6 +960,72 @@ public class User implements CloneableObject<User> {
         this.billingProfile.setVatNumber(EncryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
     }
 
+    // ================================================================================================
+    // Get Group List ( another way to get acls but adding the virtual groups )
+    // and other group related functions
+    // ================================================================================================
+
+    /**
+     * Returns the list of the groups the user have access, including the virtual group.
+     *  nd the ACL when scanAcl is true
+     * @param scanAcl - when true, the ACLs are also scanned for groups
+     * @return
+     */
+    public ArrayList<String> getAllGroups(boolean scanAcl, boolean addVirtual) {
+        ArrayList<String> _groups = new ArrayList<>();
+        if ( addVirtual ) _groups.add("user_"+this.getLogin());
+        if ( this.groups != null ) _groups.addAll(this.getGroups());
+        if ( scanAcl ) {
+            for (UserAcl acl : this.acls) {
+                _groups.add(acl.getGroup());
+            }
+        }
+        return _groups;
+    }
+
+    /**
+     * Get user default group name, application does not focus on group management will prefer this method.
+     * @return
+     */
+    public String getDefaultGroupId() {
+        return "user_"+this.getLogin();
+    }
+
+
+    /**
+     * Search a group in ACLs and return the ACL structure for getting the associated rights
+     * Raise Exception when not found
+     * @param group
+     * @return
+     * @throws ITNotFoundException
+     */
+    public UserAcl searchAclGroup(String group) throws ITNotFoundException {
+        if ( this.getAcls() != null) {
+            for ( UserAcl acl : this.getAcls() ) {
+                if ( acl.getGroup().compareTo(group) == 0 ) return acl;
+            }
+        }
+        throw new ITNotFoundException("users-group-not-in-acl");
+    }
+
+
+    /**
+     * Check if a given group has been attributed to the user
+     * When scanAcl, the ACL is also scanned if not, only the
+     * direct attachments.
+     * special response for the user virtual group
+     * @param group - shortID of the group to search
+     */
+    public boolean isInGroup(String group, boolean scanAcl, boolean addVirtual) {
+        if ( this.getAllGroups(scanAcl,addVirtual) != null ) {
+            for ( String g : this.getGroups() ) {
+                if ( g.compareTo(group) == 0 ) return true;
+            }
+        }
+        return false;
+    }
+
+
     // ===================================================
     // Roles Management
 
@@ -1060,6 +1104,11 @@ public class User implements CloneableObject<User> {
             _acls.add(acl.clone());
         }
         u.setAcls(_acls);
+
+        // Create a copy of the groups list
+        ArrayList<String> _groups = new ArrayList<String>(this.groups);
+        _groups.addAll(this.groups);
+        u.setGroups(_groups);
 
         // Create a copy the search keys
         ArrayList<String> _userSearch = new ArrayList<String>();
@@ -1382,5 +1431,13 @@ public class User implements CloneableObject<User> {
 
     public void setUserSearch(ArrayList<String> userSearch) {
         this.userSearch = userSearch;
+    }
+
+    public ArrayList<String> getGroups() {
+        return groups;
+    }
+
+    public void setGroups(ArrayList<String> groups) {
+        this.groups = groups;
     }
 }

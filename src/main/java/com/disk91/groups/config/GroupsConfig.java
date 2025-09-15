@@ -66,6 +66,12 @@ public class GroupsConfig {
         return groupsShortidSize;
     }
 
+    @Value("${groups.virtual.allows.sub:false}")
+    protected boolean groupVituralAllowsSub;
+    public boolean isGroupVituralAllowsSub() {
+        return groupVituralAllowsSub;
+    }
+
     // --------------------------------------------
     // Group Cache
     // --------------------------------------------

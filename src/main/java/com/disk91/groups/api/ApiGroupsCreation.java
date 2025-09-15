@@ -79,7 +79,7 @@ public class ApiGroupsCreation {
             produces = "application/json",
             method = RequestMethod.POST
     )
-    @PreAuthorize("hasAnyRole('ROLE_LOGIN_COMPLETE') and hasAnyRole('ROLE_GROUP_LADMIN', 'ROLE_GROUP_ADMIN', 'ROLE_GOD_ADMIN')")
+    @PreAuthorize("hasAnyRole('ROLE_LOGIN_COMPLETE')")
     // ----------------------------------------------------------------------
     public ResponseEntity<?> createSubGroup (
             HttpServletRequest request,

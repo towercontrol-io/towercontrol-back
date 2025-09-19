@@ -20,7 +20,6 @@
 
 package com.disk91.users.mdb.repositories;
 
-import com.disk91.users.mdb.entities.Role;
 import com.disk91.users.mdb.entities.User;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;

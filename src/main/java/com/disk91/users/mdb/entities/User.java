@@ -1106,8 +1106,10 @@ public class User implements CloneableObject<User> {
         u.setAcls(_acls);
 
         // Create a copy of the groups list
-        ArrayList<String> _groups = new ArrayList<String>(this.groups);
-        _groups.addAll(this.groups);
+        ArrayList<String> _groups = new ArrayList<String>();
+        if ( this.groups != null ) {
+            _groups.addAll(this.groups);
+        }
         u.setGroups(_groups);
 
         // Create a copy the search keys

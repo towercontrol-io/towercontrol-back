@@ -4,6 +4,7 @@ import com.disk91.common.tools.Tools;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITRightException;
+import com.disk91.groups.mdb.entities.Group;
 import com.disk91.groups.services.GroupsServices;
 import com.disk91.groups.tools.GroupsHierarchySimplified;
 import com.disk91.users.api.interfaces.UserAccessibleRolesResponse;
@@ -76,10 +77,18 @@ public class UserGroupRolesService {
 
         try {
             User user = userCache.getUser(u);
-            List<Role> rs = getAvailableRoles(user);
             ArrayList<UserAccessibleRolesResponse> ret = new ArrayList<>();
-            for ( Role r : rs ) {
-                ret.add(UserAccessibleRolesResponse.getUserAccessibleRolesResponseFromRole(r));
+            if (user.isInRole(UsersRolesCache.StandardRoles.ROLE_GOD_ADMIN.name())) {
+                // all roles are accessible
+                List<Role> _ret = usersRolesCache.getRoles();
+                for ( Role r : _ret ) {
+                    ret.add(UserAccessibleRolesResponse.getUserAccessibleRolesResponseFromRole(r));
+                }
+            } else {
+                List<Role> rs = getAvailableRoles(user);
+                for (Role r : rs) {
+                    ret.add(UserAccessibleRolesResponse.getUserAccessibleRolesResponseFromRole(r));
+                }
             }
             return ret;
         } catch (ITNotFoundException x) {
@@ -135,5 +144,21 @@ public class UserGroupRolesService {
 
     }
 
+    /**
+     * Add a group to the user profile after a group creation request
+     * @param u
+     * @param g
+     * @throws ITNotFoundException
+     */
+    public void addGroup(User u, Group g) throws ITNotFoundException {
+        // make sure we have the last version
+        try {
+            User _u = userCache.getUser(u.getLogin());
+            u.getGroups().add(g.getShortId());
+            userCache.saveUser(u);
+        } catch (ITNotFoundException x) {
+            throw new ITNotFoundException("user-profile-user-not-found");
+        }
+    }
 
 }

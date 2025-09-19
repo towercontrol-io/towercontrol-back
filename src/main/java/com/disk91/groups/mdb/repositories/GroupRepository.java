@@ -21,7 +21,6 @@
 package com.disk91.groups.mdb.repositories;
 
 import com.disk91.groups.mdb.entities.Group;
-import com.disk91.users.mdb.entities.User;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;

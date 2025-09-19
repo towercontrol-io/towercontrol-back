@@ -52,21 +52,21 @@ public class ApiGroupsCreation {
     protected GroupsChangeServices groupsChangeServices;
 
     /**
-     * Group creation API for creation of subgroups
+     * Group creation API for creation of subgroups & groups
      *
      * A user with a Local Admin Role has the right to create a subgroup to organize their devices.
      * This subgroup must be attached to a group they own, their default group, or a third-party group
      * on which they have an ACL granting them the Group Local Admin right. The group is added to the hierarchy.
-     * Root groups can only be created by Group Admins and a different API is used for this.
+     * Root groups can only be created by Group Admins.
      *
      * Private endpoint accessible to user with an active session and Local Admin right on a group.
      */
     @Operation(
-            summary = "Group creation API for creation of subgroups",
+            summary = "Group creation API for creation of group and subgroups",
             description = "A user with a Local Admin Role has the right to create a subgroup to organize their devices. " +
                     "This subgroup must be attached to a group they own, their default group, or a third-party group " +
                     "on which they have an ACL granting them the Group Local Admin right. The group is added to the hierarchy. " +
-                    "Root groups can only be created by Group Admins and a different API is used for this. " +
+                    "Root groups can only be created by Group Admins. " +
                     "Private endpoint accessible to user with an active session and Local Admin right on a group.",
             responses = {
                     @ApiResponse(responseCode = "201", description = "Group created", content = @Content(schema = @Schema(implementation = ActionResult.class))),
@@ -86,12 +86,16 @@ public class ApiGroupsCreation {
             @RequestBody(required = true) GroupCreationBody body
     ) {
         try {
-            groupsChangeServices.createSubGroup(request.getUserPrincipal().getName(), body);
+            if ( body.getParenId() != null && !body.getParenId().isEmpty() ) {
+                groupsChangeServices.createSubGroup(request.getUserPrincipal().getName(), body);
+            } else {
+                groupsChangeServices.createGroup(request.getUserPrincipal().getName(), body);
+            }
             return new ResponseEntity<>(ActionResult.CREATED("groups-group-creation-success"), HttpStatus.CREATED);
-
-            //@TODO - manage the exception properly
-        } catch (ITRightException | ITParseException | ITNotFoundException x) {
-            return new ResponseEntity<>(ActionResult.FORBIDDEN("groups-group-creation-refused"), HttpStatus.FORBIDDEN);
+        } catch (ITRightException x) {
+            return new ResponseEntity<>(ActionResult.FORBIDDEN("groups-group-creation-right-refused"), HttpStatus.FORBIDDEN);
+        } catch (ITParseException | ITNotFoundException x ) {
+            return new ResponseEntity<>(ActionResult.BADREQUEST("groups-group-creation-failed"), HttpStatus.BAD_REQUEST);
         }
     }
 

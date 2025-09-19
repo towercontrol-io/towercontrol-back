@@ -45,7 +45,7 @@ import java.util.List;
 @Document(collection = "groups")
 @CompoundIndexes({
       @CompoundIndex(name = "name", def = "{'name': 'hashed'}"),
-      @CompoundIndex(name = "shortId", def = "{'shortId':) 'hashed'}"),
+      @CompoundIndex(name = "shortId", def = "{'shortId': 'hashed'}"),
 })
 public class Group implements CloneableObject<Group> {
 

@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -135,6 +136,18 @@ public class UsersRolesCache {
             throw new ITNotFoundException("Role "+name+" not found");
         }
         return r.clone();
+    }
+
+    /**
+     * Return the list of role available and assignable
+     * @return list of roles
+     */
+    public List<Role> getRoles() {
+        ArrayList<Role> _roles = new ArrayList<>();
+        for ( Role r : this.rolesCache.values() ) {
+            if ( r.isAssignable() ) _roles.add(r);
+        }
+        return _roles;
     }
 
     /**

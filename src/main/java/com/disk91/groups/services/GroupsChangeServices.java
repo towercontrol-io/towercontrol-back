@@ -33,6 +33,7 @@ import com.disk91.groups.tools.GroupsList;
 import com.disk91.users.mdb.entities.User;
 import com.disk91.users.mdb.entities.sub.UserAcl;
 import com.disk91.users.services.UserCache;
+import com.disk91.users.services.UserGroupRolesService;
 import com.disk91.users.services.UsersRolesCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,10 +60,10 @@ public class GroupsChangeServices {
     protected GroupsServices groupsServices;
 
     @Autowired
-    protected GroupRepository groupRepository;
+    protected UserCache userCache;
 
     @Autowired
-    protected UserCache userCache;
+    protected UserGroupRolesService userGroupRolesService;
 
     // =====================================================================================================
     // CREATE GROUPS
@@ -151,6 +152,53 @@ public class GroupsChangeServices {
         // No need to change the user configuration as it is a subgroup, the user keep the upper layer
         // in his structure.
 
+    }
+
+
+    public void createGroup(
+            String userId,
+            GroupCreationBody body
+    ) throws ITNotFoundException, ITRightException, ITParseException {
+
+        // Make sure no parent group provided
+        if ( body.getParenId() != null && !body.getParenId().isEmpty() ) {
+            throw new ITParseException("groups-creation-with-parentid-set");
+        }
+
+        // Make sure the user can create a group
+        User user = null;
+        try {
+            user = userCache.getUser(userId);
+            boolean authorized = false;
+            // is the user is ADMIN / LOCAL_ADMIN / GOD_ADMIN to manipulate its attached groups
+            if (user.isInRole(UsersRolesCache.StandardRoles.ROLE_GOD_ADMIN)) {
+                authorized = true;
+            } else if (
+                    user.isInRole(UsersRolesCache.StandardRoles.ROLE_GROUP_ADMIN)
+            ) {
+                authorized = true;
+            }
+            if (!authorized) throw new ITRightException("groups-group-creation-refused");
+
+        } catch (ITNotFoundException x) {
+            // user not found ... not a normal situation
+            log.error("[groups] Group creation for a not existing user");
+            throw new ITParseException("groups-invalid-user-request");
+        }
+
+        // Here the user and the group rights are ok to proceed.
+        Group newGroup = new Group();
+        try {
+            String shortId = groupsServices.getNewShortId();
+            newGroup.init(body.getName(), body.getDescription(), shortId, user.getLanguage());
+            newGroup.setCreationBy(user.getLogin());
+            groupsServices.saveGroup(newGroup);
+        } catch (ITTooManyException x) {
+            throw new ITParseException(x.getMessage());
+        }
+
+        // Need to add the group in the UserProfile
+        userGroupRolesService.addGroup(user,newGroup);
     }
 
 

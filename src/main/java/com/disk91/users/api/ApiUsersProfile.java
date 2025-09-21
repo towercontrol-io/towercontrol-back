@@ -421,4 +421,56 @@ public class ApiUsersProfile {
     }
 
 
+    // ========================================================================
+    // User Profile modification by an admin or not, depends on zones
+    // ========================================================================
+
+    /**
+     * User profile change, this is mostly for the Groups, Roles & ACL modification
+     *
+     * This endpoint allows a user with the rights, to update a user profile. Focus on the groups, roles and ACLs
+     * of the profile.
+     *
+     * This endpoint requires to have LOGIN_COMPLETED first, rights will be verified later
+     */
+    @Operation(
+            summary = "User profile roles, groups, acl configuration update",
+            description = "This endpoint allows a user with the rights, to update a user profile. Focus on the groups, roles and ACLs " +
+                    "of the profile. This endpoint requires to have LOGIN_COMPLETED first, rights will be verified during processing.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "User profile updated", content = @Content(schema = @Schema(implementation = ActionResult.class))),
+                    @ApiResponse(responseCode = "400", description = "Profile update failed", content = @Content(schema = @Schema(implementation = ActionResult.class))),
+                    @ApiResponse(responseCode = "403", description = "Unauthorized", content = @Content(schema = @Schema(implementation = ActionResult.class))),
+                    @ApiResponse(responseCode = "404", description = "User Not Found", content = @Content(schema = @Schema(implementation = ActionResult.class)))
+            }
+    )
+    @RequestMapping(
+            value = "/",
+            consumes = "application/json",
+            method = RequestMethod.PUT
+    )
+    @PreAuthorize("hasAnyRole('ROLE_LOGIN_COMPLETE')")
+    // ----------------------------------------------------------------------
+    public ResponseEntity<?> userUpdate(
+            HttpServletRequest request,
+            @RequestBody(required = true) UserUpdateBody body
+    ) {
+        try {
+            userProfileService.userUpdate(
+                    request.getUserPrincipal().getName(),
+                    body,
+                    request
+            );
+            return new ResponseEntity<>(ActionResult.OK("user-profile-updated"), HttpStatus.OK);
+        } catch (ITParseException  e ) {
+            return new ResponseEntity<>(ActionResult.BADREQUEST(e.getMessage()), HttpStatus.BAD_REQUEST);
+        } catch (ITRightException e ) {
+            return new ResponseEntity<>(ActionResult.FORBIDDEN(e.getMessage()), HttpStatus.FORBIDDEN);
+        } catch (ITNotFoundException e ) {
+            return new ResponseEntity<>(ActionResult.NOTFOUND(e.getMessage()), HttpStatus.NOT_FOUND);
+        }
+    }
+
+
+
 }

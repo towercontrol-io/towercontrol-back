@@ -94,13 +94,13 @@ public class GroupsCache {
 
         this.serviceEnable = true;
 
-        Gauge.builder("common.service.groups.cache_total_time", this.groupCache.getTotalCacheTime())
+        Gauge.builder("groups_service_cache_sum_time", this.groupCache.getTotalCacheTime())
                 .description("[Groups] total time cache execution")
                 .register(meterRegistry);
-        Gauge.builder("common.service.groups.cache_total", this.groupCache.getTotalCacheTry())
+        Gauge.builder("groups_service_cache_sum", this.groupCache.getTotalCacheTry())
                 .description("[Groups] total cache try")
                 .register(meterRegistry);
-        Gauge.builder("common.service.groups.cache_miss", this.groupCache.getCacheMissStat())
+        Gauge.builder("groups_service_cache_miss", this.groupCache.getCacheMissStat())
                 .description("[Groups] total cache miss")
                 .register(meterRegistry);
     }

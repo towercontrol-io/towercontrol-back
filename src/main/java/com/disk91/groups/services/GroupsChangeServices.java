@@ -19,17 +19,16 @@
  */
 package com.disk91.groups.services;
 
-import com.disk91.common.tools.EncryptionHelper;
+import com.disk91.audit.integration.AuditIntegration;
+import com.disk91.common.config.ModuleCatalog;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITRightException;
 import com.disk91.common.tools.exceptions.ITTooManyException;
 import com.disk91.groups.api.interfaces.GroupCreationBody;
+import com.disk91.groups.config.ActionCatalog;
 import com.disk91.groups.config.GroupsConfig;
 import com.disk91.groups.mdb.entities.Group;
-import com.disk91.groups.mdb.repositories.GroupRepository;
-import com.disk91.groups.tools.GroupsHierarchySimplified;
-import com.disk91.groups.tools.GroupsList;
 import com.disk91.users.mdb.entities.User;
 import com.disk91.users.mdb.entities.sub.UserAcl;
 import com.disk91.users.services.UserCache;
@@ -39,9 +38,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Service
 public class GroupsChangeServices {
@@ -65,10 +61,26 @@ public class GroupsChangeServices {
     @Autowired
     protected UserGroupRolesService userGroupRolesService;
 
+    @Autowired
+    protected AuditIntegration auditIntegration;
+
     // =====================================================================================================
     // CREATE GROUPS
     // =====================================================================================================
 
+    /**
+     * Create a subgroup, attached to any other group
+     * The root group requires to be GROUP_LADMIN to be created , or GROUP_ADMIN
+     * The group is attached to the user creating it.
+     *
+     * Group creation is creating audit log
+     *
+     * @param userId - who request creation
+     * @param body - information to create the group
+     * @throws ITNotFoundException - Requested parent group does not exist
+     * @throws ITRightException - in case the user does not have the required role required or ACL on parent group
+     * @throws ITParseException - wong body information, user not existing or depth too deep (should not happen here)
+     */
     public void createSubGroup(
             String userId,
             GroupCreationBody body
@@ -145,6 +157,13 @@ public class GroupsChangeServices {
             newGroup.setCreationBy(user.getLogin());
             groupsServices.flushGroup(group.getShortId());
             groupsServices.saveGroup(newGroup);
+            auditIntegration.auditLog(
+                    ModuleCatalog.Modules.GROUPS,
+                    ActionCatalog.getActionName(ActionCatalog.Actions.CREATION),
+                    user.getLogin(),
+                    "User {0} created sub group {1} with shortId {2} under group {3}",
+                    new String[]{user.getLogin(), newGroup.getName(), newGroup.getShortId(), body.getParenId()}
+            );
         } catch (ITTooManyException x) {
             throw new ITParseException(x.getMessage());
         }
@@ -154,7 +173,20 @@ public class GroupsChangeServices {
 
     }
 
-
+    /**
+     * Create a root group, not attached to any other group
+     * The root group requires to be GROUP_ADMIN to be created
+     * Later the group will be attached to a user. The group is
+     * attached to the user creating it.
+     *
+     * Group creation is creating audit log
+     *
+     * @param userId - who request creation
+     * @param body - information to create the group
+     * @throws ITNotFoundException - should not happen, just in case the uer load at the beginning disappear before end
+     * @throws ITRightException - in case the user does not have the ADMIn role required
+     * @throws ITParseException - wong body information, user not existing or depth too deep (should not happen here)
+     */
     public void createGroup(
             String userId,
             GroupCreationBody body
@@ -193,6 +225,13 @@ public class GroupsChangeServices {
             newGroup.init(body.getName(), body.getDescription(), shortId, user.getLanguage());
             newGroup.setCreationBy(user.getLogin());
             groupsServices.saveGroup(newGroup);
+            auditIntegration.auditLog(
+                    ModuleCatalog.Modules.GROUPS,
+                    ActionCatalog.getActionName(ActionCatalog.Actions.CREATION),
+                    user.getLogin(),
+                    "User {0} created group {1} with shortId {2}",
+                    new String[]{user.getLogin(), newGroup.getName(), newGroup.getShortId()}
+            );
         } catch (ITTooManyException x) {
             throw new ITParseException(x.getMessage());
         }

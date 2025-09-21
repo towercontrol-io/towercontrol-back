@@ -677,13 +677,13 @@ public class UserService {
     @PostConstruct
     private void initUserRegistrationService() {
         log.info("[users][service] User service initialized");
-        Gauge.builder("users.login.attempt", this.getLoginAttempts())
+        Gauge.builder("users_service_login_attempt", this.getLoginAttempts())
                 .description("Number of login attempts")
                 .register(meterRegistry);
-        Gauge.builder("users.login.failed", this.getLoginFailed())
+        Gauge.builder("users_service_login_failed", this.getLoginFailed())
                 .description("Number of login failures")
                 .register(meterRegistry);
-        Gauge.builder("users.login.success", this.getCreationsSuccess())
+        Gauge.builder("users_service_login_success", this.getCreationsSuccess())
                 .description("Number of login success")
                 .register(meterRegistry);
     }

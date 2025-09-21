@@ -20,6 +20,7 @@
 package com.disk91.groups.services;
 
 import com.disk91.common.tools.EncryptionHelper;
+import com.disk91.common.tools.Now;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITTooManyException;
 import com.disk91.groups.tools.GroupsHierarchySimplified;
@@ -27,6 +28,9 @@ import com.disk91.groups.config.GroupsConfig;
 import com.disk91.groups.mdb.entities.Group;
 import com.disk91.groups.mdb.repositories.GroupRepository;
 import com.disk91.groups.tools.GroupsList;
+import com.disk91.users.mdb.entities.User;
+import com.disk91.users.mdb.entities.sub.UserAcl;
+import com.disk91.users.services.UsersRolesCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -163,6 +167,100 @@ public class GroupsServices {
     // USER GROUPS & RIGHTS
     // =====================================================================================================
 
+    /**
+     * Check if a user is in a group, directly or through sub-groups.
+     * When scanAcl is true, we verify if the user have the admin rights in case of ACL depends on forAdmin
+     * considerVirtual is to check the virtual group membership (default group)
+     *
+     * @param user -  User who have the list of groups & right access
+     * @param groupShortId - The group we search in the hierarchy
+     * @param scanAcl - To also scan in the ACLs
+     * @param considerVirtual - To also scan in the virtual groups
+     * @param forAdmin - To check for admin right in case of scanAcl ; if not, the group is skipped
+     * @return true when the user is in the group with enough rights for ACL (Groups right must be checked outside)
+     */
+    public boolean isUserInGroup(User user, String groupShortId, boolean scanAcl, boolean considerVirtual, boolean forAdmin) {
+        return findGroupUserForGroup(user, groupShortId, scanAcl, considerVirtual, forAdmin) != null;
+    }
+
+    /**
+     * Check if a user is in a group, directly or through sub-groups.
+     * When scanAcl is true, we verify if the user have the admin rights in case of ACL depends on forAdmin
+     * considerVirtual is to check the virtual group membership (default group)
+     *
+     * @param user -  User who have the list of groups & right access
+     * @param groupShortId - The group we search in the hierarchy
+     * @param scanAcl - To also scan in the ACLs
+     * @param considerVirtual - To also scan in the virtual groups
+     * @param forAdmin - To check for admin right in case of scanAcl ; if not, the group is skipped
+     * @return the user group / acl corresponding to the group searched ( considering the hierarchy) or null if not found
+     */
+    public String findGroupUserForGroup(User user, String groupShortId, boolean scanAcl, boolean considerVirtual, boolean forAdmin) {
+        // check the virtual group case
+        if ( considerVirtual && groupShortId.compareTo(user.getDefaultGroupId()) == 0 ) {
+            return groupShortId;
+        }
+
+        try {
+            Group g = this.getGroupByShortId(groupShortId);
+            for ( String userGroup : user.getAllGroups(false,considerVirtual) ) {
+                if ( userGroup.compareTo(g.getShortId()) == 0 ) {
+                    // direct membership
+                    return userGroup;
+                }
+                for ( String refGroup : g.getReferringGroups() ) {
+                    if ( userGroup.compareTo(refGroup) == 0 ) {
+                        // indirect membership
+                        return userGroup;
+                    }
+                }
+            }
+            if ( scanAcl ) {
+                for (UserAcl acl : user.getAcls() ) {
+                    if ( acl.getGroup().compareTo(g.getShortId()) == 0 ) {
+                        if ( forAdmin ) {
+                            if ( acl.isInRole(UsersRolesCache.StandardRoles.ROLE_GROUP_ADMIN) ) return acl.getGroup();
+                        } else {
+                            return acl.getGroup();
+                        }
+                    }
+                    for ( String refGroup : g.getReferringGroups() ) {
+                        if ( acl.getGroup().compareTo(refGroup) == 0 ) {
+                            if ( forAdmin ) {
+                                if ( acl.isInRole(UsersRolesCache.StandardRoles.ROLE_GROUP_ADMIN) ) return acl.getGroup();;
+                            } else {
+                                return acl.getGroup();
+                            }
+                        }
+                    }
+                }
+            }
+            return null;
+        } catch (ITNotFoundException x) {
+            return null;
+        }
+    }
+
+
+
+    /**
+     * Check if a group is in another one, directly or through parents.
+     * @param groupToSearch - The group we search in the hierarchy
+     * @param groupToCheck - The group used as base of the hierarchy
+     * @return true when the groupToCheck is in the groupToSearch
+     */
+    public boolean isInGroup(String groupToSearch, String groupToCheck) {
+        if ( groupToSearch.compareTo(groupToCheck) == 0 ) return true;
+        try {
+            Group g = this.getGroupByShortId(groupToCheck);
+            for ( String refGroup : g.getReferringGroups() ) {
+                if ( groupToSearch.compareTo(refGroup) == 0 ) return true;
+            }
+            return false;
+        } catch (ITNotFoundException x) {
+            return false;
+        }
+    }
 
 
     // =====================================================================================================
@@ -194,7 +292,45 @@ public class GroupsServices {
     }
 
 
+    // =====================================================================================================
+    // GROUP DELETION
+    // =====================================================================================================
+
+    /**
+     * When a group is removed from a user profile, we need to check if that group still has an owner
+     * If there are no-more owner, the group and its sub-groups must be deleted, this can also make
+     * devices to be deleted. We could eventually mark the group as to be deleted, so the group could
+     * be in a sort of purgatory and restored by GROUP_ADMIN later on.
+     *
+     * We have to check also the hierarchy under this group is not associated also. The group is market as inactive
+     * and the deletion date is set. The groups.retention.ms.before.delete config variable gives the retention duration
+     *
+     * This take in consideration the current branch and a group in different branch may not be marked as to be deleted
+     *
+     * @param groupId
+     */
+    public void groupCascadeDeletionIfNoOwner(String groupId) {
+        // @TODO - to be implemented
+    }
+
+    /**
+     * When a group has a new owner and was pending deletion, we can restore it to active state
+     * We also need to restore the hierarchy under this group.
+     * @param groupId
+     */
+    public void groupCascadeResume(String groupId) {
+        // @TODO - to be implemented
+        /*
+        _g.setActive(true);
+        _g.setDeletionDateMs(0);
+        _g.setModificationDateMs(Now.NowUtcMs());
+        groupsServices.saveGroup(_g);
+        */
+    }
 
 
-
+    /**
+     * On group deletion cascade. When a group is deleted, we need to clear all the reference in the other groups
+     * and clear the lower level groups ; making sure there have no other links ...
+     */
 }

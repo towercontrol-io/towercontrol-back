@@ -14,6 +14,9 @@ public class ActionCatalog {
         TWOFACTOR_CHANGE,
         PROFILE_UPDATE,
         RESTORATION,                // Restore from logical deletion
+        ROLE_CHANGE,
+        GROUP_CHANGE,
+        ACL_CHANGE,
 
         UNKNOWN
     }
@@ -44,6 +47,12 @@ public class ActionCatalog {
                 return "profile_update";
             case RESTORATION:
                 return "restore";
+            case ROLE_CHANGE:
+                return "role_change";
+            case GROUP_CHANGE:
+                return "group_change";
+            case ACL_CHANGE:
+                return "acl_change";
             case UNKNOWN:
             default:
                 return "unknown";

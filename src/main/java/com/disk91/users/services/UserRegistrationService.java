@@ -226,13 +226,13 @@ public class UserRegistrationService {
     @PostConstruct
     private void initUserRegistrationService() {
         log.info("[users][registration] User registration service initialized");
-        Gauge.builder("users.registration.attempt", this.getRegistrationsAttempts())
+        Gauge.builder("users_service_registration_attempt", this.getRegistrationsAttempts())
                 .description("Number of registration attempts")
                 .register(meterRegistry);
-        Gauge.builder("users.registration.failed", this.getRegistrationsFailed())
+        Gauge.builder("users_service_registration_failed", this.getRegistrationsFailed())
                 .description("Number of registration failures")
                 .register(meterRegistry);
-        Gauge.builder("users.registration.success", this.getRegistrationsSuccess())
+        Gauge.builder("users_service_registration_success", this.getRegistrationsSuccess())
                 .description("Number of registration success (waiting for email confirmation)")
                 .register(meterRegistry);
     }

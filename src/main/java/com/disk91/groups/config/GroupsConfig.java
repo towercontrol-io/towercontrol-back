@@ -72,6 +72,12 @@ public class GroupsConfig {
         return groupVituralAllowsSub;
     }
 
+    @Value("${groups.retention.ms.before.delete:604800000}")
+    protected long groupsRetentionMsBeforeDelete;
+    public long getGroupsRetentionMsBeforeDelete() {
+        return groupsRetentionMsBeforeDelete;
+    }
+
     // --------------------------------------------
     // Group Cache
     // --------------------------------------------

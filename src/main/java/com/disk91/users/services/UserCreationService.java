@@ -400,13 +400,13 @@ public class UserCreationService {
     @PostConstruct
     private void initUserRegistrationService() {
         log.info("[users][creation] User creation service initialized");
-        Gauge.builder("users.creation.attempt", this.getCreationsAttempts())
+        Gauge.builder("users_service_creation_attempt", this.getCreationsAttempts())
                 .description("Number of account creation attempts")
                 .register(meterRegistry);
-        Gauge.builder("users.creation.failed", this.getCreationsFailed())
+        Gauge.builder("users_service_creation_failed", this.getCreationsFailed())
                 .description("Number of account creation failures")
                 .register(meterRegistry);
-        Gauge.builder("users.creation.success", this.getCreationsSuccess())
+        Gauge.builder("users_service_creation_success", this.getCreationsSuccess())
                 .description("Number of account creation success (waiting for email confirmation)")
                 .register(meterRegistry);
     }

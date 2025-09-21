@@ -99,13 +99,13 @@ public class WiFiMacGeolocationService {
 
         this.serviceEnable = true;
 
-        Gauge.builder("common.service.wifimacgeo.cache_total_time", this.wifiMacLocationCache.getTotalCacheTime())
+        Gauge.builder("common_service_wifimacgeo_cache_sum_time", this.wifiMacLocationCache.getTotalCacheTime())
                 .description("[WifiMacGeo] total time cache execution")
                 .register(registry);
-        Gauge.builder("common.service.wifimacgeo.cache_total", this.wifiMacLocationCache.getTotalCacheTry())
+        Gauge.builder("common_service_wifimacgeo_cache_sum", this.wifiMacLocationCache.getTotalCacheTry())
                 .description("[WifiMacGeo] total cache try")
                 .register(registry);
-        Gauge.builder("common.service.wifimacgeo.cache_miss", this.wifiMacLocationCache.getCacheMissStat())
+        Gauge.builder("common_service_wifimacgeo_cache_miss", this.wifiMacLocationCache.getCacheMissStat())
                 .description("[WifiMacGeo] total cache miss")
                 .register(registry);
     }

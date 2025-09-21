@@ -28,12 +28,17 @@ import com.disk91.common.tools.*;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITRightException;
+import com.disk91.groups.mdb.entities.Group;
+import com.disk91.groups.services.GroupsCache;
+import com.disk91.groups.services.GroupsServices;
 import com.disk91.users.api.interfaces.*;
 import com.disk91.users.config.ActionCatalog;
 import com.disk91.users.config.UserMessages;
 import com.disk91.users.config.UsersConfig;
+import com.disk91.users.mdb.entities.Role;
 import com.disk91.users.mdb.entities.User;
 import com.disk91.users.mdb.entities.sub.TwoFATypes;
+import com.disk91.users.mdb.entities.sub.UserAcl;
 import com.disk91.users.mdb.repositories.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import org.bouncycastle.util.encoders.Base32;
@@ -44,6 +49,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Locale;
 
 @Service
@@ -993,5 +999,491 @@ public class UserProfileService {
             throw new ITRightException("user-profile-user-not-found");
         }
     }
+
+    // ==========================================================================
+    // Update focussing on rights
+    // ==========================================================================
+
+    @Autowired
+    protected UsersRolesCache usersRolesCache;
+
+    @Autowired
+    protected GroupsServices groupsServices;
+
+    /**
+     * Sub Function - Update Role, the _resquestor and _user are already identified
+     * @param _requestor - Who is requesting the change
+     * @param _user - Who is having its roles updated
+     * @param body - The role list expected
+     * @param req - The request for IP tracing
+     * @throws ITRightException - When there is a request for a role the requestor cannot assign
+     * @throws ITParseException - When the body is not correctly formatted or Role does not exist
+     */
+    protected void userUpdateRoles (
+            User _requestor,
+            User _user,
+            UserUpdateBody body,
+            HttpServletRequest req
+    ) throws ITRightException, ITParseException {
+
+        // A user may not be able to change his own role, non-sense
+        if ( _requestor.getLogin().compareTo(_user.getLogin()) == 0 ) {
+            throw new ITParseException("user-profile-role-self-change-not-allowed");
+        }
+
+        // Only Admin can change roles
+        if (   _requestor.isInRole(UsersRolesCache.StandardRoles.ROLE_GOD_ADMIN)
+            || _requestor.isInRole(UsersRolesCache.StandardRoles.ROLE_USER_ADMIN)
+        ) {
+            // Admin can only change the role they have
+
+            // First pass - add the missing roles
+            ArrayList<String> rolesToAdd = new ArrayList<>();
+            for ( String r : body.getRoles() ) {
+                // Check the role... exists and is assignable
+                try {
+                    Role _r = usersRolesCache.getRole(r);
+                    if ( ! _r.isAssignable() ) throw new ITParseException("user-profile-role-not-assignable");
+                } catch (ITNotFoundException x) {
+                    throw new ITParseException("user-profile-role-not-found");
+                }
+
+                // problem if the role is not owned by requestor and user (user can have a role the requestor does not have)
+                if ( ! _requestor.isInRole(r) && ! _user.isInRole(r) ) {
+                    log.warn("[users] Requestor {} does not have right to assign role {}", _requestor.getLogin(), r);
+                    throw new ITRightException("user-profile-role-change-not-owned");
+                }
+
+                // Role exists and can be assigned, verify the user do not already own it
+                if ( ! _user.isInRole(r) ) {
+                    rolesToAdd.add(r);
+                }
+            }
+
+            // Second pass - remove the roles not wanted anymore
+            ArrayList<String> rolesToRemove = new ArrayList<>();
+            for ( String r : _user.getRoles() ) {
+                // Check the role... exists and is assignable
+                try {
+                    Role _r = usersRolesCache.getRole(r);
+                    if ( ! _r.isAssignable() ) continue;
+                } catch (ITNotFoundException x) {
+                    continue;
+                }
+
+                // check the requestor has it, in this case the removal is possible
+                if ( _requestor.isInRole(r) ) {
+                    boolean found = false;
+                    for ( String rr : body.getRoles() ) {
+                        if ( rr.compareTo(r) == 0 ) {
+                            // role must be kept
+                            found = true;
+                            break;
+                        }
+                    }
+                    if ( !found ) {
+                        // role onwed by user is no more in the role list, must be removed
+                        rolesToRemove.add(r);
+                    }
+                }
+            }
+
+            // Proceed to change
+            for ( String r : rolesToAdd ) {
+                _user.getRoles().add(r);
+            }
+            for ( String r : rolesToRemove ) {
+                _user.getRoles().remove(r);
+            }
+            _user.setModificationDate(Now.NowUtcMs());
+            userCache.saveUser(_user);
+
+            // Audit logs
+            for ( String r : rolesToAdd ) {
+                auditIntegration.auditLog(
+                        ModuleCatalog.Modules.USERS,
+                        ActionCatalog.getActionName(ActionCatalog.Actions.ROLE_CHANGE),
+                        _user.getLogin(),
+                        "User {0} added role {1} from {2}",
+                        new String[]{_requestor.getLogin(), r, (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+                );
+            }
+            for ( String r : rolesToRemove ) {
+                auditIntegration.auditLog(
+                        ModuleCatalog.Modules.USERS,
+                        ActionCatalog.getActionName(ActionCatalog.Actions.ROLE_CHANGE),
+                        _user.getLogin(),
+                        "User {0} removed role {1} from {2}",
+                        new String[]{_requestor.getLogin(), r, (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+                );
+            }
+
+        } else {
+            throw new ITRightException("user-profile-role-change-not-authorized");
+        }
+    }
+
+
+    /**
+     * Sub Function - Update Groups, the _resquestor and _user are already identified
+     * @param _requestor - Who is requesting the change
+     * @param _user - Who is having its group updated
+     * @param body - The group list expected
+     * @param req - The request for IP tracing
+     * @throws ITRightException - When there is a request for a group the requestor cannot assign
+     * @throws ITParseException - When the body is not correctly formatted or group does not exist
+     */
+    protected void userUpdateGroups (
+            User _requestor,
+            User _user,
+            UserUpdateBody body,
+            HttpServletRequest req
+    ) throws ITRightException, ITParseException {
+
+        // A user can remove a group, in this case, we can have a deletion cascade
+        // But no addition
+        boolean selfRequest = false;
+        if ( _requestor.getLogin().compareTo(_user.getLogin()) == 0 ) {
+            selfRequest = true;
+        }
+
+        // First pass add groups
+        ArrayList<String> groupsToAdd = new ArrayList<>();
+        ArrayList<String> aclToRemove = new ArrayList<>();
+        for ( String g : body.getGroups() ) {
+
+            try {
+                Group _g = groupsServices.getGroupByShortId(g);
+            } catch (ITNotFoundException x) {
+                throw new ITParseException("user-profile-group-not-found");
+            }
+
+            // Make sure we can affect that group as ownership
+            if (   ! groupsServices.isUserInGroup(_requestor,g,false,false,true)   // not owned by requestor
+                && !_requestor.isInRole(UsersRolesCache.StandardRoles.ROLE_GOD_ADMIN)                            // not GOD_ADMIN
+            ) {
+                if ( ! selfRequest || ! _requestor.isInGroup(g,false,false) ) {
+                    // we can give ownership for a group we do not own but GOD_ADMIN can do anything
+                    throw new ITRightException("user-profile-group-change-not-owned");
+                }
+            }
+
+            // We can add this group if the user does not already own it.
+            if ( ! groupsServices.isUserInGroup(_user,g,false, true, false)  ) {
+                boolean inAcl = false;
+                if ( groupsServices.isUserInGroup(_user,g,true, true, false) ) {
+                    // In this case, the group is not owned but there is an ACL on the group... we need to remove the ACL
+                    // and transform into ownership
+                    inAcl = true;
+                }
+                // when exists
+                try {
+                    groupsServices.getGroupByShortId(g);
+                    groupsToAdd.add(g);
+                    if ( inAcl ) aclToRemove.add(g);
+                } catch (ITNotFoundException x) {
+                    throw new ITParseException("user-profile-group-not-found");
+                }
+            }
+        }
+
+        // Second pass - remove groups
+        ArrayList<String> groupsToRemove = new ArrayList<>();
+        for ( String g : _user.getGroups() ) {
+            boolean found = false;
+            for ( String gg : body.getGroups() ) {
+                if  (groupsServices.isInGroup(g,gg) ) { // We need to make sure it is not here because we have it in the hierarchy
+                    found = true;
+                    break;
+                }
+            }
+            // verify this group can be removed by the requestor or skip it
+            if ( !found ) {
+                if (groupsServices.isUserInGroup(_requestor, g, false, false, true)) {
+                    // the user can, so it's a removal
+                    groupsToRemove.add(g);
+                }
+            }
+        }
+
+        // Proceed to change
+        for ( String g : groupsToAdd ) {
+            _user.getGroups().add(g);
+            // resume a purgatory group in case
+            // only GOD_ADMIN can reactivate a group when it has no ownership, before deletion
+            if ( _requestor.isInRole(UsersRolesCache.StandardRoles.ROLE_GOD_ADMIN)) {
+                try {
+                    Group _g = groupsServices.getGroupByShortId(g);
+                    if ( ! _g.isActive() ) {
+                        groupsServices.groupCascadeResume(g);
+                    }
+                } catch (ITNotFoundException x) {}
+            }
+        }
+        for ( String g : groupsToRemove ) {
+            _user.getGroups().remove(g);
+        }
+        // An ACL can be replaced by a hierarchy
+        for ( String acl : aclToRemove ) {
+            String g = groupsServices.findGroupUserForGroup(_user,acl,true,false,false);
+            if ( g != null ) {
+                UserAcl found = null;
+                for (UserAcl _acl : _user.getAcls()) {
+                    if (_acl.getGroup().compareTo(g) == 0) {
+                        found = _acl;
+                        break;
+                    }
+                }
+                _user.getAcls().remove(found);
+            }
+        }
+        _user.setModificationDate(Now.NowUtcMs());
+        userCache.saveUser(_user);
+
+        // Audit logs
+        for ( String r : groupsToAdd ) {
+            auditIntegration.auditLog(
+                    ModuleCatalog.Modules.USERS,
+                    ActionCatalog.getActionName(ActionCatalog.Actions.GROUP_CHANGE),
+                    _user.getLogin(),
+                    "User {0} added group {1} from {2}",
+                    new String[]{_requestor.getLogin(), r, (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+            );
+        }
+        for ( String r : groupsToRemove ) {
+            auditIntegration.auditLog(
+                    ModuleCatalog.Modules.USERS,
+                    ActionCatalog.getActionName(ActionCatalog.Actions.GROUP_CHANGE),
+                    _user.getLogin(),
+                    "User {0} removed group {1} from {2}",
+                    new String[]{_requestor.getLogin(), r, (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+            );
+        }
+        for ( String r : aclToRemove ) {
+            auditIntegration.auditLog(
+                    ModuleCatalog.Modules.USERS,
+                    ActionCatalog.getActionName(ActionCatalog.Actions.ACL_CHANGE),
+                    _user.getLogin(),
+                    "User {0} removed ACL {1} from {2} due to group ownership addition",
+                    new String[]{_requestor.getLogin(), r, (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+            );
+        }
+
+        // Deletion Cascade for groups with no more owners
+        for ( String g : groupsToRemove ) {
+            groupsServices.groupCascadeDeletionIfNoOwner(g);
+        }
+
+    }
+
+    /**
+     * Sub Function - Update ACL, the _resquestor and _user are already identified
+     * @param _requestor - Who is requesting the change
+     * @param _user - Who is having its group updated
+     * @param body - The group list expected
+     * @param req - The request for IP tracing
+     * @throws ITRightException - When there is a request for a group the requestor cannot assign
+     * @throws ITParseException - When the body is not correctly formatted or group does not exist
+     */
+    protected void userUpdateAcls (
+            User _requestor,
+            User _user,
+            UserUpdateBody body,
+            HttpServletRequest req
+    ) throws ITRightException, ITParseException {
+
+        // A user can remove a group, in this case, we can have a deletion cascade
+        // But no addition
+        boolean selfRequest = false;
+        if ( _requestor.getLogin().compareTo(_user.getLogin()) == 0 ) {
+            selfRequest = true;
+        }
+
+
+        // @TODO - ACL update not implemented yet
+
+
+
+        // First pass add groups
+        ArrayList<String> groupsToAdd = new ArrayList<>();
+        ArrayList<String> aclToRemove = new ArrayList<>();
+        for ( String g : body.getGroups() ) {
+
+            try {
+                Group _g = groupsServices.getGroupByShortId(g);
+            } catch (ITNotFoundException x) {
+                throw new ITParseException("user-profile-group-not-found");
+            }
+
+            // Make sure we can affect that group as ownership
+            if (   ! groupsServices.isUserInGroup(_requestor,g,false,false,true)   // not owned by requestor
+                    && !_requestor.isInRole(UsersRolesCache.StandardRoles.ROLE_GOD_ADMIN)                            // not GOD_ADMIN
+            ) {
+                // we can give ownership for a group we do not own but GOD_ADMIN can do anything
+                throw new ITRightException("user-profile-group-change-not-owned");
+            }
+
+            // We can add this group if the user does not already own it.
+            if ( ! groupsServices.isUserInGroup(_user,g,false, true, false)  ) {
+                boolean inAcl = false;
+                if ( groupsServices.isUserInGroup(_user,g,true, true, false) ) {
+                    // In this case, the group is not owned but there is an ACL on the group... we need to remove the ACL
+                    // and transform into ownership
+                    inAcl = true;
+                }
+                // when exists
+                try {
+                    groupsServices.getGroupByShortId(g);
+                    groupsToAdd.add(g);
+                    if ( inAcl ) aclToRemove.add(g);
+                } catch (ITNotFoundException x) {
+                    throw new ITParseException("user-profile-group-not-found");
+                }
+            }
+        }
+
+        // Second pass - remove groups
+        ArrayList<String> groupsToRemove = new ArrayList<>();
+        for ( String g : _user.getGroups() ) {
+            boolean found = false;
+            for ( String gg : body.getGroups() ) {
+                if  (groupsServices.isInGroup(g,gg) ) { // We need to make sure it is not here because we have it in the hierarchy
+                    found = true;
+                    break;
+                }
+            }
+            // verify this group can be removed by the requestor or skip it
+            if ( !found ) {
+                if (groupsServices.isUserInGroup(_requestor, g, false, false, true)) {
+                    // the user can, so it's a removal
+                    groupsToRemove.add(g);
+                }
+            }
+        }
+
+        // Proceed to change
+        for ( String g : groupsToAdd ) {
+            _user.getGroups().add(g);
+        }
+        for ( String g : groupsToRemove ) {
+            _user.getGroups().remove(g);
+        }
+        // An ACL can be replaced by a hierarchy
+        for ( String acl : aclToRemove ) {
+            String g = groupsServices.findGroupUserForGroup(_user,acl,true,false,false);
+            if ( g != null ) {
+                UserAcl found = null;
+                for (UserAcl _acl : _user.getAcls()) {
+                    if (_acl.getGroup().compareTo(g) == 0) {
+                        found = _acl;
+                        break;
+                    }
+                }
+                _user.getAcls().remove(found);
+            }
+        }
+        _user.setModificationDate(Now.NowUtcMs());
+        userCache.saveUser(_user);
+
+        // Audit logs
+        for ( String r : groupsToAdd ) {
+            auditIntegration.auditLog(
+                    ModuleCatalog.Modules.USERS,
+                    ActionCatalog.getActionName(ActionCatalog.Actions.GROUP_CHANGE),
+                    _user.getLogin(),
+                    "User {0} added group {1} from {2}",
+                    new String[]{_requestor.getLogin(), r, (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+            );
+        }
+        for ( String r : groupsToRemove ) {
+            auditIntegration.auditLog(
+                    ModuleCatalog.Modules.USERS,
+                    ActionCatalog.getActionName(ActionCatalog.Actions.GROUP_CHANGE),
+                    _user.getLogin(),
+                    "User {0} removed group {1} from {2}",
+                    new String[]{_requestor.getLogin(), r, (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+            );
+        }
+        for ( String r : aclToRemove ) {
+            auditIntegration.auditLog(
+                    ModuleCatalog.Modules.USERS,
+                    ActionCatalog.getActionName(ActionCatalog.Actions.ACL_CHANGE),
+                    _user.getLogin(),
+                    "User {0} removed ACL {1} from {2} due to group ownership addition",
+                    new String[]{_requestor.getLogin(), r, (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+            );
+        }
+
+    }
+
+
+
+    /**
+     * Update the user, not personal information. This part can be manipulated safely in regard of the GDRP
+     * It mostly address the Roles, Group & ACLs management. Most of the modifications require admin rights
+     * but not all of them (like when a user share access to a group to another user). The rights are checked
+     * for each modification.
+     *
+     * @param requestor - who is requesting the update
+     * @param body - the body of the request containing the user login and the profile information to update
+     * @param req - for tracing IP and audit log
+     * @throws ITRightException
+     * @throws ITParseException
+     * @throws ITNotFoundException
+     */
+    public void userUpdate(
+            String requestor,
+            UserUpdateBody body,
+            HttpServletRequest req
+    ) throws ITRightException, ITParseException, ITNotFoundException {
+
+        // We need a body
+        if ( body.getLogin() == null || body.getLogin().isEmpty() ) {
+            throw new ITParseException("user-profile-login-invalid");
+        }
+
+        // We need to be the user ourself or an admin
+        User _requestor = null;
+        User _user = null;
+        try {
+            _requestor = userCache.getUser(requestor);
+            String user = body.getLogin();
+
+            if (!userCommon.isLegitAccessRead(_requestor, user, true)) {
+                log.warn("[users] Requestor {} does not have access right to user {} profile", requestor, user);
+                throw new ITRightException("user-profile-no-access");
+            }
+
+            _user = _requestor;
+            if (requestor.compareTo(user) != 0) {
+                try {
+                    _user = userCache.getUser(user);
+                } catch (ITNotFoundException x) {
+                    log.warn("[users] Searched user does not exists", x);
+                    throw new ITNotFoundException("user-profile-user-not-found");
+                }
+            }
+        } catch (ITNotFoundException x) {
+            log.error("[users] Requestor does not exists", x);
+            throw new ITRightException("user-profile-user-not-found");
+        }
+
+        // Now the requestor and user are identified
+        // We can process block by block the update
+        if ( body.isConsiderRoles() ) {
+            // First process the roles, this raise Exception directly
+            // User modifications also directly saved
+            userUpdateRoles(_requestor, _user, body, req );
+        }
+
+        if ( body.isConsiderGroups() ) {
+            userUpdateGroups(_requestor, _user, body, req );
+        }
+
+
+
+    }
+
+
 
 }

@@ -14,6 +14,7 @@ The group data structure is defined as follows:
   "createdBy": "string",          // user login of the creator
   "creationDateMs": "number",     // group creation date in MS since epoch
   "modificationDateMs": "number", // last group modification date in MS since epoch
+  "deletionDateMs": "number",     // group planned deletion date in MS since epoch, 0 if not deleted, async deletion, later after beeing inactive
   
   "virtual": "boolean",           // virtual group flag, this group is a virtual group, it is not stored in the database
   

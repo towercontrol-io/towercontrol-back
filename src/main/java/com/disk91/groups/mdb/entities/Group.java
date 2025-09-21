@@ -88,6 +88,9 @@ public class Group implements CloneableObject<Group> {
     // The group last update date
     protected long modificationDateMs;
 
+    // The group deletion date request when the group has no more owners, keep it  bit before destorying it
+    protected long deletionDateMs;
+
     // The group attributes to store per module information
     protected List<GroupAttribute> attributes;
 
@@ -107,6 +110,7 @@ public class Group implements CloneableObject<Group> {
         this.virtual = false;
         this.creationDateMs = Now.NowUtcMs();
         this.modificationDateMs = this.creationDateMs;
+        this.deletionDateMs = 0;
         this.attributes = new ArrayList<>();
         this.referringGroups = new ArrayList<>();
     }
@@ -125,6 +129,7 @@ public class Group implements CloneableObject<Group> {
         u.setCreationDateMs(creationDateMs);
         u.setCreationBy(creationBy);
         u.setModificationDateMs(modificationDateMs);
+        u.setDeletionDateMs(deletionDateMs);
         u.setAttributes(new ArrayList<>());
         for ( GroupAttribute attribute : attributes) {
             u.getAttributes().add(attribute.clone());
@@ -261,5 +266,13 @@ public class Group implements CloneableObject<Group> {
 
     public void setReferringGroups(List<String> referringGroups) {
         this.referringGroups = referringGroups;
+    }
+
+    public long getDeletionDateMs() {
+        return deletionDateMs;
+    }
+
+    public void setDeletionDateMs(long deletionDateMs) {
+        this.deletionDateMs = deletionDateMs;
     }
 }

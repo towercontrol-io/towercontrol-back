@@ -88,13 +88,13 @@ public class UserCache {
 
         this.serviceEnable = true;
 
-        Gauge.builder("common.service.users.cache_total_time", this.userCache.getTotalCacheTime())
+        Gauge.builder("users_service_cache_sum_time", this.userCache.getTotalCacheTime())
                 .description("[Users] total time cache execution")
                 .register(meterRegistry);
-        Gauge.builder("common.service.users.cache_total", this.userCache.getTotalCacheTry())
+        Gauge.builder("users_service_cache_sum", this.userCache.getTotalCacheTry())
                 .description("[Users] total cache try")
                 .register(meterRegistry);
-        Gauge.builder("common.service.users.cache_miss", this.userCache.getCacheMissStat())
+        Gauge.builder("users_service_cache_miss", this.userCache.getCacheMissStat())
                 .description("[Users] total cache miss")
                 .register(meterRegistry);
     }

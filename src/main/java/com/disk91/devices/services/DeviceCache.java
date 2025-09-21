@@ -94,13 +94,13 @@ public class DeviceCache {
 
         this.serviceEnable = true;
 
-        Gauge.builder("common.service.devices.cache_total_time", this.devicesCache.getTotalCacheTime())
+        Gauge.builder("devices_service_cache_sum_time", this.devicesCache.getTotalCacheTime())
                 .description("[Devices] total time cache execution")
                 .register(meterRegistry);
-        Gauge.builder("common.service.devices.cache_total", this.devicesCache.getTotalCacheTry())
+        Gauge.builder("devices_service_cache_sum", this.devicesCache.getTotalCacheTry())
                 .description("[Devices] total cache try")
                 .register(meterRegistry);
-        Gauge.builder("common.service.devices.cache_miss", this.devicesCache.getCacheMissStat())
+        Gauge.builder("devices_service_cache_miss", this.devicesCache.getCacheMissStat())
                 .description("[Devices] total cache miss")
                 .register(meterRegistry);
     }

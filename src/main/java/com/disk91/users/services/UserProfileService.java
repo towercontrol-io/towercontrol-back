@@ -1300,117 +1300,185 @@ public class UserProfileService {
         }
 
 
-        // @TODO - ACL update not implemented yet
+        // First pass add acls
+        ArrayList<UserAcl> aclToAdd = new ArrayList<>();
+        ArrayList<UserAcl> aclToRemove = new ArrayList<>();
+        boolean changeMade = false;
+        for ( UserAcl a : body.getAcls() ) {
 
-
-
-        // First pass add groups
-        ArrayList<String> groupsToAdd = new ArrayList<>();
-        ArrayList<String> aclToRemove = new ArrayList<>();
-        for ( String g : body.getGroups() ) {
-
-            try {
-                Group _g = groupsServices.getGroupByShortId(g);
-            } catch (ITNotFoundException x) {
-                throw new ITParseException("user-profile-group-not-found");
-            }
-
-            // Make sure we can affect that group as ownership
-            if (   ! groupsServices.isUserInGroup(_requestor,g,false,false,true)   // not owned by requestor
-                    && !_requestor.isInRole(UsersRolesCache.StandardRoles.ROLE_GOD_ADMIN)                            // not GOD_ADMIN
-            ) {
-                // we can give ownership for a group we do not own but GOD_ADMIN can do anything
-                throw new ITRightException("user-profile-group-change-not-owned");
-            }
-
-            // We can add this group if the user does not already own it.
-            if ( ! groupsServices.isUserInGroup(_user,g,false, true, false)  ) {
-                boolean inAcl = false;
-                if ( groupsServices.isUserInGroup(_user,g,true, true, false) ) {
-                    // In this case, the group is not owned but there is an ACL on the group... we need to remove the ACL
-                    // and transform into ownership
-                    inAcl = true;
-                }
-                // when exists
-                try {
-                    groupsServices.getGroupByShortId(g);
-                    groupsToAdd.add(g);
-                    if ( inAcl ) aclToRemove.add(g);
-                } catch (ITNotFoundException x) {
-                    throw new ITParseException("user-profile-group-not-found");
-                }
-            }
-        }
-
-        // Second pass - remove groups
-        ArrayList<String> groupsToRemove = new ArrayList<>();
-        for ( String g : _user.getGroups() ) {
+            // search the ACL in the existing ones
             boolean found = false;
-            for ( String gg : body.getGroups() ) {
-                if  (groupsServices.isInGroup(g,gg) ) { // We need to make sure it is not here because we have it in the hierarchy
+            UserAcl userAcl = null;
+            for (UserAcl aa : _user.getAcls()) {
+                if (aa.getGroup().compareTo(a.getGroup()) == 0) {
+                    userAcl = aa;
                     found = true;
                     break;
                 }
             }
-            // verify this group can be removed by the requestor or skip it
+
+            // Process the modification of an existing ACL
+            if (found) {
+                // ACL is found, check the name
+                if (userAcl.getLocalName().compareTo(a.getLocalName()) != 0) {
+                    // rename the ACL
+                    userAcl.setLocalName(a.getLocalName());
+                    changeMade = true;
+                }
+                if (!selfRequest) {
+                    // ACL is found, check the rights (self request may not change the rights)
+                    // Comparer les rôles entre userAcl et a
+                    ArrayList<String> rolesToAdd = new ArrayList<>();
+                    ArrayList<String> rolesToRemove = new ArrayList<>();
+                    for (String role : a.getRoles()) {
+                        if (!userAcl.getRoles().contains(role)) {
+                            rolesToAdd.add(role);
+                        }
+                    }
+                    for (String role : userAcl.getRoles()) {
+                        if (!a.getRoles().contains(role)) {
+                            rolesToRemove.add(role);
+                        }
+                    }
+
+                    // is requestor owns the group & the role
+                    for (String add : rolesToAdd) {
+                        // make sure that role exists and is assignable
+                        try {
+                            Role r = usersRolesCache.getRole(add);
+                            if (!r.isAssignable()) throw new ITParseException("user-profile-role-not-assignable");
+                        } catch (ITNotFoundException x) {
+                            throw new ITParseException("user-profile-role-not-found");
+                        }
+                        // make sure the requestor owns the group and the role
+                        // or is GOD_ADMIN
+                        if (groupsServices.isUserInGroup(_requestor, userAcl.getGroup(), true, false, true)   // requestor own or have right on group
+                                || _requestor.isInRole(UsersRolesCache.StandardRoles.ROLE_GOD_ADMIN)                            // or is GOD_ADMIN
+                        ) {
+                            if (_requestor.isInRole(add) || _requestor.isInRole(UsersRolesCache.StandardRoles.ROLE_GOD_ADMIN)) {
+                                userAcl.getRoles().add(add);
+                                changeMade = true;
+                                auditIntegration.auditLog(
+                                        ModuleCatalog.Modules.USERS,
+                                        ActionCatalog.getActionName(ActionCatalog.Actions.ACL_CHANGE),
+                                        _user.getLogin(),
+                                        "User {0} add a role {3} in ACL {1} from {2}",
+                                        new String[]{_requestor.getLogin(), userAcl.getGroup(), (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown", add}
+                                );
+                            } else {
+                                throw new ITRightException("user-profile-acl-change-not-owned");
+                            }
+                        } else {
+                            throw new ITRightException("user-profile-acl-change-not-owned");
+                        }
+                    }
+                    // remove roles when the requestor owns the role
+                    for (String remove : rolesToRemove) {
+                        // Make ure requestor owns the group and the role
+                        // or is GOD_ADMIN
+                        if (groupsServices.isUserInGroup(_requestor, userAcl.getGroup(), true, false, true)   // requestor own or have right on group
+                                || _requestor.isInRole(UsersRolesCache.StandardRoles.ROLE_GOD_ADMIN)                            // or is GOD_ADMIN
+                        ) {
+                            if (_requestor.isInRole(remove) || _requestor.isInRole(UsersRolesCache.StandardRoles.ROLE_GOD_ADMIN)) {
+                                userAcl.getRoles().remove(remove);
+                                changeMade = true;
+                                auditIntegration.auditLog(
+                                        ModuleCatalog.Modules.USERS,
+                                        ActionCatalog.getActionName(ActionCatalog.Actions.ACL_CHANGE),
+                                        _user.getLogin(),
+                                        "User {0} remove a role {3} in ACL {1} from {2}",
+                                        new String[]{_requestor.getLogin(), userAcl.getGroup(), (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown", remove}
+                                );
+                            } else {
+                                throw new ITRightException("user-profile-acl-change-not-owned");
+                            }
+                        }
+                    }
+                }
+                // Process the creation of a new ACL
+            } else {
+                // Check the group ownership for the requestor
+                // or is GOD_ADMIN
+                if (groupsServices.isUserInGroup(_requestor, a.getGroup(), true, false, true)   // requestor own or have right on group
+                        || _requestor.isInRole(UsersRolesCache.StandardRoles.ROLE_GOD_ADMIN)                                         // or is GOD_ADMIN
+                ) {
+                    // Verify the requested Roles
+                    // make sure that role exists and are assignable
+                    for (String role : a.getRoles()) {
+                        try {
+                            Role r = usersRolesCache.getRole(role);
+                            if (!r.isAssignable()) throw new ITParseException("user-profile-role-not-assignable");
+                        } catch (ITNotFoundException x) {
+                            throw new ITParseException("user-profile-role-not-found");
+                        }
+                        if (_requestor.isInRole(role) || _requestor.isInRole(UsersRolesCache.StandardRoles.ROLE_GOD_ADMIN)) {
+                            // this role is ok
+                            continue;
+                        } else {
+                            throw new ITRightException("user-profile-acl-change-not-owned");
+                        }
+                    }
+                    // Don't we have it already in hierarchy ?
+                    if ( groupsServices.isUserInGroup(_user, a.getGroup(), true, true, false) ) {
+                        throw new ITParseException("user-profile-acl-change-already-member");
+                    }
+
+                    // All roles are ok, we can add the ACL
+                    aclToAdd.add(a);
+                }
+            }
+        }
+
+        // Second pass - Scan ACLs to remove
+        for ( UserAcl a : _user.getAcls() ) {
+            boolean found = false;
+            for ( UserAcl aa : body.getAcls() ) {
+                if ( aa.getGroup().compareTo(a.getGroup()) == 0 ) {
+                    found = true;
+                    break;
+                }
+            }
             if ( !found ) {
-                if (groupsServices.isUserInGroup(_requestor, g, false, false, true)) {
-                    // the user can, so it's a removal
-                    groupsToRemove.add(g);
+                // verify the requestor can remove that ACL
+                if (   groupsServices.isUserInGroup(_requestor, a.getGroup(), true, false, true)   // requestor own or have right on group
+                    || _requestor.isInRole(UsersRolesCache.StandardRoles.ROLE_GOD_ADMIN)                                         // or is GOD_ADMIN
+                ) {
+                    aclToRemove.add(a);
                 }
             }
         }
 
         // Proceed to change
-        for ( String g : groupsToAdd ) {
-            _user.getGroups().add(g);
+        for ( UserAcl a : aclToAdd ) {
+            _user.getAcls().add(a);
+            changeMade=true;
         }
-        for ( String g : groupsToRemove ) {
-            _user.getGroups().remove(g);
+        for ( UserAcl a : aclToRemove ) {
+            _user.getAcls().remove(a);
+            changeMade = true;
         }
-        // An ACL can be replaced by a hierarchy
-        for ( String acl : aclToRemove ) {
-            String g = groupsServices.findGroupUserForGroup(_user,acl,true,false,false);
-            if ( g != null ) {
-                UserAcl found = null;
-                for (UserAcl _acl : _user.getAcls()) {
-                    if (_acl.getGroup().compareTo(g) == 0) {
-                        found = _acl;
-                        break;
-                    }
-                }
-                _user.getAcls().remove(found);
-            }
+        if ( changeMade ) {
+            _user.setModificationDate(Now.NowUtcMs());
+            userCache.saveUser(_user);
         }
-        _user.setModificationDate(Now.NowUtcMs());
-        userCache.saveUser(_user);
 
         // Audit logs
-        for ( String r : groupsToAdd ) {
-            auditIntegration.auditLog(
-                    ModuleCatalog.Modules.USERS,
-                    ActionCatalog.getActionName(ActionCatalog.Actions.GROUP_CHANGE),
-                    _user.getLogin(),
-                    "User {0} added group {1} from {2}",
-                    new String[]{_requestor.getLogin(), r, (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
-            );
-        }
-        for ( String r : groupsToRemove ) {
-            auditIntegration.auditLog(
-                    ModuleCatalog.Modules.USERS,
-                    ActionCatalog.getActionName(ActionCatalog.Actions.GROUP_CHANGE),
-                    _user.getLogin(),
-                    "User {0} removed group {1} from {2}",
-                    new String[]{_requestor.getLogin(), r, (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
-            );
-        }
-        for ( String r : aclToRemove ) {
+        for ( UserAcl a : aclToAdd ) {
             auditIntegration.auditLog(
                     ModuleCatalog.Modules.USERS,
                     ActionCatalog.getActionName(ActionCatalog.Actions.ACL_CHANGE),
                     _user.getLogin(),
-                    "User {0} removed ACL {1} from {2} due to group ownership addition",
-                    new String[]{_requestor.getLogin(), r, (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+                    "User {0} add an ACL for {1} with roles {3} from {2}",
+                    new String[]{_requestor.getLogin(), a.getGroup(), (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown", String.join(",", a.getRoles()) }
+            );
+        }
+        for ( UserAcl a : aclToRemove ) {
+            auditIntegration.auditLog(
+                    ModuleCatalog.Modules.USERS,
+                    ActionCatalog.getActionName(ActionCatalog.Actions.ACL_CHANGE),
+                    _user.getLogin(),
+                    "User {0} remove an ACL for {1} from {2}",
+                    new String[]{_requestor.getLogin(), a.getGroup(), (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown" }
             );
         }
 
@@ -1442,7 +1510,7 @@ public class UserProfileService {
             throw new ITParseException("user-profile-login-invalid");
         }
 
-        // We need to be the user ourself or an admin
+        // We need to be the user ourselves or an admin
         User _requestor = null;
         User _user = null;
         try {
@@ -1477,10 +1545,16 @@ public class UserProfileService {
         }
 
         if ( body.isConsiderGroups() ) {
+            // Second process the groups, this raise Exception directly
+            // User modifications also directly saved
             userUpdateGroups(_requestor, _user, body, req );
         }
 
-
+        if ( body.isConsiderACLs() ) {
+            // Third process the ACLs, this raise Exception directly
+            // User modifications also directly saved
+            userUpdateAcls(_requestor, _user, body, req );
+        }
 
     }
 

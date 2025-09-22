@@ -32,6 +32,8 @@ import com.disk91.groups.mdb.entities.Group;
 import com.disk91.groups.services.GroupsCache;
 import com.disk91.groups.services.GroupsServices;
 import com.disk91.users.api.interfaces.*;
+import com.disk91.users.api.interfaces.sub.GroupItf;
+import com.disk91.users.api.interfaces.sub.RoleItf;
 import com.disk91.users.config.ActionCatalog;
 import com.disk91.users.config.UserMessages;
 import com.disk91.users.config.UsersConfig;
@@ -1558,6 +1560,80 @@ public class UserProfileService {
 
     }
 
+    /**
+     * Return the user profile information based on what is expected in terms of information.
+     * Then it will be possible to use this content to update the user profile.
+     * @param requestor - who is requesting the information
+     * @param body - whose information we want and what kind of information
+     * @param req - for tracing IP and audit log
+     * @return the user profile information as requested
+     * @throws ITRightException
+     * @throws ITParseException
+     * @throws ITNotFoundException
+     */
+    public UserUpdateBodyResponse getUserUpdateBodyFromUser(
+        String requestor,
+        UserUpdateBodyRequest body,
+        HttpServletRequest req
+    ) throws ITRightException {
+
+        User _requestor = null;
+        User _user = null;
+        try {
+            _requestor = userCache.getUser(requestor);
+            String user = body.getLogin();
+
+            if (!userCommon.isLegitAccessRead(_requestor, user, true)) {
+                log.warn("[users] Requestor {} does not have access right to user {} profile", requestor, user);
+                throw new ITRightException("user-profile-no-access");
+            }
+
+            _user = _requestor;
+            if (requestor.compareTo(user) != 0) {
+                try {
+                    _user = userCache.getUser(user);
+                } catch (ITNotFoundException x) {
+                    log.warn("[users] Searched user does not exists", x);
+                    throw new ITNotFoundException("user-profile-user-not-found");
+                }
+            }
+        } catch (ITNotFoundException x) {
+            log.error("[users] Requestor does not exists", x);
+            throw new ITRightException("user-profile-user-not-found");
+        }
+
+        UserUpdateBodyResponse r = new UserUpdateBodyResponse();
+        r.setLogin(_user.getLogin());
+        if ( body.isConsiderRoles() ) {
+            r.setConsiderRoles(true);
+            r.setRoles(new ArrayList<>());
+            for ( String _role : _user.getRoles() ) {
+                try {
+                    Role role = usersRolesCache.getRole(_role);
+                    r.getRoles().add(RoleItf.getRoleItfFromRole(role));
+                } catch ( ITNotFoundException x) {}
+            }
+        }
+        if ( body.isConsiderGroups() ) {
+            r.setConsiderGroups(true);
+            r.setGroups(new ArrayList<>());
+            for ( String _g : _user.getAllGroups(false,true)) {
+                try {
+                    Group g = groupsServices.getGroupByShortId(_g);
+                    r.getGroups().add(GroupItf.getRoleItfFromGroup(g));
+                } catch ( ITNotFoundException x) {}
+            }
+        }
+        if ( body.isConsiderACLs() ) {
+            r.setConsiderACLs(true);
+            r.setAcls(new ArrayList<>());
+            for ( UserAcl a : _user.getAcls() ) {
+                r.getAcls().add(a);
+            }
+        }
+
+        return r;
+    }
 
 
 }

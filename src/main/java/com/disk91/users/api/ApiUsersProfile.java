@@ -472,5 +472,49 @@ public class ApiUsersProfile {
     }
 
 
+    /**
+     * User profile get, this is mostly for the Groups, Roles & ACL modification
+     *
+     * This endpoint allows a user with the rights, to get a user profile. Focus on the groups, roles and ACLs
+     * of the profile.
+     *
+     * This endpoint requires to have LOGIN_COMPLETED first, rights will be verified later
+     */
+    @Operation(
+            summary = "User profile roles, groups, acl configuration get",
+            description = "This endpoint allows a user with the rights, to get a user profile. Focus on the groups, roles and ACLs " +
+                    "of the profile. This endpoint requires to have LOGIN_COMPLETED first, rights will be verified during processing.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "User profile", content = @Content(schema = @Schema(implementation = UserUpdateBodyResponse.class))),
+                    @ApiResponse(responseCode = "400", description = "Profile get failed", content = @Content(schema = @Schema(implementation = ActionResult.class))),
+                    @ApiResponse(responseCode = "403", description = "Unauthorized", content = @Content(schema = @Schema(implementation = ActionResult.class)))
+            }
+    )
+    @RequestMapping(
+            value = "/",
+            consumes = "application/json",
+            method = RequestMethod.POST
+    )
+    @PreAuthorize("hasAnyRole('ROLE_LOGIN_COMPLETE')")
+    // ----------------------------------------------------------------------
+    public ResponseEntity<?> userProfileGet(
+            HttpServletRequest request,
+            @RequestBody(required = true) UserUpdateBodyRequest body
+    ) {
+        try {
+            UserUpdateBodyResponse ret = userProfileService.getUserUpdateBodyFromUser(
+                    request.getUserPrincipal().getName(),
+                    body,
+                    request
+            );
+            return new ResponseEntity<>(ret, HttpStatus.OK);
+        } catch (ITRightException e ) {
+            return new ResponseEntity<>(ActionResult.FORBIDDEN(e.getMessage()), HttpStatus.FORBIDDEN);
+        }
+    }
+
+
+
+
 
 }

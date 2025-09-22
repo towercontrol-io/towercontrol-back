@@ -25,7 +25,7 @@ public class UserCommon {
                 ||  _requestor.isInRole(UsersRolesCache.StandardRoles.ROLE_USER_ADMIN)
                 ||  _requestor.getLogin().compareTo(user) == 0
         ) {
-            // the requestion is the user searched himself or it have admin / user admin global right
+            // the requestion is the user searched himself, or it has admin / user admin global right
             // so we can hase the information
             return true;
         } else {

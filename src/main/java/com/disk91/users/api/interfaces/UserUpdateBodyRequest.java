@@ -19,15 +19,11 @@
  */
 package com.disk91.users.api.interfaces;
 
-import com.disk91.users.mdb.entities.User;
-import com.disk91.users.mdb.entities.sub.UserAcl;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-import java.util.List;
-
-@Tag(name = "User Update", description = "User update structure, for local or global updates")
-public class UserUpdateBody {
+@Tag(name = "User Update Request", description = "User update, request the current structure")
+public class UserUpdateBodyRequest {
 
     @Schema(
             description = "User to be modified login (hash)",
@@ -46,26 +42,12 @@ public class UserUpdateBody {
 
 
     @Schema(
-            description = "List of affectable roles",
-            requiredMode = Schema.RequiredMode.NOT_REQUIRED
-    )
-    protected List<String> roles;
-
-
-    @Schema(
             description = "To indicate if the group list is to be considered",
             example = "true",
             requiredMode = Schema.RequiredMode.REQUIRED
     )
     protected boolean considerGroups;
 
-
-    @Schema(
-            description = "List of owned groups (shortId)",
-            example = "[ XdfhYII, Jy6FSHB ]",
-            requiredMode = Schema.RequiredMode.NOT_REQUIRED
-    )
-    protected List<String> groups;
 
     @Schema(
             description = "To indicate if the ACL list is to be considered",
@@ -75,50 +57,8 @@ public class UserUpdateBody {
     protected boolean considerACLs;
 
 
-    @Schema(
-            description = "List of acls",
-            requiredMode = Schema.RequiredMode.NOT_REQUIRED
-    )
-    protected List<UserAcl> acls;
-
     // ==========================
     // Construction
-
-    public static UserUpdateBody getUserUpdateBodyFromUser(User u) {
-        UserUpdateBody uub = new UserUpdateBody();
-
-        uub.setLogin(u.getLogin());
-        uub.setConsiderRoles(true);
-        uub.setRoles(u.getRoles());
-        uub.setConsiderGroups(true);
-        uub.setGroups(u.getGroups());
-        uub.setConsiderACLs(true);
-        uub.setAcls(u.getAcls());
-
-        return uub;
-    }
-
-    public static UserUpdateBody getUserUpdateBodyFromUser(User u, UserUpdateBodyRequest r) {
-        UserUpdateBody uub = new UserUpdateBody();
-
-        uub.setLogin(u.getLogin());
-        if ( r.isConsiderRoles() ) {
-            uub.setConsiderRoles(true);
-            uub.setRoles(u.getRoles());
-        } else uub.setConsiderRoles(false);
-        if (r.isConsiderGroups() ) {
-            uub.setConsiderGroups(true);
-            uub.setGroups(u.getGroups());
-        } else uub.setConsiderGroups(false);
-        if ( r.isConsiderACLs() ) {
-            uub.setConsiderACLs(true);
-            uub.setAcls(u.getAcls());
-        } else uub.setConsiderACLs(false);
-
-        return uub;
-    }
-
-
 
     // ==========================
     // Getters & Setters
@@ -140,14 +80,6 @@ public class UserUpdateBody {
         this.considerRoles = considerRoles;
     }
 
-    public List<String> getRoles() {
-        return roles;
-    }
-
-    public void setRoles(List<String> roles) {
-        this.roles = roles;
-    }
-
     public boolean isConsiderGroups() {
         return considerGroups;
     }
@@ -156,27 +88,11 @@ public class UserUpdateBody {
         this.considerGroups = considerGroups;
     }
 
-    public List<String> getGroups() {
-        return groups;
-    }
-
-    public void setGroups(List<String> groups) {
-        this.groups = groups;
-    }
-
     public boolean isConsiderACLs() {
         return considerACLs;
     }
 
     public void setConsiderACLs(boolean considerACLs) {
         this.considerACLs = considerACLs;
-    }
-
-    public List<UserAcl> getAcls() {
-        return acls;
-    }
-
-    public void setAcls(List<UserAcl> acls) {
-        this.acls = acls;
     }
 }

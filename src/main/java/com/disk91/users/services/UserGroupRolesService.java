@@ -135,7 +135,7 @@ public class UserGroupRolesService {
             User user = userCache.getUser(u);
             // compose the user group list (head of the hierarchy)
             // this includes the user default group and the standard groups and acls
-            ArrayList<String> userGroups = user.getGroups();
+            ArrayList<String> userGroups = user.getAllGroups(true,true);
             return groupsServices.getGroupsForDisplay(userGroups);
         } catch (ITNotFoundException x) {
             log.warn("[users] user or some of the groups assigned to user {} do not exist : {}", u, x.getMessage());

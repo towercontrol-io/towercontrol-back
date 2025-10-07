@@ -30,6 +30,7 @@ import com.disk91.common.tools.Now;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITRightException;
+import com.disk91.groups.config.GroupsConfig;
 import com.disk91.users.api.interfaces.UserConfigResponse;
 import com.disk91.users.api.interfaces.UserLoginBody;
 import com.disk91.users.api.interfaces.UserLoginResponse;
@@ -100,6 +101,8 @@ public class UserService {
     @Autowired
     protected UserMessages userMessages;
 
+    @Autowired
+    protected GroupsConfig groupsConfig;
 
     /**
      * User Login verification, search for a corresponding user & email.
@@ -872,6 +875,7 @@ public class UserService {
             userConfigResponse.setPasswordMinSymbols(usersConfig.getUsersPasswordMinSymbols());
             userConfigResponse.setPasswordMinDigits(usersConfig.getUsersPasswordMinNumbers());
             userConfigResponse.setDeletionPurgatoryDelayHours(usersConfig.getUsersDeletionPurgatoryDuration());
+            userConfigResponse.setSubGroupUnderVirtualAllowed(groupsConfig.isGroupVituralAllowsSub());
         }
         return userConfigResponse;
     }

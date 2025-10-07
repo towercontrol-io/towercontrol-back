@@ -104,6 +104,14 @@ public class UserConfigResponse {
     protected long deletionPurgatoryDelayHours;
 
 
+    @Schema(
+            description = "User can create a sub group under the virtual group",
+            example = "true",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    protected boolean subGroupUnderVirtualAllowed;
+
+
     // ==========================
     // Getters & Setters
 
@@ -194,5 +202,13 @@ public class UserConfigResponse {
 
     public void setDeletionPurgatoryDelayHours(long deletionPurgatoryDelayHours) {
         this.deletionPurgatoryDelayHours = deletionPurgatoryDelayHours;
+    }
+
+    public boolean isSubGroupUnderVirtualAllowed() {
+        return subGroupUnderVirtualAllowed;
+    }
+
+    public void setSubGroupUnderVirtualAllowed(boolean subGroupUnderVirtualAllowed) {
+        this.subGroupUnderVirtualAllowed = subGroupUnderVirtualAllowed;
     }
 }

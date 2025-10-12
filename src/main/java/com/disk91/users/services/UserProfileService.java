@@ -29,9 +29,10 @@ import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITRightException;
 import com.disk91.groups.mdb.entities.Group;
-import com.disk91.groups.services.GroupsCache;
 import com.disk91.groups.services.GroupsServices;
+import com.disk91.groups.tools.GroupsHierarchySimplified;
 import com.disk91.users.api.interfaces.*;
+import com.disk91.users.api.interfaces.sub.AclItf;
 import com.disk91.users.api.interfaces.sub.GroupItf;
 import com.disk91.users.api.interfaces.sub.RoleItf;
 import com.disk91.users.config.ActionCatalog;
@@ -52,6 +53,7 @@ import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 @Service
@@ -1560,6 +1562,9 @@ public class UserProfileService {
 
     }
 
+    @Autowired
+    protected UserGroupRolesService userGroupRolesService;
+
     /**
      * Return the user profile information based on what is expected in terms of information.
      * Then it will be possible to use this content to update the user profile.
@@ -1569,13 +1574,12 @@ public class UserProfileService {
      * @return the user profile information as requested
      * @throws ITRightException
      * @throws ITParseException
-     * @throws ITNotFoundException
      */
     public UserUpdateBodyResponse getUserUpdateBodyFromUser(
         String requestor,
         UserUpdateBodyRequest body,
         HttpServletRequest req
-    ) throws ITRightException {
+    ) throws ITRightException, ITParseException {
 
         User _requestor = null;
         User _user = null;
@@ -1617,18 +1621,47 @@ public class UserProfileService {
         if ( body.isConsiderGroups() ) {
             r.setConsiderGroups(true);
             r.setGroups(new ArrayList<>());
-            for ( String _g : _user.getAllGroups(false,true)) {
+            if ( body.isConsiderSubs() ) {
                 try {
-                    Group g = groupsServices.getGroupByShortId(_g);
-                    r.getGroups().add(GroupItf.getRoleItfFromGroup(g));
-                } catch ( ITNotFoundException x) {}
+                    List<GroupsHierarchySimplified> groups = userGroupRolesService.getAvailableGroups(_user.getLogin(),true,false,true);
+                    for ( GroupsHierarchySimplified g : groups ) {
+                        r.getGroups().add(GroupItf.getGroupItfFromGroupsHierarchySimplified(g));
+                    }
+                } catch (ITParseException x) {
+                    throw x;
+                }
+            } else {
+                for (String _g : _user.getAllGroups(true,false, true)) {
+                    try {
+                        Group g = groupsServices.getGroupByShortId(_g);
+                        r.getGroups().add(GroupItf.getGroupItfFromGroup(g));
+                    } catch (ITNotFoundException x) {
+                    }
+                }
             }
         }
         if ( body.isConsiderACLs() ) {
             r.setConsiderACLs(true);
             r.setAcls(new ArrayList<>());
-            for ( UserAcl a : _user.getAcls() ) {
-                r.getAcls().add(a);
+            if ( body.isConsiderSubs() ) {
+                try {
+                    List<GroupsHierarchySimplified> groups = userGroupRolesService.getAvailableGroups(_user.getLogin(),false,true,false);
+                    for ( GroupsHierarchySimplified g : groups ) {
+                        // search the related ACL
+                        for ( UserAcl a : _user.getAcls() ) {
+                            if ( a.getGroup().compareTo(g.getShortId()) == 0 ) {
+                                r.getAcls().add(AclItf.getAclItfFromGroupsHierarchySimplified(a,g));
+                                break;
+                            }
+                        }
+                    }
+                } catch (ITParseException x) {
+                    throw x;
+                }
+            } else {
+                for ( UserAcl a : _user.getAcls() ) {
+                    r.getAcls().add(AclItf.getAclItfFromUserAcl(a));
+                }
             }
         }
 

@@ -37,3 +37,4 @@ out/
 .vscode/
 itc_run
 apitest_old.http
+.DS_Store

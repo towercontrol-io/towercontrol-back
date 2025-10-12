@@ -510,6 +510,8 @@ public class ApiUsersProfile {
             return new ResponseEntity<>(ret, HttpStatus.OK);
         } catch (ITRightException e ) {
             return new ResponseEntity<>(ActionResult.FORBIDDEN(e.getMessage()), HttpStatus.FORBIDDEN);
+        } catch ( ITParseException e ) {
+            return new ResponseEntity<>(ActionResult.BADREQUEST(e.getMessage()), HttpStatus.BAD_REQUEST);
         }
     }
 

@@ -203,7 +203,7 @@ public class GroupsServices {
 
         try {
             Group g = this.getGroupByShortId(groupShortId);
-            for ( String userGroup : user.getAllGroups(false,considerVirtual) ) {
+            for ( String userGroup : user.getAllGroups(true,false,considerVirtual) ) {
                 if ( userGroup.compareTo(g.getShortId()) == 0 ) {
                     // direct membership
                     return userGroup;

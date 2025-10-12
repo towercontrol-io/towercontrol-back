@@ -128,14 +128,14 @@ public class UserGroupRolesService {
     // GROUP RIGHT MANAGEMENT
     // =====================================================================
 
-    public List<GroupsHierarchySimplified> getAvailableGroups(String u)
+    public List<GroupsHierarchySimplified> getAvailableGroups(String u, boolean includesGroups, boolean includesAcls, boolean includesVirtual)
         throws ITParseException {
 
         try {
             User user = userCache.getUser(u);
             // compose the user group list (head of the hierarchy)
             // this includes the user default group and the standard groups and acls
-            ArrayList<String> userGroups = user.getAllGroups(true,true);
+            ArrayList<String> userGroups = user.getAllGroups(includesGroups,includesAcls,includesVirtual);
             return groupsServices.getGroupsForDisplay(userGroups);
         } catch (ITNotFoundException x) {
             log.warn("[users] user or some of the groups assigned to user {} do not exist : {}", u, x.getMessage());

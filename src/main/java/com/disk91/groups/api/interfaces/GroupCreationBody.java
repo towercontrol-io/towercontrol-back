@@ -47,7 +47,7 @@ public class GroupCreationBody {
             example = "abC12Dfy",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED
     )
-    protected String parenId;
+    protected String parentId;
 
 
 
@@ -71,11 +71,11 @@ public class GroupCreationBody {
         this.description = description;
     }
 
-    public String getParenId() {
-        return parenId;
+    public String getParentId() {
+        return parentId;
     }
 
-    public void setParenId(String parenId) {
-        this.parenId = parenId;
+    public void setParentId(String parentId) {
+        this.parentId = parentId;
     }
 }

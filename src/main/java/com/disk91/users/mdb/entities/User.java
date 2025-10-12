@@ -971,10 +971,10 @@ public class User implements CloneableObject<User> {
      * @param scanAcl - when true, the ACLs are also scanned for groups
      * @return
      */
-    public ArrayList<String> getAllGroups(boolean scanAcl, boolean addVirtual) {
+    public ArrayList<String> getAllGroups(boolean scanGroups, boolean scanAcl, boolean addVirtual) {
         ArrayList<String> _groups = new ArrayList<>();
         if ( addVirtual ) _groups.add("user_"+this.getLogin());
-        if ( this.groups != null ) _groups.addAll(this.getGroups());
+        if ( scanGroups && this.groups != null ) _groups.addAll(this.getGroups());
         if ( scanAcl ) {
             for (UserAcl acl : this.acls) {
                 _groups.add(acl.getGroup());
@@ -1017,7 +1017,7 @@ public class User implements CloneableObject<User> {
      * @param group - shortID of the group to search
      */
     public boolean isInGroup(String group, boolean scanAcl, boolean addVirtual) {
-        if ( this.getAllGroups(scanAcl,addVirtual) != null ) {
+        if ( this.getAllGroups(true,scanAcl,addVirtual) != null ) {
             for ( String g : this.getGroups() ) {
                 if ( g.compareTo(group) == 0 ) return true;
             }

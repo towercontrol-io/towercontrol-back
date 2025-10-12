@@ -19,6 +19,7 @@
  */
 package com.disk91.users.api.interfaces;
 
+import com.disk91.users.api.interfaces.sub.AclItf;
 import com.disk91.users.api.interfaces.sub.GroupItf;
 import com.disk91.users.api.interfaces.sub.RoleItf;
 import com.disk91.users.mdb.entities.User;
@@ -61,6 +62,12 @@ public class UserUpdateBodyResponse {
     )
     protected boolean considerGroups;
 
+    @Schema(
+            description = "To indicate if group list contains subgroups",
+            example = "true",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    protected boolean considerSubs;
 
     @Schema(
             description = "List of owned groups (shortId)",
@@ -81,7 +88,7 @@ public class UserUpdateBodyResponse {
             description = "List of acls",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED
     )
-    protected List<UserAcl> acls;
+    protected List<AclItf> acls;
 
 
     // ==========================
@@ -120,11 +127,19 @@ public class UserUpdateBodyResponse {
         this.considerACLs = considerACLs;
     }
 
-    public List<UserAcl> getAcls() {
+    public boolean isConsiderSubs() {
+        return considerSubs;
+    }
+
+    public void setConsiderSubs(boolean considerSubs) {
+        this.considerSubs = considerSubs;
+    }
+
+    public List<AclItf> getAcls() {
         return acls;
     }
 
-    public void setAcls(List<UserAcl> acls) {
+    public void setAcls(List<AclItf> acls) {
         this.acls = acls;
     }
 

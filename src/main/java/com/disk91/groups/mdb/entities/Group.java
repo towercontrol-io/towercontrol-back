@@ -154,9 +154,9 @@ public class Group implements CloneableObject<Group> {
      */
     public void addUnderGroup(Group under, int maxDepth) throws ITTooManyException, ITParseException {
         if ( this.referringGroups == null ) this.referringGroups = new ArrayList<>();
-        if ( under.getReferringGroups().contains(this.getShortId())) throw new ITParseException("group-loop-detected");
-        if ( under.getShortId().compareTo(this.getShortId()) == 0 ) throw new ITParseException("group-loop-detected");
-        if ( under.referringGroups.size() >= maxDepth ) throw new ITTooManyException("group-hierarchy-too-deep");
+        if ( under.getReferringGroups().contains(this.getShortId())) throw new ITParseException("groups-group-loop-detected");
+        if ( under.getShortId().compareTo(this.getShortId()) == 0 ) throw new ITParseException("groups-group-loop-detected");
+        if ( under.referringGroups.size() >= maxDepth ) throw new ITTooManyException("groups-group-hierarchy-too-deep");
         this.referringGroups.addAll(under.referringGroups);
         this.referringGroups.add(under.getShortId());
     }

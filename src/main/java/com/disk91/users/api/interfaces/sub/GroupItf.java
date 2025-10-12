@@ -21,9 +21,11 @@ package com.disk91.users.api.interfaces.sub;
 
 import com.disk91.groups.mdb.entities.Group;
 import com.disk91.groups.mdb.entities.sub.GroupAttribute;
+import com.disk91.groups.tools.GroupsHierarchySimplified;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Tag(name = "Group information", description = "Group structure for front-end usage")
@@ -57,15 +59,36 @@ public class GroupItf {
     )
     protected List<GroupAttribute> attributes;
 
+    @Schema(
+            description = "Sub-groups",
+            example = "Lis of SubGroups",
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED
+    )
+    protected List<GroupItf> subs;
+
+
     // ==========================
     // Constructors
 
-    public static GroupItf getRoleItfFromGroup(Group _g) {
+    public static GroupItf getGroupItfFromGroup(Group _g) {
         GroupItf g = new GroupItf();
         g.setShortId(_g.getShortId());
         g.setName(_g.getName());
         g.setDescription(_g.getDescription());
         g.setAttributes(_g.getAttributes());
+        g.setSubs(new ArrayList<>());
+        return g;
+    }
+
+    public static GroupItf getGroupItfFromGroupsHierarchySimplified(GroupsHierarchySimplified _g) {
+        GroupItf g = new GroupItf();
+        g.setShortId(_g.getShortId());
+        g.setName(_g.getName());
+        g.setDescription(_g.getDescription());
+        g.setSubs(new ArrayList<>());
+        for ( GroupsHierarchySimplified sg : _g.getChildren() ) {
+            g.getSubs().add( getGroupItfFromGroupsHierarchySimplified(sg) );
+        }
         return g;
     }
 
@@ -103,5 +126,13 @@ public class GroupItf {
 
     public void setAttributes(List<GroupAttribute> attributes) {
         this.attributes = attributes;
+    }
+
+    public List<GroupItf> getSubs() {
+        return subs;
+    }
+
+    public void setSubs(List<GroupItf> subs) {
+        this.subs = subs;
     }
 }

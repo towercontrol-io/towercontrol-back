@@ -48,6 +48,13 @@ public class UserUpdateBodyRequest {
     )
     protected boolean considerGroups;
 
+    @Schema(
+            description = "To indicate if group list contains subgroups",
+            example = "true",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    protected boolean considerSubs;
+
 
     @Schema(
             description = "To indicate if the ACL list is to be considered",
@@ -94,5 +101,13 @@ public class UserUpdateBodyRequest {
 
     public void setConsiderACLs(boolean considerACLs) {
         this.considerACLs = considerACLs;
+    }
+
+    public boolean isConsiderSubs() {
+        return considerSubs;
+    }
+
+    public void setConsiderSubs(boolean considerSubs) {
+        this.considerSubs = considerSubs;
     }
 }

@@ -454,9 +454,9 @@ public class ApiUsersAdmin {
 
 
     /**
-     * Disable user two factor authentication
+     * Disable user two-factor authentication
      *
-     * This endpoint allows to manually disable a user two factor authentication when that user
+     * This endpoint allows to manually disable a user two-factor authentication when that user
      * is not able to restore the two factor by himself.
      *
      * This endpoint is private

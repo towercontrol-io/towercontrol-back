@@ -17,14 +17,15 @@
  *    WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  *    IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package com.disk91.users.api;
+package com.disk91.groups.api;
 
 import com.disk91.common.api.interfaces.ActionResult;
+import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITRightException;
+import com.disk91.groups.api.interfaces.GroupCreationBody;
+import com.disk91.groups.services.GroupsChangeServices;
 import com.disk91.groups.tools.GroupsHierarchySimplified;
-import com.disk91.users.api.interfaces.UserAccessibleRolesResponse;
-import com.disk91.users.services.UserGroupRolesService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -38,31 +39,24 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@Tag( name = "Users module groups API", description = "Users module groups API" )
+@Tag( name = "Group module read / earch API", description = "Group module read / search API" )
 @CrossOrigin
-@RequestMapping(value = "/users/1.0/groups")
+@RequestMapping(value = "/groups/1.0/read")
 @RestController
-public class ApiUsersGroups {
+public class ApiGroupsRead {
 
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
     @Autowired
-    protected UserGroupRolesService userGroupRolesService;
+    protected GroupsChangeServices groupsChangeServices;
 
     /**
      * User module list the groups accessible for a given user endpoint
-     *
-     * To display the groups a user can access, in the form of a hierarchy,
-     * this API provides all the information needed to represent them. This
-     * API does not provide information about the rights associated with each group but traverses the entire hierarchy.
-     *
+     * User Admin can access the groups a user ownd
      * Private endpoint accessible to user with an active session
      */
     @Operation(
@@ -73,7 +67,7 @@ public class ApiUsersGroups {
                     "This endpoint is accessible to registered users.",
             responses = {
                     @ApiResponse(responseCode = "200", description = "User accessible groups",
-                            content = @Content(array = @ArraySchema(schema = @Schema( implementation = GroupsHierarchySimplified.class)))),
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = GroupsHierarchySimplified.class)))),
                     @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content(schema = @Schema(implementation = ActionResult.class))),
                     @ApiResponse(responseCode = "400", description = "Parse error in processing groups", content = @Content(schema = @Schema(implementation = ActionResult.class))),
             }
@@ -84,16 +78,20 @@ public class ApiUsersGroups {
             method = RequestMethod.GET
     )
     @PreAuthorize("hasAnyRole('ROLE_LOGIN_COMPLETE')")
-    // ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
     public ResponseEntity<?> getUserAccessibleGroups(
             HttpServletRequest request
     ) {
+        /*
         try {
-            List<GroupsHierarchySimplified> r = userGroupRolesService.getAvailableGroups(request.getUserPrincipal().getName(), true,true,true);
+            List<GroupsHierarchySimplified> r = userGroupRolesService.getAvailableGroups(request.getUserPrincipal().getName());
             return new ResponseEntity<>(r, HttpStatus.OK);
-        } catch ( ITParseException x) {
+        } catch (ITParseException x) {
             return new ResponseEntity<>(ActionResult.FORBIDDEN(x.getMessage()), HttpStatus.FORBIDDEN);
         }
+        */
+        return new ResponseEntity<>(ActionResult.FORBIDDEN(""), HttpStatus.FORBIDDEN);
     }
 
 }
+

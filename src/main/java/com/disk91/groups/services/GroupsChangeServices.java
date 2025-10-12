@@ -89,7 +89,7 @@ public class GroupsChangeServices {
         // Make sure the group exists
         Group group = null;
         try {
-            group = groupsServices.getGroupByShortId(body.getParenId());
+            group = groupsServices.getGroupByShortId(body.getParentId());
         } catch (ITNotFoundException x) {
             throw new ITNotFoundException("groups-get-not-found");
         }
@@ -162,7 +162,7 @@ public class GroupsChangeServices {
                     ActionCatalog.getActionName(ActionCatalog.Actions.CREATION),
                     user.getLogin(),
                     "User {0} created sub group {1} with shortId {2} under group {3}",
-                    new String[]{user.getLogin(), newGroup.getName(), newGroup.getShortId(), body.getParenId()}
+                    new String[]{user.getLogin(), newGroup.getName(), newGroup.getShortId(), body.getParentId()}
             );
         } catch (ITTooManyException x) {
             throw new ITParseException(x.getMessage());
@@ -193,7 +193,7 @@ public class GroupsChangeServices {
     ) throws ITNotFoundException, ITRightException, ITParseException {
 
         // Make sure no parent group provided
-        if ( body.getParenId() != null && !body.getParenId().isEmpty() ) {
+        if ( body.getParentId() != null && !body.getParentId().isEmpty() ) {
             throw new ITParseException("groups-creation-with-parentid-set");
         }
 

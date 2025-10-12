@@ -65,7 +65,7 @@ public class DeviceService {
     public List<Device> getUserDevices(User user) {
         // @TODO : here we do not check the roles & ACL, so this should be later modified with
         //         access to a list of groups where we have this minimum level.
-        ArrayList<String> groups = user.getAllGroups(false,true);
+        ArrayList<String> groups = user.getAllGroups(true,false,true);
         List<Device> devices = devicesRepository.findDevicesByAssociatedGroups(groups);
         return devices;
     }

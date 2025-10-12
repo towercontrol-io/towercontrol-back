@@ -26,7 +26,6 @@ import com.disk91.common.tools.exceptions.ITRightException;
 import com.disk91.groups.api.interfaces.GroupCreationBody;
 import com.disk91.groups.services.GroupsChangeServices;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -40,7 +39,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-@Tag( name = "Users module groups API", description = "Users module groups API" )
+@Tag( name = "Group module creation API", description = "Group module creation API" )
 @CrossOrigin
 @RequestMapping(value = "/groups/1.0/creation")
 @RestController
@@ -86,7 +85,7 @@ public class ApiGroupsCreation {
             @RequestBody(required = true) GroupCreationBody body
     ) {
         try {
-            if ( body.getParenId() != null && !body.getParenId().isEmpty() ) {
+            if ( body.getParentId() != null && !body.getParentId().isEmpty() ) {
                 groupsChangeServices.createSubGroup(request.getUserPrincipal().getName(), body);
             } else {
                 groupsChangeServices.createGroup(request.getUserPrincipal().getName(), body);
@@ -95,7 +94,7 @@ public class ApiGroupsCreation {
         } catch (ITRightException x) {
             return new ResponseEntity<>(ActionResult.FORBIDDEN("groups-group-creation-right-refused"), HttpStatus.FORBIDDEN);
         } catch (ITParseException | ITNotFoundException x ) {
-            return new ResponseEntity<>(ActionResult.BADREQUEST("groups-group-creation-failed"), HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(ActionResult.BADREQUEST(x.getMessage()), HttpStatus.BAD_REQUEST);
         }
     }
 

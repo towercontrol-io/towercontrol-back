@@ -27,6 +27,9 @@ public class UserCommon {
         ) {
             // the requestion is the user searched himself, or it has admin / user admin global right
             // so we can hase the information
+            // @TODO - on doit gérer le fait qu'un USER_ADMIN ne peut acceder que aux info des utilisateurs avec qui
+            // il partage des groupes commmun. GOD ADMIN n'a pas cette restriction.
+
             return true;
         } else {
             // The user is not a global user admin. We may verify if the user can be a local user admin

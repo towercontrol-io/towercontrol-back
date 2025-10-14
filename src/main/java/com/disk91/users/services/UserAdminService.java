@@ -132,6 +132,8 @@ public class UserAdminService {
         if ( body.getSearch() == null || body.getSearch().length() < 3 )
             throw new ITNotFoundException("user-search-invalid-input");
 
+        // @TODO - We can only search for the User the requestor share groups & ACLs with
+
         ArrayList<UserListElementResponse> response = new ArrayList<>();
 
         try {
@@ -164,6 +166,8 @@ public class UserAdminService {
             HttpServletRequest req
     ){
 
+        // @TODO - We can only search for the User the requestor share groups & ACLs with
+
         ArrayList<UserListElementResponse> response = new ArrayList<>();
         List<User> users = userRepository.findTop11ByOrderByLastLoginDesc();
         if ( users != null && !users.isEmpty() ) {
@@ -191,6 +195,8 @@ public class UserAdminService {
             String requester,
             HttpServletRequest req
     ){
+
+        // @TODO - We can only search for the User the requestor share groups & ACLs with
 
         ArrayList<UserListElementResponse> response = new ArrayList<>();
         List<User> users = userRepository.findTop11ByOrderByRegistrationDateDesc();

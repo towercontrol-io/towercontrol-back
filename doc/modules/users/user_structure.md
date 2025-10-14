@@ -103,7 +103,7 @@ session token to avoid verifications on every call. As a consequence, the role r
 
 - `ROLE_GOD_ADMIN`: this role is the super admin role, it does not give specific permissions but influence the other role to give full access on not owned artifacts
 - `ROLE_USER_ADMIN`: this role is the user admin role, it has the right to manage users
-- `ROLE_GROUP_ADMIN`: this role manage the group creation, configuration and association of user & devices to groups
+- `ROLE_GROUP_ADMIN`: this role manage the root group creation, configuration
 - `ROLE_GROUP_LADMIN`: this role allows a user to create and configure an owned group and self assign to it
 - `ROLE_DEVICE_ADMIN`: this role allows to register devices
 - `ROLE_DEVICE_READ`: this role gives access to owned device data.
@@ -115,6 +115,7 @@ session token to avoid verifications on every call. As a consequence, the role r
 Following roles are dynamically added to the user profile with the user creation process, they can't be assigned
 - `ROLE_PENDING_USER`: this role is assigned to a user not yet registered into the system
 - `ROLE_REGISTERED_USER`: this role is assigned to a user registered into the system (confirmed email)
+See [roles](roles.md) for more details.
 
 Following roles are dynamically added and should not be stored in the user profile.
 - `ROLE_LOGIN_1FA`: this role is assigned on login with 1st factor to allow access 2nd Factor API

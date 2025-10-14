@@ -93,7 +93,7 @@ public class UserProfileService {
     protected UserCommon userCommon;
 
     /**
-     * Return user basic profile for a given user. Only Admin can acces user information or you can access for yourself
+     * Return user basic profile for a given user. Only Admin can access user information or you can access for yourself
      * @param requestor
      * @return
      */

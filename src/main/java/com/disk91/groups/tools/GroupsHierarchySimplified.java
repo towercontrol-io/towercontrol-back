@@ -61,6 +61,13 @@ public class GroupsHierarchySimplified {
     )
     protected List<GroupsHierarchySimplified> children;
 
+    @Schema(
+            description = "Special rights associated to that group for the user, only applicable to ACLs",
+            example = "['ROLE_GROUP_LADMIN', 'ROLE_DEVICE_READ']",
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED
+    )
+    protected List<String> roles;
+
     // ============================================================================
     // Builder
     // ============================================================================
@@ -80,6 +87,7 @@ public class GroupsHierarchySimplified {
         resp.name = g.getName();
         resp.description = g.getDescription();
         resp.children = new ArrayList<>();
+        resp.roles = new ArrayList<>();
         if (!ghn.getChildren().isEmpty()) {
             for ( GroupsHierarchyNode child : ghn.getChildren() ) {
                 try {
@@ -108,12 +116,9 @@ public class GroupsHierarchySimplified {
         }
     }
 
-
-
     // ============================================================================
     // Getters & Setters
     // ============================================================================
-
 
     public String getShortId() {
         return shortId;
@@ -145,5 +150,13 @@ public class GroupsHierarchySimplified {
 
     public void setChildren(List<GroupsHierarchySimplified> children) {
         this.children = children;
+    }
+
+    public List<String> getRoles() {
+        return roles;
+    }
+
+    public void setRoles(List<String> roles) {
+        this.roles = roles;
     }
 }

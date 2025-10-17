@@ -36,18 +36,20 @@ public class GroupsHierarchyNode {
 
     protected ArrayList<String> path;
     protected Group group;
+    protected List<String> roles; // for ACLs, propagate roles if any
     protected LinkedList<GroupsHierarchyNode> children;
 
-    public GroupsHierarchyNode(Group g, ArrayList<String> _path) {
+    public GroupsHierarchyNode(Group g, ArrayList<String> _path, List<String> _roles) {
         this.group = g;
         this.path = new ArrayList<>(_path);
+        this.roles = (_roles != null) ? new ArrayList<>(_roles) : new ArrayList<>();
         this.children = new LinkedList<>();
     }
 
-    public GroupsHierarchyNode addChild(Group child)  {
+    public GroupsHierarchyNode addChild(Group child, List<String> _roles)  {
         ArrayList<String> newPath = new ArrayList<>(this.path);
         newPath.add(this.group.getShortId());
-        GroupsHierarchyNode childNode = new GroupsHierarchyNode(child, newPath);
+        GroupsHierarchyNode childNode = new GroupsHierarchyNode(child, newPath,_roles);
         this.children.add(childNode);
         return childNode;
     }

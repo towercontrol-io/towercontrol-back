@@ -1031,8 +1031,12 @@ public class UserProfileService {
     ) throws ITRightException, ITParseException {
 
         // A user may not be able to change his own role, non-sense
+        boolean self = false;
         if ( _requestor.getLogin().compareTo(_user.getLogin()) == 0 ) {
-            throw new ITParseException("user-profile-role-self-change-not-allowed");
+            if ( !_requestor.isInRole(UsersRolesCache.StandardRoles.ROLE_GOD_ADMIN)) {
+                throw new ITParseException("user-profile-role-self-change-not-allowed");
+            }
+            self = true;
         }
 
         // Only Admin can change roles
@@ -1053,7 +1057,7 @@ public class UserProfileService {
                 }
 
                 // problem if the role is not owned by requestor and user (user can have a role the requestor does not have)
-                if ( ! _requestor.isInRole(r) && ! _user.isInRole(r) ) {
+                if ( ! _requestor.isInRole(r) && ! _user.isInRole(r) && !_requestor.isInRole(UsersRolesCache.StandardRoles.ROLE_GOD_ADMIN)) {
                     log.warn("[users] Requestor {} does not have right to assign role {}", _requestor.getLogin(), r);
                     throw new ITRightException("user-profile-role-change-not-owned");
                 }
@@ -1087,7 +1091,10 @@ public class UserProfileService {
                     }
                     if ( !found ) {
                         // role onwed by user is no more in the role list, must be removed
-                        rolesToRemove.add(r);
+                        // just avoid god admin self remove god admin role
+                        if ( !self || r.compareTo(UsersRolesCache.StandardRoles.ROLE_GOD_ADMIN.getRoleName()) != 0 ) {
+                            rolesToRemove.add(r);
+                        }
                     }
                 }
             }

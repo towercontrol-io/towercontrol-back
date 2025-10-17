@@ -180,7 +180,7 @@ public class GroupsList implements CloneableObject<GroupsList> {
         if ( depth >= maxDepth ) throw new ITTooManyException("group-hierarchy-too-deep-possible-loop");
         List<Group> under = this.getNextLevel(node.getChildrenPath());
         for ( Group g : under ) {
-            GroupsHierarchyNode child = node.addChild(g);
+            GroupsHierarchyNode child = node.addChild(g,null);
             this.buildHierarchy(child, depth+1, maxDepth);
         }
     }
@@ -190,7 +190,7 @@ public class GroupsList implements CloneableObject<GroupsList> {
      * @return
      */
     public GroupsHierarchyNode getHierarchy() throws ITTooManyException {
-        GroupsHierarchyNode root = new GroupsHierarchyNode(this.headElement,new ArrayList<>());
+        GroupsHierarchyNode root = new GroupsHierarchyNode(this.headElement,new ArrayList<>(),null);
         this.buildHierarchy(root,1,10);
         return root;
     }

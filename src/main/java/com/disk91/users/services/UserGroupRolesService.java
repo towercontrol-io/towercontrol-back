@@ -11,6 +11,7 @@ import com.disk91.users.api.interfaces.UserAccessibleRolesResponse;
 import com.disk91.users.config.UsersConfig;
 import com.disk91.users.mdb.entities.Role;
 import com.disk91.users.mdb.entities.User;
+import com.disk91.users.mdb.entities.sub.UserAcl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -128,6 +129,36 @@ public class UserGroupRolesService {
     // GROUP RIGHT MANAGEMENT
     // =====================================================================
 
+    /**
+      * Enriches the group hierarchy with the user's ACLs.
+      *
+      * @param h The simplified group hierarchy.
+      * @param acls The list of the user's ACLs.
+      */
+    protected void enrichGroupHierarchyWithUserAcls(GroupsHierarchySimplified h, List<UserAcl> acls) {
+        for ( UserAcl acl : acls ) {
+            if ( acl.getGroup().compareTo(h.getShortId()) == 0 ) {
+                h.setRoles(acl.getRoles());
+                h.setName(acl.getLocalName());
+                break;
+            }
+        }
+        for ( GroupsHierarchySimplified child : h.getChildren() ) {
+            enrichGroupHierarchyWithUserAcls(child, acls);
+        }
+    }
+
+     /**
+      * Retrieves the available groups for a user, with options to include
+      * groups, ACLs and virtual groups.
+      *
+      * @param u The user identifier.
+      * @param includesGroups Indicates whether groups should be included.
+      * @param includesAcls Indicates whether ACLs should be included.
+      * @param includesVirtual Indicates whether virtual groups should be included.
+      * @return A list of simplified group hierarchies.
+      * @throws ITParseException If some group elements are missing.
+      */
     public List<GroupsHierarchySimplified> getAvailableGroups(String u, boolean includesGroups, boolean includesAcls, boolean includesVirtual)
         throws ITParseException {
 
@@ -136,7 +167,13 @@ public class UserGroupRolesService {
             // compose the user group list (head of the hierarchy)
             // this includes the user default group and the standard groups and acls
             ArrayList<String> userGroups = user.getAllGroups(includesGroups,includesAcls,includesVirtual);
-            return groupsServices.getGroupsForDisplay(userGroups);
+            List<GroupsHierarchySimplified> ret = groupsServices.getGroupsForDisplay(userGroups);
+            // We need to enrich with the ACLs local modification if any
+            List<UserAcl> acls = user.getAcls();
+            for ( GroupsHierarchySimplified h : ret) {
+                enrichGroupHierarchyWithUserAcls(h, acls);
+            }
+            return ret;
         } catch (ITNotFoundException x) {
             log.warn("[users] user or some of the groups assigned to user {} do not exist : {}", u, x.getMessage());
             throw new ITParseException("user-group-missing-elements");

@@ -81,3 +81,10 @@ A virtual group named `root` exists to indicate you have a full admin/view... on
 but a kind of shortcut used for super-admin users. super-admin is by default in that group and it can be affected to other
 admin when a global delegation is required.
 
+### Some important function (for development)
+
+#### GroupServices
+- `isUserInGroup(_User, GroupSortId,  inACL?, inVirtual?, withAdminRights? ) )` - Check if the user is in the group identified by its sort ID. 
+  The optional parameters allow checking for ACL presence, virtual group inclusion, and admin rights. This scans in the Group hierarchy.
+- `findGroupUserForGroup(_User, GroupSortId,  inACL?, inVirtual?, withAdminRights? ) )` - Return the User group shortId owning the rights corresponding 
+  to the GroupSortId searched. Scans the searched group hierarchy to match the right user entry (take the first if multiple match).

@@ -26,7 +26,7 @@ public class UserApiKeys implements CloneableObject<UserApiKeys> {
     // right change.
     private List<String> roles;
 
-    // address (encrypted)
+    // List of ACL associated to this key with some specific rights on these groups.
     private List<UserAcl> acls;
 
     // === FUNCTIONALITY ===
@@ -37,6 +37,7 @@ public class UserApiKeys implements CloneableObject<UserApiKeys> {
     public void init() {
         this.roles = new ArrayList<String>();
         this.acls = new ArrayList<UserAcl>();
+        this.id = null;
     }
 
     /**

@@ -23,7 +23,7 @@ The user data structure is defined as follows:
       "name": "string",           // API key name, given by user, used to identify the key
       "secret": "string",         // API key secret, used to sign JWTs
       "expiration": "number",     // API key expiration date in MS since epoch
-      "roles": ["string"],        // API key groups, list of group names (for quick search later)
+      "roles": ["string"],        // API key groups, list of group names (for quick search later - not associated to groups but common)
       "acls": [                   // API key ACLs, same structure as user acls
         { "group": "string", "localName" : "string", "roles" : [ "string"] }
       ]

@@ -22,28 +22,20 @@ package com.disk91.users.services;
 import com.disk91.audit.integration.AuditIntegration;
 import com.disk91.common.config.CommonConfig;
 import com.disk91.common.config.ModuleCatalog;
-import com.disk91.common.pdb.entities.Param;
 import com.disk91.common.pdb.repositories.ParamRepository;
-import com.disk91.common.tools.Now;
+import com.disk91.common.tools.HexCodingTools;
+import com.disk91.common.tools.Tools;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITRightException;
-import com.disk91.common.tools.exceptions.ITTooManyException;
-import com.disk91.users.api.interfaces.UserAccountCreationBody;
+import com.disk91.groups.services.GroupsServices;
 import com.disk91.users.api.interfaces.UserApiTokenCreationBody;
 import com.disk91.users.config.ActionCatalog;
 import com.disk91.users.config.UsersConfig;
-import com.disk91.users.mdb.entities.Role;
 import com.disk91.users.mdb.entities.User;
-import com.disk91.users.mdb.entities.UserRegistration;
-import com.disk91.users.mdb.entities.sub.TwoFATypes;
 import com.disk91.users.mdb.entities.sub.UserAcl;
 import com.disk91.users.mdb.entities.sub.UserApiKeys;
-import com.disk91.users.mdb.repositories.UserRegistrationRepository;
 import com.disk91.users.mdb.repositories.UserRepository;
-import io.micrometer.core.instrument.Gauge;
-import io.micrometer.core.instrument.MeterRegistry;
-import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +43,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.function.Supplier;
 
 @Service
 public class UserApiTokenService {
@@ -74,12 +65,6 @@ public class UserApiTokenService {
     protected UsersConfig usersConfig;
 
     @Autowired
-    protected UserRepository userRepository;
-
-    @Autowired
-    protected ParamRepository paramRepository;
-
-    @Autowired
     protected AuditIntegration auditIntegration;
 
     @Autowired
@@ -90,6 +75,12 @@ public class UserApiTokenService {
 
     @Autowired
     protected UsersRolesCache usersRolesCache;
+
+    @Autowired
+    protected UserService userService;
+
+    @Autowired
+    protected GroupsServices groupsServices;
 
     /**
      * Create a new API token for the existing user. The user can't give a right he is not owning.
@@ -105,7 +96,7 @@ public class UserApiTokenService {
      * @throws ITRightException
      * @throws ITNotFoundException
      */
-    protected void createApiToken(
+    protected String createApiToken(
             HttpServletRequest request,
             String requestorId,
             String userId,
@@ -119,7 +110,7 @@ public class UserApiTokenService {
         try {
             User _requestor = userCache.getUser(requestorId);
 
-            if (!userCommon.isLegitAccessRead(_requestor, userId, true)) {
+            if (!userCommon.isLegitAccess(_requestor, userId, true)) {
                 log.warn("[users] Requestor {} does not have write access right to user {} profile", requestorId, userId);
                 throw new ITRightException("user-profile-no-access");
             }
@@ -133,20 +124,31 @@ public class UserApiTokenService {
                     throw new ITRightException("user-profile-user-not-found");
                 }
             }
-
             UserApiKeys apiKey = new UserApiKeys();
             apiKey.init();
+            // Generate a unique random ID that will be used for identification
+            while ( apiKey.getId() == null ){
+                String _id = HexCodingTools.getRandomHexString(6);
+                if ( _user.getApiKeys().stream().noneMatch( k -> k.getId().compareTo(_id) == 0 ) ) {
+                    apiKey.setId(_id);
+                }
+            }
+            apiKey.setName(body.getKeyName());
+            apiKey.setSecret(HexCodingTools.getRandomHexString(64));
+            apiKey.setExpiration(body.getExpiration());
 
-            // We have the right user with the authorization to create the token
-            // Check the requested ROLES
+            // Process Global ROLES
             ArrayList<String> allowedRoles = new ArrayList<>();
             for ( String r : body.getRoles() ) {
                 if ( _user.isInRole(r) ) {
                     // some of the role are not assigned to API token or will be assigned after
                     try {
                         if (usersRolesCache.getRole(r).isAssignable()) {
-                            // we can add the role
-                            allowedRoles.add(r);
+                            // we can add the role if it is in the list of apikey assignable roles
+                            if (Tools.isStringInList(r, usersConfig.getUserApiKeyAuthorizedRoles())) {
+                                // we can add the role
+                                allowedRoles.add(r);
+                            } throw new ITRightException("user-profile-unauthorize-role");
                         }
                     } catch ( ITNotFoundException x) {
                         // role does not exist. skip it
@@ -158,25 +160,93 @@ public class UserApiTokenService {
             allowedRoles.add(UsersRolesCache.StandardRoles.ROLE_LOGIN_API.getRoleName());
             apiKey.setRoles(allowedRoles);
 
-
+            // We have the right user with the authorization to create the token
             // Now we can process the ACL
             ArrayList<UserAcl> allowedAcls = new ArrayList<>();
             if ( body.getAcls() != null && !body.getAcls().isEmpty() ) {
                 for ( UserAcl _acl : body.getAcls() ) {
-
-                    // check if the user is in group
-                    // @TODO
-                    // check if the user is in Role
-
+                   if ( groupsServices.isUserInGroup(_requestor, _acl.getGroup(),  true, true, false) ) {
+                       // we are into it, get the information about the right to that group and verify it
+                       String parentgroup = groupsServices.findGroupUserForGroup(_user,_acl.getGroup(), false,true, false);
+                       if ( parentgroup != null ) {
+                           UserAcl newAcl = new UserAcl();
+                           newAcl.setGroup(_acl.getGroup());
+                           newAcl.setLocalName(_acl.getLocalName());
+                           newAcl.setRoles(new ArrayList<>());
+                           // user own that group, as the roles match, we are good to go
+                           // Check the requested ROLES as part of the user roles
+                           for ( String r : _acl.getRoles() ) {
+                               if ( ! _user.isInRole(r) ) {
+                                   throw new ITRightException("user-profile-unauthorize-role");
+                               }
+                               newAcl.getRoles().add(r);
+                           }
+                           allowedAcls.add(newAcl);
+                       } else {
+                           // search in acls
+                           parentgroup = groupsServices.findGroupUserForGroup(_user,_acl.getGroup(), true,false, false);
+                           if ( parentgroup != null ) {
+                               UserAcl newAcl = new UserAcl();
+                               newAcl.setGroup(_acl.getGroup());
+                               newAcl.setLocalName(_acl.getLocalName());
+                               newAcl.setRoles(new ArrayList<>());
+                               // we need to find the matching ACL
+                               UserAcl requestorAcl = null;
+                               for ( UserAcl a : _user.getAcls() ) {
+                                   if ( a.getGroup().compareTo(parentgroup) == 0 ) {
+                                       requestorAcl = a;
+                                       break;
+                                   }
+                               }
+                               if ( requestorAcl == null ) {
+                                   log.error("[users] Requestor ACL {} not found {} for user {} but it was found previously...", requestorId, _acl.getGroup(), userId);
+                                   throw new ITRightException("user-profile-unauthorize-role");
+                               }
+                               // now we need to verify that the requestorAcl contains all the requested roles
+                               for ( String r : _acl.getRoles() ) {
+                                   for ( String ar : requestorAcl.getRoles() ) {
+                                       if ( ar.compareTo(r) == 0 ) {
+                                           // role found, we can add it
+                                           newAcl.getRoles().add(r);
+                                           break;
+                                       }
+                                   } // else skip it
+                               }
+                               allowedAcls.add(newAcl);
+                           } else {
+                               // we should never reach this point as the requestor is in the group
+                               log.error("[users] Requestor {} does not have access to group {} for user {} but it was found previously...", requestorId, _acl.getGroup(), userId);
+                               throw new ITRightException("user-profile-unauthorize-role");
+                           }
+                       }
+                   }  else throw new ITRightException("user-profile-unauthorize-role");
                 }
             }
+            apiKey.setAcls(allowedAcls);
 
+            // Add audit trace
+            auditIntegration.auditLog(
+                    ModuleCatalog.Modules.USERS,
+                    ActionCatalog.getActionName(ActionCatalog.Actions.APIKEY_CREATION),
+                    _user.getLogin(),
+                    "Apikey creation from {0} requested by {1} for user {2} with name {3} and expiration {4}",
+                    new String[]{(request.getHeader("x-real-ip") != null) ? request.getHeader("x-real-ip") : "Unknown",_requestor.getLogin(), _user.getLogin(),apiKey.getName(), Long.toString(apiKey.getExpiration())}
+            );
+
+            // Add the API key to the user list and store it
+            _user.getApiKeys().add(apiKey);
+            userCache.saveUser(_user);
+
+
+            // Now we can create the JWT
+            String jwt = userService.generateApiKeyJWTForUser(_user, apiKey.getId());
+
+            return jwt;
 
         } catch (ITNotFoundException x) {
             log.error("[users] Requestor {} not found", requestorId);
             throw new ITRightException("user-profile-user-not-foundd");
         }
-
     }
 
 

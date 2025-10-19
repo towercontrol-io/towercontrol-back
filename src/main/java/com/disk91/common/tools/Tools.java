@@ -21,6 +21,7 @@ package com.disk91.common.tools;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Tools for the common library
@@ -78,5 +79,19 @@ public class Tools {
         return new ArrayList<>(Arrays.asList(_params));
     }
 
+    /**
+     * Return true if the given string is in the given list (comma separated)
+     * @param str
+     * @param list
+     * @return
+     */
+    public static boolean isStringInList(String str,String list) {
+        if ( list == null || list.isEmpty() ) return false;
+        List<String> arrayList = getStringListFromParam(list);
+        for ( String s : arrayList ) {
+            if ( s.compareTo(str) == 0 ) return true;
+        }
+        return false;
+    }
 
 }

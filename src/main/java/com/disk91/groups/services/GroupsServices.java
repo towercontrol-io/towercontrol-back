@@ -184,7 +184,7 @@ public class GroupsServices {
     }
 
     /**
-     * Check if a user is in a group, directly or through sub-groups.
+     * Search if a user is in a group, directly or through sub-groups.
      * When scanAcl is true, we verify if the user have the admin rights in case of ACL depends on forAdmin
      * considerVirtual is to check the virtual group membership (default group)
      *
@@ -193,7 +193,7 @@ public class GroupsServices {
      * @param scanAcl - To also scan in the ACLs
      * @param considerVirtual - To also scan in the virtual groups
      * @param forAdmin - To check for admin right in case of scanAcl ; if not, the group is skipped
-     * @return the user group / acl corresponding to the group searched ( considering the hierarchy) or null if not found
+     * @return the user group / acl corresponding to the group searched (considering the hierarchy) or null if not found
      */
     public String findGroupUserForGroup(User user, String groupShortId, boolean scanAcl, boolean considerVirtual, boolean forAdmin) {
         // check the virtual group case
@@ -210,7 +210,7 @@ public class GroupsServices {
                 }
                 for ( String refGroup : g.getReferringGroups() ) {
                     if ( userGroup.compareTo(refGroup) == 0 ) {
-                        // indirect membership
+                        // indirect membership - through parent group
                         return userGroup;
                     }
                 }

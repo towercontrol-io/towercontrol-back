@@ -17,7 +17,7 @@ public class UserCommon {
      * @param user
      * @return true when requestor can R/W access the user profile
      */
-    public boolean isLegitAccessRead(User _requestor, String user, boolean writeAccess) {
+    public boolean isLegitAccess(User _requestor, String user, boolean writeAccess) {
         if ( ! _requestor.isActive() || _requestor.isLocked() ) return false;
         if ( ! _requestor.isInRole(UsersRolesCache.StandardRoles.ROLE_REGISTERED_USER)) return false;
 

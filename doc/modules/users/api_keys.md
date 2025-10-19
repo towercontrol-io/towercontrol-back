@@ -20,3 +20,12 @@ Consequently, the structure of API tokens contains information allowing for quic
 information is not used for rights validation when using the token, which itself contains these rights.  
 For this reason, when creating an API token, it is important to associate it with a minimalist level of
 rights to avoid the deletion of tokens linked to too broad rights that may be removed from the user later.
+
+### Groups vs ACLs
+
+An API key has no groups, so its operation relies exclusively on ACLs. Roles associated with the API key are limited and 
+should not pertain to access rights, only to non-assignable technical rights. However, there may be specific rights required 
+for custom developments that can be added by configuration, and these rights may be necessary to access certain APIs.
+
+Therefore, ACLs carry all access rights of the API key; they must be specified when creating the API key and are verified 
+during key creation.

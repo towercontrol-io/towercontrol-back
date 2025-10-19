@@ -204,6 +204,13 @@ public class UsersConfig {
     public String getUserDefaultRoles() {
         return userDefaultRoles;
     }
+
+    @Value("${users.apikey.authorized.roles:")
+    protected String userApiKeyAuthorizedRoles;
+    public String getUserApiKeyAuthorizedRoles() {
+        return userApiKeyAuthorizedRoles;
+    }
+
     // --------------------------------------------
     // User Cache
     // --------------------------------------------

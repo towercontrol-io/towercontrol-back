@@ -17,6 +17,9 @@ public class ActionCatalog {
         ROLE_CHANGE,
         GROUP_CHANGE,
         ACL_CHANGE,
+        APIKEY_CREATION,
+        APIKEY_DELETION,
+        APIKEY_RENEWAL,
 
         UNKNOWN
     }
@@ -53,6 +56,12 @@ public class ActionCatalog {
                 return "group_change";
             case ACL_CHANGE:
                 return "acl_change";
+            case APIKEY_CREATION:
+                return "apikey_creation";
+            case APIKEY_DELETION:
+                return "apikey_deletion";
+            case APIKEY_RENEWAL:
+                return "apikey_renewal";
             case UNKNOWN:
             default:
                 return "unknown";

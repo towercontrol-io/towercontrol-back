@@ -39,6 +39,7 @@ import com.disk91.users.config.UserMessages;
 import com.disk91.users.config.UsersConfig;
 import com.disk91.users.mdb.entities.User;
 import com.disk91.users.mdb.entities.sub.TwoFATypes;
+import com.disk91.users.mdb.entities.sub.UserApiKeys;
 import com.disk91.users.mdb.repositories.UserRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -506,6 +507,42 @@ public class UserService {
                 .expiration(new Date(exp))
                 .add("roles", roles)
                 .build();
+
+        return Jwts.builder()
+                .header().add("typ", "JWT")
+                .add("sub", u.getLogin())
+                .and()
+                .claims().empty().add(claims)
+                .and()
+                .expiration(new Date(exp))
+                .signWith(this.generateKeyForUser(u))
+                .compact();
+    }
+
+
+    /**
+     * Create a JWT token for the user API key
+     *
+     * @param u
+     * @return
+     */
+    protected String generateApiKeyJWTForUser(User u, String keyId) {
+        for (UserApiKeys a : u.getApiKeys()) {
+            if ( a.getId().compareTo(keyId) == 0 ) {
+                Claims claims = Jwts.claims()
+                        .subject(u.getLogin())
+                        .expiration(new Date(exp))
+                        .add("roles", roles)
+                        .build();
+
+
+
+                break;
+            }
+        }
+
+
+
 
         return Jwts.builder()
                 .header().add("typ", "JWT")

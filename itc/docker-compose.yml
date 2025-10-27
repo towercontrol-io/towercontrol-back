@@ -116,6 +116,7 @@ services:
       - ./mongo/scripts:/scripts
       - ./mongo/data/router-01:/data/db
       - ./mongo/configuration/router-01:/data/configdb
+      - ./mongo/dumps:/dumps
     profiles:
       - mongo
     depends_on:
@@ -146,6 +147,7 @@ services:
        - ./mongo/scripts:/scripts
        - ./mongo/data/router-02:/data/db
        - ./mongo/configuration/router-02:/data/configdb
+       - ./mongo/dumps:/dumps
      networks:
        - mongo_net
      profiles:

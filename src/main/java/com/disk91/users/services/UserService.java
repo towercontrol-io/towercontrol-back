@@ -529,12 +529,13 @@ public class UserService {
     protected String generateApiKeyJWTForUser(User u, String keyId) {
         for (UserApiKeys a : u.getApiKeys()) {
             if ( a.getId().compareTo(keyId) == 0 ) {
+                /*
                 Claims claims = Jwts.claims()
                         .subject(u.getLogin())
                         .expiration(new Date(exp))
                         .add("roles", roles)
                         .build();
-
+*/
 
 
                 break;
@@ -543,7 +544,7 @@ public class UserService {
 
 
 
-
+/*
         return Jwts.builder()
                 .header().add("typ", "JWT")
                 .add("sub", u.getLogin())
@@ -553,6 +554,9 @@ public class UserService {
                 .expiration(new Date(exp))
                 .signWith(this.generateKeyForUser(u))
                 .compact();
+
+ */
+        return "";
     }
 
 

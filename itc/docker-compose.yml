@@ -12,6 +12,7 @@ services:
         condition: service_started
     volumes:
       - ./configuration:/configuration
+      - ./data:/data
     environment:
       - COMMON_SERVICE_NAME=IotTowerControl
       - COMMON_SERVICE_BACK_DOMAIN=itc-back.foo.bar

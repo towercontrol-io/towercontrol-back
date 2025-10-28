@@ -2,10 +2,15 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.4.4'
 	id 'io.spring.dependency-management' version '1.1.7'
+    id 'com.google.protobuf' version '0.9.5'
 }
 
 compileJava {
 	options.compilerArgs << '-Xlint'
+}
+
+protobuf {
+    protoc { artifact = "com.google.protobuf:protoc:4.33.0" }
 }
 
 group = 'com.disk91'
@@ -47,6 +52,7 @@ dependencies {
 
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation group: 'org.flywaydb', name: 'flyway-core', version: '11.3.4'
+    implementation group: 'com.google.protobuf', name: 'protobuf-java', version: '4.33.0'
 
 	runtimeOnly group: 'io.jsonwebtoken', name: 'jjwt-impl', version: '0.12.6'
 	runtimeOnly group: 'io.jsonwebtoken', name: 'jjwt-jackson', version: '0.12.6'

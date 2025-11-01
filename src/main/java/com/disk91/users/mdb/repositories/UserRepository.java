@@ -59,4 +59,12 @@ public interface UserRepository extends MongoRepository<User,String> {
     // Find the 50 Last registered users
     public List<User> findTop11ByOrderByRegistrationDateDesc();
 
+    /**
+     * Find a user by one of its API key ids
+     * @param apiKeyId - 6 hex chars API key id
+     * @return Optional User document if found
+     */
+    @Query(value = "{ 'apiKeys.id' : ?0 }")
+    public User findByApiKeyId(String apiKeyId);
+
 }

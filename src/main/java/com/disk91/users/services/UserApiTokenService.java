@@ -22,7 +22,6 @@ package com.disk91.users.services;
 import com.disk91.audit.integration.AuditIntegration;
 import com.disk91.common.config.CommonConfig;
 import com.disk91.common.config.ModuleCatalog;
-import com.disk91.common.pdb.repositories.ParamRepository;
 import com.disk91.common.tools.HexCodingTools;
 import com.disk91.common.tools.Tools;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
@@ -82,6 +81,9 @@ public class UserApiTokenService {
     @Autowired
     protected GroupsServices groupsServices;
 
+    @Autowired
+    protected UserRepository userRepository;
+
     /**
      * Create a new API token for the existing user. The user can't give a right he is not owning.
      * Not all the ROLES are available for API token, only a subset of roles is allowed.
@@ -128,8 +130,8 @@ public class UserApiTokenService {
             apiKey.init();
             // Generate a unique random ID that will be used for identification
             while ( apiKey.getId() == null ){
-                String _id = HexCodingTools.getRandomHexString(6);
-                if ( _user.getApiKeys().stream().noneMatch( k -> k.getId().compareTo(_id) == 0 ) ) {
+                String _id = HexCodingTools.getRandomHexString(8);
+                if ( userRepository.findByApiKeyId(_id) == null ) {
                     apiKey.setId(_id);
                 }
             }

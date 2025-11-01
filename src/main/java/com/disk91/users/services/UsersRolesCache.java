@@ -71,7 +71,8 @@ public class UsersRolesCache {
         "{'version':2, 'platform':true, 'name':'ROLE_LOGIN_1FA','description':'role-login-1fa-desc', 'enDescription':'logged user with 1 factor authentication', 'creationBy':'system','creationMs':0, 'assignable':false}",
         "{'version':2, 'platform':true, 'name':'ROLE_LOGIN_2FA','description':'role-login-2fa-desc', 'enDescription':'logged user with 2 factor authentication', 'creationBy':'system','creationMs':0, 'assignable':false}",
         "{'version':2, 'platform':true, 'name':'ROLE_LOGIN_COMPLETE','description':'role-login-complete-desc', 'enDescription':'login completed', 'creationBy':'system','creationMs':0, 'assignable':false}",
-        "{'version':2, 'platform':true, 'name':'ROLE_LOGIN_API','description':'role-login-api-desc', 'enDescription':'login from API', 'creationBy':'system','creationMs':0, 'assignable':false}"
+        "{'version':2, 'platform':true, 'name':'ROLE_LOGIN_API','description':'role-login-api-desc', 'enDescription':'login from API', 'creationBy':'system','creationMs':0, 'assignable':false}",
+        "{'version':2, 'platform':true, 'name':'ROLE_USER_APIKEY','description':'role-user-apikey-desc', 'enDescription':'Apikey self creation', 'creationBy':'system','creationMs':0, 'assignable':true}",
     };
 
     // Standard roles strings
@@ -91,7 +92,8 @@ public class UsersRolesCache {
         ROLE_LOGIN_1FA("ROLE_LOGIN_1FA"),
         ROLE_LOGIN_2FA("ROLE_LOGIN_2FA"),
         ROLE_LOGIN_COMPLETE("ROLE_LOGIN_COMPLETE"),
-        ROLE_LOGIN_API("ROLE_LOGIN_API");
+        ROLE_LOGIN_API("ROLE_LOGIN_API"),
+        ROLE_USER_APIKEY("ROLE_USER_APIKEY");
 
         private String roleName;
         StandardRoles(String roleName) {

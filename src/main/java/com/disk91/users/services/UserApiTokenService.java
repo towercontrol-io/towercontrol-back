@@ -98,12 +98,12 @@ public class UserApiTokenService {
      * @throws ITRightException
      * @throws ITNotFoundException
      */
-    protected String createApiToken(
+    public void createApiToken(
             HttpServletRequest request,
             String requestorId,
             String userId,
             UserApiTokenCreationBody body
-    ) throws ITParseException, ITRightException, ITNotFoundException {
+    ) throws ITParseException, ITRightException {
 
         if ( userId == null || userId.isEmpty() ) {
             throw new ITParseException("user-profile-login-invalid");
@@ -236,18 +236,13 @@ public class UserApiTokenService {
             );
 
             // Add the API key to the user list and store it
+            if ( _user.getApiKeys() == null ) _user.setApiKeys(new ArrayList<>());
             _user.getApiKeys().add(apiKey);
             userCache.saveUser(_user);
 
-
-            // Now we can create the JWT
-            String jwt = userService.generateApiKeyJWTForUser(_user, apiKey.getId());
-
-            return jwt;
-
         } catch (ITNotFoundException x) {
             log.error("[users] Requestor {} not found", requestorId);
-            throw new ITRightException("user-profile-user-not-foundd");
+            throw new ITRightException("user-profile-user-not-found");
         }
     }
 

@@ -23,12 +23,14 @@ import com.disk91.audit.integration.AuditIntegration;
 import com.disk91.common.config.CommonConfig;
 import com.disk91.common.config.ModuleCatalog;
 import com.disk91.common.tools.HexCodingTools;
+import com.disk91.common.tools.Now;
 import com.disk91.common.tools.Tools;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITRightException;
 import com.disk91.groups.services.GroupsServices;
 import com.disk91.users.api.interfaces.UserApiTokenCreationBody;
+import com.disk91.users.api.interfaces.UserApiTokenResponse;
 import com.disk91.users.config.ActionCatalog;
 import com.disk91.users.config.UsersConfig;
 import com.disk91.users.mdb.entities.User;
@@ -42,6 +44,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class UserApiTokenService {
@@ -130,7 +133,7 @@ public class UserApiTokenService {
             apiKey.init();
             // Generate a unique random ID that will be used for identification
             while ( apiKey.getId() == null ){
-                String _id = HexCodingTools.getRandomHexString(8);
+                String _id = "apikey_"+HexCodingTools.getRandomHexString(8);
                 if ( userRepository.findByApiKeyId(_id) == null ) {
                     apiKey.setId(_id);
                 }
@@ -246,5 +249,181 @@ public class UserApiTokenService {
         }
     }
 
+    /**
+     * Return the list of User API keys
+     * @param request
+     * @param requestorId
+     * @param userId
+     * @return
+     * @throws ITParseException
+     * @throws ITRightException
+     */
+    public List<UserApiTokenResponse> getUserApiTokens(
+            HttpServletRequest request,
+            String requestorId,
+            String userId
+    ) throws ITParseException, ITRightException {
 
+        if (userId == null || userId.isEmpty()) {
+            throw new ITParseException("user-profile-login-invalid");
+        }
+
+        try {
+            User _requestor = userCache.getUser(requestorId);
+
+            if (!userCommon.isLegitAccess(_requestor, userId, false)) {
+                log.warn("[users] Requestor {} does not have read access right to user {} profile", requestorId, userId);
+                throw new ITRightException("user-profile-no-access");
+            }
+
+            User _user = _requestor;
+            if (requestorId.compareTo(userId) != 0) {
+                try {
+                    _user = userCache.getUser(userId);
+                } catch (ITNotFoundException x) {
+                    log.warn("[users] Searched user does not exists", x);
+                    throw new ITRightException("user-profile-user-not-found");
+                }
+            }
+
+            ArrayList<UserApiTokenResponse> ret = new ArrayList<>();
+            for (UserApiKeys k : _user.getApiKeys()) {
+                UserApiTokenResponse _r = UserApiTokenResponse.getInstance(k);
+                ret.add(_r);
+            }
+            return ret;
+
+        } catch (ITNotFoundException x) {
+            log.error("[users] Requestor {} not found", requestorId);
+            throw new ITRightException("user-profile-user-not-found");
+        }
+
+    }
+
+
+    /**
+     * Delete one API key for the existing user.
+     * @param request
+     * @param requestorId
+     * @param userId
+     * @return
+     * @throws ITParseException
+     * @throws ITRightException
+     */
+    public void deleteUserApiTokens(
+            HttpServletRequest request,
+            String requestorId,
+            String userId,
+            String tokenId
+    ) throws ITParseException, ITRightException {
+
+        if (userId == null || userId.isEmpty()) {
+            throw new ITParseException("user-profile-login-invalid");
+        }
+
+        try {
+            User _requestor = userCache.getUser(requestorId);
+
+            if (!userCommon.isLegitAccess(_requestor, userId, true)) {
+                log.warn("[users] Requestor {} does not have read access right to user {} profile", requestorId, userId);
+                throw new ITRightException("user-profile-no-access");
+            }
+
+            User _user = _requestor;
+            if (requestorId.compareTo(userId) != 0) {
+                try {
+                    _user = userCache.getUser(userId);
+                } catch (ITNotFoundException x) {
+                    log.warn("[users] Searched user does not exists", x);
+                    throw new ITRightException("user-profile-user-not-found");
+                }
+            }
+
+            UserApiKeys toRemove = null;
+            for (UserApiKeys k : _user.getApiKeys()) {
+                if (k.getId().compareTo(tokenId) == 0) {
+                    toRemove = k;
+                    break;
+                }
+            }
+            if ( toRemove != null ) {
+                // clear the key
+                _user.getApiKeys().remove(toRemove);
+                userCache.saveUser(_user);
+
+                // Add audit trace
+                auditIntegration.auditLog(
+                        ModuleCatalog.Modules.USERS,
+                        ActionCatalog.getActionName(ActionCatalog.Actions.APIKEY_DELETION),
+                        _user.getLogin(),
+                        "Apikey deletion from {0} requested by {1} for user {2} with name {3}",
+                        new String[]{(request.getHeader("x-real-ip") != null) ? request.getHeader("x-real-ip") : "Unknown",_requestor.getLogin(), _user.getLogin(),toRemove.getName()}
+                );
+            } else {
+                throw new ITParseException("user-apikey-not-found");
+            }
+
+        } catch (ITNotFoundException x) {
+            log.error("[users] Requestor {} not found", requestorId);
+            throw new ITRightException("user-profile-user-not-found");
+        }
+
+    }
+
+
+    /**
+     * Return the JWT corresponding to the given API key
+     * The same JWT is generated each time for the same key until expiration
+     * @param request
+     * @param requestorId
+     * @param userId
+     * @param tokenId
+     * @return
+     * @throws ITParseException
+     * @throws ITRightException
+     */
+    public String getJWTForApiKey(
+            HttpServletRequest request,
+            String requestorId,
+            String userId,
+            String tokenId
+    ) throws ITParseException, ITRightException {
+
+        if (userId == null || userId.isEmpty()) {
+            throw new ITParseException("user-profile-login-invalid");
+        }
+
+        try {
+            User _requestor = userCache.getUser(requestorId);
+
+            if (!userCommon.isLegitAccess(_requestor, userId, false)) {
+                log.warn("[users] Requestor {} does not have read access right to user {} profile", requestorId, userId);
+                throw new ITRightException("user-profile-no-access");
+            }
+
+            User _user = _requestor;
+            if (requestorId.compareTo(userId) != 0) {
+                try {
+                    _user = userCache.getUser(userId);
+                } catch (ITNotFoundException x) {
+                    log.warn("[users] Searched user does not exists", x);
+                    throw new ITRightException("user-profile-user-not-found");
+                }
+            }
+
+            for (UserApiKeys k : _user.getApiKeys()) {
+                if (k.getId().compareTo(tokenId) == 0) {
+                    if ( k.getExpiration() < Now.NowUtcMs() ) {
+                        throw new ITParseException("user-apikey-expired");
+                    }
+                    return userService.generateApiKeyJWTForUser(_user,k);
+                }
+            }
+            throw new ITParseException("user-apikey-not-found");
+
+        } catch (ITNotFoundException x) {
+            log.error("[users] Requestor {} not found", requestorId);
+            throw new ITRightException("user-profile-user-not-found");
+        }
+    }
 }

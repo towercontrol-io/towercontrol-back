@@ -526,37 +526,46 @@ public class UserService {
      * @param u
      * @return
      */
-    protected String generateApiKeyJWTForUser(User u, String keyId) {
-        for (UserApiKeys a : u.getApiKeys()) {
-            if ( a.getId().compareTo(keyId) == 0 ) {
-                /*
-                Claims claims = Jwts.claims()
-                        .subject(u.getLogin())
-                        .expiration(new Date(exp))
-                        .add("roles", roles)
-                        .build();
-*/
-
-
-                break;
-            }
-        }
-
-
-
-/*
+    protected String generateApiKeyJWTForUser(User u, UserApiKeys k) {
+        Claims claims = Jwts.claims()
+                .subject(k.getId())
+                .expiration(new Date(k.getExpiration()))
+                .add("roles", k.getRoles())
+                .build();
         return Jwts.builder()
                 .header().add("typ", "JWT")
-                .add("sub", u.getLogin())
+                .add("sub", k.getId())
                 .and()
                 .claims().empty().add(claims)
                 .and()
-                .expiration(new Date(exp))
-                .signWith(this.generateKeyForUser(u))
+                .expiration(new Date(k.getExpiration()))
+                .signWith(this.generateKeyForAPIKey(u,k))
                 .compact();
+    }
 
- */
-        return "";
+
+    /**
+     * Compute a key to sign the JWT token for the user's apikey
+     * The key does not use user session key to not be impacted by sign out
+     * process and every key have his own salt to make sure we can revoke
+     * it individually (even if simply delete the key and create a new one to revoke it)
+     *
+     * @param u - User owning the API key
+     * @param k - API Key to use the secret from
+     * @return JWT Signing Key
+     */
+    public Key generateKeyForAPIKey(User u,UserApiKeys k) {
+        // Generate the key for the user
+        String srvKey = usersConfig.getUsersSessionKey();
+        String userSecret = k.getSecret();
+        byte[] _srvKey = HexCodingTools.getByteArrayFromHexString(srvKey);          // 32 bytes
+        byte[] _userSecret = HexCodingTools.getByteArrayFromHexString(userSecret);  // 32 bytes
+        byte[] key = new byte[64];
+        for (int i = 0; i < 32; i++) {
+            key[i] = (byte)(_srvKey[i] ^ _userSecret[i]);
+            key[i+32] = (byte)(_srvKey[i] ^ _userSecret[i]);
+        }
+        return Keys.hmacShaKeyFor(key);
     }
 
 

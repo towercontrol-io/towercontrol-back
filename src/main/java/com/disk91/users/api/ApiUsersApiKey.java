@@ -23,7 +23,6 @@ package com.disk91.users.api;
 import com.disk91.common.api.interfaces.ActionResult;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITRightException;
-import com.disk91.groups.tools.GroupsHierarchySimplified;
 import com.disk91.users.api.interfaces.UserApiTokenCreationBody;
 import com.disk91.users.api.interfaces.UserApiTokenResponse;
 import com.disk91.users.services.UserApiTokenService;
@@ -77,7 +76,7 @@ public class ApiUsersApiKey {
             }
     )
     @RequestMapping(
-            value = "/",
+            value = "",
             produces = "application/json",
             method = RequestMethod.PUT
     )
@@ -119,7 +118,7 @@ public class ApiUsersApiKey {
             }
     )
     @RequestMapping(
-            value = "/",
+            value = "",
             produces = "application/json",
             method = RequestMethod.GET
     )
@@ -205,7 +204,7 @@ public class ApiUsersApiKey {
             }
     )
     @RequestMapping(
-            value = "/{keyId}/jwt/",
+            value = "/{keyId}/jwt",
             produces = "application/json",
             method = RequestMethod.GET
     )

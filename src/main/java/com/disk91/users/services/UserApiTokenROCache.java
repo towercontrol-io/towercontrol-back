@@ -19,6 +19,7 @@
  */
 package com.disk91.users.services;
 
+import com.disk91.common.tools.ClonableString;
 import com.disk91.common.tools.Now;
 import com.disk91.common.tools.ObjectCache;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
@@ -39,13 +40,15 @@ import java.time.Duration;
 import java.util.List;
 
 @Service
-public class UserCache {
+public class UserApiTokenROCache {
 
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
     /**
-     * User Cache Service is caching the User Information. It may be instantiated in all the instances
-     * and multiple cache should collaborate in a cluster
+     * When an API key is used, the cache service provides faster access to the associated user.
+     * This cache is read-only but must be invalidated if the user is modified or if the API key is changed.
+     * For the user, we can rely on the UserCache and thus only keep the mapping APIKey ID <-> User ID, which will be lighter.
+     * However, the API key's validity must be verified each time. Since the cache does this, it is not necessary to do it externally.
      */
 
     @Autowired
@@ -62,25 +65,25 @@ public class UserCache {
     // CACHE SERVICE
     // ================================================================================================================
 
-    private ObjectCache<String, User> userCache;
+    private ObjectCache<String, ClonableString> userCache;
 
     protected boolean serviceEnable = false;
 
     @PostConstruct
     private void initUsersCache() {
-        log.info("[users] initUsersCache");
-        if ( usersConfig.getUsersCacheMaxSize() > 0 ) {
-            this.userCache = new ObjectCache<String, User>(
-                    "UserROCache",
-                    usersConfig.getUsersCacheMaxSize(),
-                    usersConfig.getUsersCacheExpiration()*1000L
+        log.info("[users] initUsersApiTokenROCache");
+        if ( usersConfig.getUsersCacheApiKeyMaxSize() > 0 ) {
+            this.userCache = new ObjectCache<String, ClonableString>(
+                    "UserApiTokenROCache",
+                    usersConfig.getUsersCacheApiKeyMaxSize(),
+                    usersConfig.getUsersCacheApiKeyExpiration()*1000L
             ) {
                 @Override
-                synchronized public void onCacheRemoval(String key, User obj, boolean batch, boolean last) {
+                synchronized public void onCacheRemoval(String key, ClonableString obj, boolean batch, boolean last) {
                     // read only cache, do nothing
                 }
                 @Override
-                public void bulkCacheUpdate(List<User> objects) {
+                public void bulkCacheUpdate(List<ClonableString> objects) {
                     // read only cache, do nothing
                 }
             };
@@ -88,34 +91,34 @@ public class UserCache {
 
         this.serviceEnable = true;
 
-        Gauge.builder("users_service_cache_sum_time", this.userCache.getTotalCacheTime())
+        Gauge.builder("users_service_cache_apikey_sum_time", this.userCache.getTotalCacheTime())
                 .description("[Users] total time cache execution")
                 .register(meterRegistry);
-        Gauge.builder("users_service_cache_sum", this.userCache.getTotalCacheTry())
+        Gauge.builder("users_service_cache_apikey_sum", this.userCache.getTotalCacheTry())
                 .description("[Users] total cache try")
                 .register(meterRegistry);
-        Gauge.builder("users_service_cache_miss", this.userCache.getCacheMissStat())
+        Gauge.builder("users_service_cache_apikey_miss", this.userCache.getCacheMissStat())
                 .description("[Users] total cache miss")
                 .register(meterRegistry);
     }
 
     @PreDestroy
     public void destroy() {
-        log.info("[users] UserCache stopping");
+        log.info("[users] UserCache ApiKey stopping");
         this.serviceEnable = false;
-        if ( usersConfig.getUsersCacheMaxSize() > 0 ) {
+        if ( usersConfig.getUsersCacheApiKeyMaxSize() > 0 ) {
             userCache.deleteCache();
         }
-        log.info("[users] UserCache stopped");
+        log.info("[users] UserCache ApiKey stopped");
     }
 
     @Scheduled(fixedRateString = "${users.cache.log.period:PT24H}", initialDelay = 3600_000)
     protected void userCacheStatus() {
         try {
-            Duration duration = Duration.parse(usersConfig.getUsersCacheLogPeriod());
+            Duration duration = Duration.parse(usersConfig.getUsersCacheApiKeyLogPeriod());
             if (duration.toMillis() >= Now.ONE_FULL_DAY ) return;
         } catch (Exception ignored) {}
-        if ( ! this.serviceEnable || usersConfig.getUsersCacheMaxSize() == 0 ) return;
+        if ( ! this.serviceEnable || usersConfig.getUsersCacheApiKeyMaxSize() == 0 ) return;
         this.userCache.log();
     }
 
@@ -123,8 +126,10 @@ public class UserCache {
     // Cache access
     // ================================================================================================================
 
+    // @TODO - ici !
+/*
     public User getUser(String userLogin) throws ITNotFoundException {
-        if ( ! this.serviceEnable || usersConfig.getUsersCacheMaxSize() == 0 ) {
+        if ( ! this.serviceEnable || usersConfig.getUsersCacheApiKeyMaxSize() == 0 ) {
             // direct acces from database
             User u = userRepository.findOneUserByLogin(userLogin);
             if ( u == null ) throw new ITNotFoundException("User not found");
@@ -140,27 +145,18 @@ public class UserCache {
             return u.clone();
         }
     }
-
+*/
     /**
      * Remove a user from the local cache if exists (this is when the user has been updated somewhere else
      * @param userLogin - user login to be removed
      * @return
      */
     public void flushUser(String userLogin) {
-        if ( this.serviceEnable && usersConfig.getUsersCacheMaxSize() > 0 ) {
+        if ( this.serviceEnable && usersConfig.getUsersCacheApiKeyMaxSize() > 0 ) {
             this.userCache.remove(userLogin,false);
         }
     }
 
-    /**
-     * Save the User structure after an update. The cache is flushed for this user
-     * This is not protected against concurrent access on multiple cache service instance
-     * @param u
-     */
-    public void saveUser(User u) {
-         userRepository.save(u);
-         this.flushUser(u.getLogin());
-    }
 
     // @TODO - manage the broadcast request for user flush and scan for flush trigger on each of the instances
 

@@ -108,8 +108,15 @@ public class JWTAuthorizationFilter extends GenericFilterBean {
                             }
                             if (user == null) return null;
                             try {
-                                User u = userCache.getUser(user);
-                                return userService.generateKeyForUser(u);
+                                if ( user.startsWith("apikey_") ) {
+                                    // this is an API key, we need to find the associated user
+                                    // @TODO - We need a cache ?
+
+                                } else {
+                                    // this is a regular user token
+                                    User u = userCache.getUser(user);
+                                    return userService.generateKeyForUser(u);
+                                }
                             } catch (ITNotFoundException x) {
                                 return null;
                             }
@@ -130,7 +137,16 @@ public class JWTAuthorizationFilter extends GenericFilterBean {
             }
             String user = claims.getSubject();
             try {
-                User u = userCache.getUser(user);
+                User u = null;
+                if ( user.startsWith("apikey_") ) {
+                    // this is an API key, we need to find the associated user
+                    // @TODO - We need a cache ?
+
+                } else {
+                    // standard user
+                    u = userCache.getUser(user);
+                }
+                assert u != null;
                 if ( u.isActive() && !u.isLocked() && u.getDeletionDate() == 0 ) {
                     // @TODO - Lets see if we have some other verification ?
                     // accept the authentication

@@ -527,10 +527,13 @@ public class UserService {
      * @return
      */
     protected String generateApiKeyJWTForUser(User u, UserApiKeys k) {
+        ArrayList<String> roles = new ArrayList<>(k.getRoles());
+        roles.add(UsersRolesCache.StandardRoles.ROLE_LOGIN_COMPLETE.getRoleName());
+        roles.add(UsersRolesCache.StandardRoles.ROLE_LOGIN_API.getRoleName());
         Claims claims = Jwts.claims()
                 .subject(k.getId())
                 .expiration(new Date(k.getExpiration()))
-                .add("roles", k.getRoles())
+                .add("roles", roles)
                 .build();
         return Jwts.builder()
                 .header().add("typ", "JWT")

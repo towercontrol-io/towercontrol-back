@@ -233,6 +233,24 @@ public class UsersConfig {
         return usersCacheLogPeriod;
     }
 
+    @Value("${users.cache.apikey.max.size:1000}")
+    protected int usersCacheApiKeyMaxSize;
+    public int getUsersCacheApiKeyMaxSize() {
+        return usersCacheApiKeyMaxSize;
+    }
+
+    @Value("${users.cache.apikey.expiration_s:0}")
+    protected int usersCacheApiKeyExpiration;
+    public int getUsersCacheApiKeyExpiration() {
+        return usersCacheApiKeyExpiration;
+    }
+
+    @Value("{users.cache.apikey.log.period:PT24H}")
+    protected String usersCacheApiKeyLogPeriod;
+    public String getUsersCacheApiKeyLogPeriod() {
+        return usersCacheApiKeyLogPeriod;
+    }
+
     // --------------------------------------------
     // User Sessions
     // --------------------------------------------

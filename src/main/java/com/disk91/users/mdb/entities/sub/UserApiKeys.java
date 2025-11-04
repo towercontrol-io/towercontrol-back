@@ -3,6 +3,7 @@ package com.disk91.users.mdb.entities.sub;
 import com.disk91.common.tools.CloneableObject;
 import com.disk91.common.tools.HexCodingTools;
 import com.disk91.common.tools.Now;
+import com.disk91.users.services.UsersRolesCache;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,6 +48,23 @@ public class UserApiKeys implements CloneableObject<UserApiKeys> {
         this.expiration = 0; // Set expiration at 0 means the key has been expired
         this.secret = HexCodingTools.getRandomHexString(64); // new random secret
     }
+
+    /**
+     * Check if a given role has been attributed to the user
+     * @param role
+     */
+    public boolean isInRole(String role) {
+        if ( this.roles == null ) return false;
+        for ( String r : this.roles ) {
+            if ( r.compareTo(role) == 0 ) return true;
+        }
+        return false;
+    }
+
+    public boolean isInRole(UsersRolesCache.StandardRoles role) {
+        return isInRole(role.getRoleName());
+    }
+
 
     // === GETTER / SETTER ===
 

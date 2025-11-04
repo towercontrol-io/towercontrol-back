@@ -120,7 +120,7 @@ public class ApiUsersSession {
             produces = "application/json",
             method = RequestMethod.GET
     )
-    @PreAuthorize("hasAnyRole('ROLE_REGISTERED_USER')")
+    @PreAuthorize("hasAnyRole('ROLE_REGISTERED_USER') and !hasRole('ROLE_LOGIN_API')")
     // ----------------------------------------------------------------------
     public ResponseEntity<?> getSelfSignOut(
             HttpServletRequest request
@@ -200,7 +200,7 @@ public class ApiUsersSession {
             produces = "application/json",
             method = RequestMethod.GET
     )
-    @PreAuthorize("hasAnyRole('ROLE_LOGIN_COMPLETE')")
+    @PreAuthorize("hasAnyRole('ROLE_LOGIN_COMPLETE') and !hasRole('ROLE_LOGIN_API')")
     // ----------------------------------------------------------------------
     public ResponseEntity<?> verifyUser2Fa(
             HttpServletRequest request,

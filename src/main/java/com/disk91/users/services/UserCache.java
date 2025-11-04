@@ -19,6 +19,7 @@
  */
 package com.disk91.users.services;
 
+import com.disk91.common.tools.ClonableString;
 import com.disk91.common.tools.Now;
 import com.disk91.common.tools.ObjectCache;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
@@ -59,7 +60,7 @@ public class UserCache {
 
 
     // ================================================================================================================
-    // CACHE SERVICE
+    // USER CACHE SERVICE
     // ================================================================================================================
 
     private ObjectCache<String, User> userCache;
@@ -124,17 +125,19 @@ public class UserCache {
     // ================================================================================================================
 
     public User getUser(String userLogin) throws ITNotFoundException {
+        if ( User.isApiKey(userLogin)) return this.getUserByApiKey(userLogin);
+
         if ( ! this.serviceEnable || usersConfig.getUsersCacheMaxSize() == 0 ) {
-            // direct acces from database
+            // direct access from database
             User u = userRepository.findOneUserByLogin(userLogin);
-            if ( u == null ) throw new ITNotFoundException("User not found");
+            if ( u == null ) throw new ITNotFoundException("user-user-not-found");
             return u.clone();
         } else {
             User u = this.userCache.get(userLogin);
             if ( u == null ) {
                 // not in cache, get it from the database
                 u = userRepository.findOneUserByLogin(userLogin);
-                if ( u == null ) throw new ITNotFoundException("User not found");
+                if ( u == null ) throw new ITNotFoundException("user-user-not-found");
                 this.userCache.put(u, u.getLogin());
             }
             return u.clone();
@@ -163,5 +166,106 @@ public class UserCache {
     }
 
     // @TODO - manage the broadcast request for user flush and scan for flush trigger on each of the instances
+
+
+    // ================================================================================================================
+    // APIKEY CACHE SERVICE
+    // ================================================================================================================
+
+    private ObjectCache<String, ClonableString> userApiCache;
+    protected boolean serviceApiEnable = false;
+
+    @PostConstruct
+    private void initUsersApiCache() {
+        log.info("[users] initUsersApiTokenROCache");
+        if ( usersConfig.getUsersCacheApiKeyMaxSize() > 0 ) {
+            this.userApiCache = new ObjectCache<String, ClonableString>(
+                    "UserApiTokenROCache",
+                    usersConfig.getUsersCacheApiKeyMaxSize(),
+                    usersConfig.getUsersCacheApiKeyExpiration()*1000L
+            ) {
+                @Override
+                synchronized public void onCacheRemoval(String key, ClonableString obj, boolean batch, boolean last) {
+                    // read only cache, do nothing
+                }
+                @Override
+                public void bulkCacheUpdate(List<ClonableString> objects) {
+                    // read only cache, do nothing
+                }
+            };
+        }
+
+        this.serviceApiEnable = true;
+
+        Gauge.builder("users_service_cache_apikey_sum_time", this.userApiCache.getTotalCacheTime())
+                .description("[Users] total time cache execution")
+                .register(meterRegistry);
+        Gauge.builder("users_service_cache_apikey_sum", this.userApiCache.getTotalCacheTry())
+                .description("[Users] total cache try")
+                .register(meterRegistry);
+        Gauge.builder("users_service_cache_apikey_miss", this.userApiCache.getCacheMissStat())
+                .description("[Users] total cache miss")
+                .register(meterRegistry);
+    }
+
+    @PreDestroy
+    public void destroyApi() {
+        log.info("[users] UserCache ApiKey stopping");
+        this.serviceApiEnable = false;
+        if ( usersConfig.getUsersCacheApiKeyMaxSize() > 0 ) {
+            userApiCache.deleteCache();
+        }
+        log.info("[users] UserCache ApiKey stopped");
+    }
+
+    @Scheduled(fixedRateString = "${users.cache.log.period:PT24H}", initialDelay = 3600_000)
+    protected void userApiCacheStatus() {
+        try {
+            Duration duration = Duration.parse(usersConfig.getUsersCacheApiKeyLogPeriod());
+            if (duration.toMillis() >= Now.ONE_FULL_DAY ) return;
+        } catch (Exception ignored) {}
+        if ( ! this.serviceApiEnable || usersConfig.getUsersCacheApiKeyMaxSize() == 0 ) return;
+        this.userApiCache.log();
+    }
+
+    // ================================================================================================================
+    // Cache access
+    // ================================================================================================================
+
+    /**
+     * Get a User structure from a given API KEY
+     * @param apiKey
+     * @return
+     * @throws ITNotFoundException
+     */
+    public User getUserByApiKey(String apiKey) throws ITNotFoundException {
+        if ( ! this.serviceApiEnable || usersConfig.getUsersCacheApiKeyMaxSize() == 0 ) {
+            // direct access from database
+            User u = userRepository.findByApiKeyId(apiKey);
+            if ( u == null ) throw new ITNotFoundException("user-user-not-found");
+            return u.clone();
+        } else {
+            ClonableString _u = this.userApiCache.get(apiKey);
+            if ( _u == null ) {
+                // not in cache, get it from the database
+                User u = userRepository.findByApiKeyId(apiKey);
+                if ( u == null ) throw new ITNotFoundException("user-user-not-found");
+                this.userApiCache.put(new ClonableString(u.getLogin()), apiKey);
+                return u.clone();
+            }
+            return this.getUser(_u.getValue());
+        }
+    }
+
+    /**
+     * Remove a user from the local cache if exists (this is when the user has been updated somewhere else
+     * @param apiKey - user apiKey to remove
+     */
+    public void flushApiKey(String apiKey) {
+        if ( this.serviceApiEnable && usersConfig.getUsersCacheApiKeyMaxSize() > 0 ) {
+            this.userApiCache.remove(apiKey,false);
+        }
+    }
+
 
 }

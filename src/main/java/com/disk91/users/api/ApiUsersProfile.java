@@ -76,7 +76,7 @@ public class ApiUsersProfile {
             produces = "application/json",
             method = RequestMethod.GET
     )
-    @PreAuthorize("hasAnyRole('ROLE_LOGIN_COMPLETE')")
+    @PreAuthorize("hasAnyRole('ROLE_LOGIN_COMPLETE') and !hasRole('ROLE_LOGIN_API')")
     // ----------------------------------------------------------------------
     public ResponseEntity<?> getSlefBasicProfile(
             HttpServletRequest request
@@ -265,7 +265,7 @@ public class ApiUsersProfile {
             consumes = "application/json",
             method = RequestMethod.DELETE
     )
-    @PreAuthorize("hasAnyRole('ROLE_LOGIN_COMPLETE')")
+    @PreAuthorize("hasAnyRole('ROLE_LOGIN_COMPLETE') and !hasRole('ROLE_LOGIN_API')")
     // ----------------------------------------------------------------------
     public ResponseEntity<?> deleteUserSelf(
             HttpServletRequest request
@@ -312,7 +312,7 @@ public class ApiUsersProfile {
             consumes = "application/json",
             method = RequestMethod.PUT
     )
-    @PreAuthorize("hasAnyRole('ROLE_LOGIN_COMPLETE')")
+    @PreAuthorize("hasAnyRole('ROLE_LOGIN_COMPLETE') and !hasRole('ROLE_LOGIN_API')")
     // ----------------------------------------------------------------------
     public ResponseEntity<?> setupUser2Fa(
             HttpServletRequest request,
@@ -398,7 +398,7 @@ public class ApiUsersProfile {
             consumes = "application/json",
             method = RequestMethod.PUT
     )
-    @PreAuthorize("hasAnyRole('ROLE_LOGIN_COMPLETE')")
+    @PreAuthorize("hasAnyRole('ROLE_LOGIN_COMPLETE') and !hasRole('ROLE_LOGIN_API')")
     // ----------------------------------------------------------------------
     public ResponseEntity<?> userBasicProfileUpdate(
             HttpServletRequest request,
@@ -514,9 +514,5 @@ public class ApiUsersProfile {
             return new ResponseEntity<>(ActionResult.BADREQUEST(e.getMessage()), HttpStatus.BAD_REQUEST);
         }
     }
-
-
-
-
 
 }

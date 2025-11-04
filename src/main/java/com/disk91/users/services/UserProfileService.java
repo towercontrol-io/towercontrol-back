@@ -103,7 +103,7 @@ public class UserProfileService {
         try {
             User _requestor = userCache.getUser(requestor);
 
-            if ( !userCommon.isLegitAccess(_requestor,user,false) ) {
+            if ( !userCommon.isLegitAccess(requestor,user,false) ) {
                 log.warn("[users] Requestor {} does not have access right to user {} profile", requestor, user);
                 throw new ITRightException("user-profile-no-access");
             }
@@ -150,7 +150,7 @@ public class UserProfileService {
 
             User _requestor = userCache.getUser(requestor);
 
-            if ( !userCommon.isLegitAccess(_requestor,user,false) ) {
+            if ( !userCommon.isLegitAccess(requestor,user,false) ) {
                 log.warn("[users] Requestor {} does not have access right to user {} profile", requestor, user);
                 throw new ITRightException("user-profile-no-access");
             }
@@ -216,7 +216,7 @@ public class UserProfileService {
             User _requestor = userCache.getUser(requestor);
             String user = body.getLogin();
 
-            if ( !userCommon.isLegitAccess(_requestor,user,true) ) {
+            if ( !userCommon.isLegitAccess(requestor,user,true) ) {
                 log.warn("[users] Requestor {} does not have access right to user {} profile", requestor, user);
                 throw new ITRightException("user-profile-no-access");
             }
@@ -310,7 +310,7 @@ public class UserProfileService {
         try {
             User _requestor = userCache.getUser(requestor);
 
-            if ( !userCommon.isLegitAccess(_requestor,user,true) ) {
+            if ( !userCommon.isLegitAccess(requestor,user,true) ) {
                 log.warn("[users] Requestor {} does not have write access right to user {} profile", requestor, user);
                 throw new ITRightException("user-profile-no-access");
             }
@@ -370,7 +370,7 @@ public class UserProfileService {
         try {
             User _requestor = userCache.getUser(requestor);
 
-            if ( !userCommon.isLegitAccess(_requestor,user,true) ) {
+            if ( !userCommon.isLegitAccess(requestor,user,true) ) {
                 log.warn("[users] Requestor {} does not have write access right to user {} profile", requestor, user);
                 throw new ITRightException("user-profile-no-access");
             }
@@ -554,7 +554,7 @@ public class UserProfileService {
 
         try {
             User _requestor = userCache.getUser(requestor);
-            if ( !userCommon.isLegitAccess(_requestor,user,true) ) {
+            if ( !userCommon.isLegitAccess(requestor,user,true) ) {
                 log.warn("[users] Requestor {} does not have access right to user {} profile", requestor, user);
                 throw new ITRightException("user-profile-no-access");
             }
@@ -619,7 +619,7 @@ public class UserProfileService {
         try {
             User _requestor = userCache.getUser(requestor);
 
-            if ( !userCommon.isLegitAccess(_requestor,user,true) ) {
+            if ( !userCommon.isLegitAccess(requestor,user,true) ) {
                 log.warn("[users] Requestor {} does not have write access right to user {} profile", requestor, user);
                 throw new ITRightException("user-profile-no-access");
             }
@@ -701,7 +701,7 @@ public class UserProfileService {
             throw new ITRightException("user-profile-user-not-found");
         }
 
-        if ( !userCommon.isLegitAccess(_requestor,user,true) ) {
+        if ( !userCommon.isLegitAccess(requestor,user,true) ) {
             log.warn("[users] Requestor {} does not have write access right to user {} profile", requestor, user);
             throw new ITRightException("user-profile-no-access");
         }
@@ -755,7 +755,7 @@ public class UserProfileService {
         try {
             User _requestor = userCache.getUser(requestor);
 
-            if ( !userCommon.isLegitAccess(_requestor,user,true) ) {
+            if ( !userCommon.isLegitAccess(requestor,user,true) ) {
                 log.warn("[users] Requestor {} does not have write access right to user {} profile", requestor, user);
                 throw new ITRightException("user-profile-no-access");
             }
@@ -868,7 +868,7 @@ public class UserProfileService {
         try {
             User _requestor = userCache.getUser(requestor);
 
-            if ( !userCommon.isLegitAccess(_requestor,body.getLogin(),true) ) {
+            if ( !userCommon.isLegitAccess(requestor,body.getLogin(),true) ) {
                 log.warn("[users] Requestor {} does not have write access right to user {} profile", requestor, body.getLogin());
                 throw new ITRightException("user-profile-no-access");
             }
@@ -918,7 +918,7 @@ public class UserProfileService {
         try {
             User _requestor = userCache.getUser(requestor);
 
-            if ( !userCommon.isLegitAccess(_requestor,body.getLogin(),true) ) {
+            if ( !userCommon.isLegitAccess(requestor,body.getLogin(),true) ) {
                 log.warn("[users] Requestor {} does not have write access right to user {} profile", requestor, body.getLogin());
                 throw new ITRightException("user-profile-no-access");
             }
@@ -971,7 +971,7 @@ public class UserProfileService {
         try {
             User _requestor = userCache.getUser(requestor);
 
-            if ( !userCommon.isLegitAccess(_requestor,body.getLogin(),true) ) {
+            if ( !userCommon.isLegitAccess(requestor,body.getLogin(),true) ) {
                 log.warn("[users] Requestor {} does not have write access right to user {} profile", requestor, body.getLogin());
                 throw new ITRightException("user-profile-no-access");
             }
@@ -1528,7 +1528,7 @@ public class UserProfileService {
             _requestor = userCache.getUser(requestor);
             String user = body.getLogin();
 
-            if (!userCommon.isLegitAccess(_requestor, user, true)) {
+            if (!userCommon.isLegitAccess(requestor, user, true)) {
                 log.warn("[users] Requestor {} does not have access right to user {} profile", requestor, user);
                 throw new ITRightException("user-profile-no-access");
             }
@@ -1594,7 +1594,7 @@ public class UserProfileService {
             _requestor = userCache.getUser(requestor);
             String user = body.getLogin();
 
-            if (!userCommon.isLegitAccess(_requestor, user, true)) {
+            if (!userCommon.isLegitAccess(requestor, user, true)) {
                 log.warn("[users] Requestor {} does not have access right to user {} profile", requestor, user);
                 throw new ITRightException("user-profile-no-access");
             }

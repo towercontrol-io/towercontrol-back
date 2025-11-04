@@ -81,7 +81,7 @@ public class ApiUsersAdmin {
             produces = "application/json",
             method = RequestMethod.GET
     )
-    @PreAuthorize("hasRole('ROLE_LOGIN_COMPLETE') and hasAnyRole('ROLE_GOD_ADMIN','ROLE_USER_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_LOGIN_COMPLETE') and hasAnyRole('ROLE_GOD_ADMIN','ROLE_USER_ADMIN')  and !hasRole('ROLE_LOGIN_API')")
     // ----------------------------------------------------------------------
     public ResponseEntity<?> getUserInPurgatory(
             HttpServletRequest request
@@ -124,7 +124,7 @@ public class ApiUsersAdmin {
             produces = "application/json",
             method = RequestMethod.POST
     )
-    @PreAuthorize("hasRole('ROLE_LOGIN_COMPLETE') and hasAnyRole('ROLE_GOD_ADMIN','ROLE_USER_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_LOGIN_COMPLETE') and hasAnyRole('ROLE_GOD_ADMIN','ROLE_USER_ADMIN') and !hasRole('ROLE_LOGIN_API')")
     // ----------------------------------------------------------------------
     public ResponseEntity<?> postUserSearch(
             HttpServletRequest request,
@@ -166,7 +166,7 @@ public class ApiUsersAdmin {
             produces = "application/json",
             method = RequestMethod.GET
     )
-    @PreAuthorize("hasRole('ROLE_LOGIN_COMPLETE') and hasAnyRole('ROLE_GOD_ADMIN','ROLE_USER_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_LOGIN_COMPLETE') and hasAnyRole('ROLE_GOD_ADMIN','ROLE_USER_ADMIN') and !hasRole('ROLE_LOGIN_API')")
     // ----------------------------------------------------------------------
     public ResponseEntity<?> getUserSearch(
             HttpServletRequest request
@@ -201,7 +201,7 @@ public class ApiUsersAdmin {
             produces = "application/json",
             method = RequestMethod.GET
     )
-    @PreAuthorize("hasRole('ROLE_LOGIN_COMPLETE') and hasAnyRole('ROLE_GOD_ADMIN','ROLE_USER_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_LOGIN_COMPLETE') and hasAnyRole('ROLE_GOD_ADMIN','ROLE_USER_ADMIN') and !hasRole('ROLE_LOGIN_API')")
     // ----------------------------------------------------------------------
     public ResponseEntity<?> getUserLastRegistered(
             HttpServletRequest request
@@ -246,7 +246,7 @@ public class ApiUsersAdmin {
             consumes = "application/json",
             method = RequestMethod.PUT
     )
-    @PreAuthorize("hasRole('ROLE_LOGIN_COMPLETE') and hasAnyRole('ROLE_GOD_ADMIN','ROLE_USER_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_LOGIN_COMPLETE') and hasAnyRole('ROLE_GOD_ADMIN','ROLE_USER_ADMIN') and !hasRole('ROLE_LOGIN_API')")
     // ----------------------------------------------------------------------
     public ResponseEntity<?> deleteUserByAdmin(
             HttpServletRequest request,
@@ -292,7 +292,7 @@ public class ApiUsersAdmin {
             consumes = "application/json",
             method = RequestMethod.DELETE
     )
-    @PreAuthorize("hasRole('ROLE_LOGIN_COMPLETE') and hasAnyRole('ROLE_GOD_ADMIN','ROLE_USER_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_LOGIN_COMPLETE') and hasAnyRole('ROLE_GOD_ADMIN','ROLE_USER_ADMIN') and !hasRole('ROLE_LOGIN_API')")
     // ----------------------------------------------------------------------
     public ResponseEntity<?> purgeUserByAdmin(
             HttpServletRequest request,
@@ -338,7 +338,7 @@ public class ApiUsersAdmin {
             consumes = "application/json",
             method = RequestMethod.DELETE
     )
-    @PreAuthorize("hasRole('ROLE_LOGIN_COMPLETE') and hasAnyRole('ROLE_GOD_ADMIN','ROLE_USER_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_LOGIN_COMPLETE') and hasAnyRole('ROLE_GOD_ADMIN','ROLE_USER_ADMIN') and !hasRole('ROLE_LOGIN_API')")
     // ----------------------------------------------------------------------
     public ResponseEntity<?> deleteUserSelf(
             HttpServletRequest request,
@@ -388,7 +388,7 @@ public class ApiUsersAdmin {
             consumes = "application/json",
             method = RequestMethod.PUT
     )
-    @PreAuthorize("hasRole('ROLE_LOGIN_COMPLETE') and hasAnyRole('ROLE_GOD_ADMIN','ROLE_USER_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_LOGIN_COMPLETE') and hasAnyRole('ROLE_GOD_ADMIN','ROLE_USER_ADMIN') and !hasRole('ROLE_LOGIN_API')")
     // ----------------------------------------------------------------------
     public ResponseEntity<?> activeUserByAdmin(
             HttpServletRequest request,
@@ -433,7 +433,7 @@ public class ApiUsersAdmin {
             consumes = "application/json",
             method = RequestMethod.PUT
     )
-    @PreAuthorize("hasRole('ROLE_LOGIN_COMPLETE') and hasAnyRole('ROLE_GOD_ADMIN','ROLE_USER_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_LOGIN_COMPLETE') and hasAnyRole('ROLE_GOD_ADMIN','ROLE_USER_ADMIN') and !hasRole('ROLE_LOGIN_API')")
     // ----------------------------------------------------------------------
     public ResponseEntity<?> lockUserByAdmin(
             HttpServletRequest request,
@@ -478,7 +478,7 @@ public class ApiUsersAdmin {
             consumes = "application/json",
             method = RequestMethod.PUT
     )
-    @PreAuthorize("hasRole('ROLE_LOGIN_COMPLETE') and hasAnyRole('ROLE_GOD_ADMIN','ROLE_USER_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_LOGIN_COMPLETE') and hasAnyRole('ROLE_GOD_ADMIN','ROLE_USER_ADMIN') and !hasRole('ROLE_LOGIN_API')")
     // ----------------------------------------------------------------------
     public ResponseEntity<?> diable2faUserByAdmin(
             HttpServletRequest request,

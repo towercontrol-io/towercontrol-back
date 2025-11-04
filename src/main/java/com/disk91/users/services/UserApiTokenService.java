@@ -115,7 +115,7 @@ public class UserApiTokenService {
         try {
             User _requestor = userCache.getUser(requestorId);
 
-            if (!userCommon.isLegitAccess(_requestor, userId, true)) {
+            if (!userCommon.isLegitAccess(requestorId, userId, true)) {
                 log.warn("[users] Requestor {} does not have write access right to user {} profile", requestorId, userId);
                 throw new ITRightException("user-profile-no-access");
             }
@@ -271,7 +271,7 @@ public class UserApiTokenService {
         try {
             User _requestor = userCache.getUser(requestorId);
 
-            if (!userCommon.isLegitAccess(_requestor, userId, false)) {
+            if (!userCommon.isLegitAccess(requestorId, userId, false)) {
                 log.warn("[users] Requestor {} does not have read access right to user {} profile", requestorId, userId);
                 throw new ITRightException("user-profile-no-access");
             }
@@ -324,7 +324,7 @@ public class UserApiTokenService {
         try {
             User _requestor = userCache.getUser(requestorId);
 
-            if (!userCommon.isLegitAccess(_requestor, userId, true)) {
+            if (!userCommon.isLegitAccess(requestorId, userId, true)) {
                 log.warn("[users] Requestor {} does not have read access right to user {} profile", requestorId, userId);
                 throw new ITRightException("user-profile-no-access");
             }
@@ -359,6 +359,9 @@ public class UserApiTokenService {
                         "Apikey deletion from {0} requested by {1} for user {2} with name {3}",
                         new String[]{(request.getHeader("x-real-ip") != null) ? request.getHeader("x-real-ip") : "Unknown",_requestor.getLogin(), _user.getLogin(),toRemove.getName()}
                 );
+
+                // clear cache
+                userCache.flushApiKey(tokenId);
             } else {
                 throw new ITParseException("user-apikey-not-found");
             }
@@ -396,7 +399,7 @@ public class UserApiTokenService {
         try {
             User _requestor = userCache.getUser(requestorId);
 
-            if (!userCommon.isLegitAccess(_requestor, userId, false)) {
+            if (!userCommon.isLegitAccess(requestorId, userId, false)) {
                 log.warn("[users] Requestor {} does not have read access right to user {} profile", requestorId, userId);
                 throw new ITRightException("user-profile-no-access");
             }

@@ -22,6 +22,7 @@ package com.disk91.common.api.security;
 
 import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.users.mdb.entities.User;
+import com.disk91.users.mdb.entities.sub.UserApiKeys;
 import com.disk91.users.services.UserCache;
 import com.disk91.users.services.UserService;
 import io.jsonwebtoken.*;
@@ -108,10 +109,15 @@ public class JWTAuthorizationFilter extends GenericFilterBean {
                             }
                             if (user == null) return null;
                             try {
-                                if ( user.startsWith("apikey_") ) {
+                                if ( User.isApiKey(user) ) {
                                     // this is an API key, we need to find the associated user
-                                    // @TODO - We need a cache ?
-
+                                    User u = userCache.getUserByApiKey(user);
+                                    try {
+                                        UserApiKeys k = u.getApiKey(user);
+                                        return userService.generateKeyForAPIKey(u, k);
+                                    } catch (ITNotFoundException e) {
+                                        return null;
+                                    }
                                 } else {
                                     // this is a regular user token
                                     User u = userCache.getUser(user);
@@ -138,10 +144,9 @@ public class JWTAuthorizationFilter extends GenericFilterBean {
             String user = claims.getSubject();
             try {
                 User u = null;
-                if ( user.startsWith("apikey_") ) {
+                if ( User.isApiKey(user) ) {
                     // this is an API key, we need to find the associated user
-                    // @TODO - We need a cache ?
-
+                    u = userCache.getUserByApiKey(user);
                 } else {
                     // standard user
                     u = userCache.getUser(user);

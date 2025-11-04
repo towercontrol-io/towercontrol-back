@@ -406,15 +406,6 @@ public class User implements CloneableObject<User> {
         this.sessionSecret = HexCodingTools.getRandomHexString(64);
     }
 
-    /**
-     * Clear the API Session Secret, so the API can't be used anymore
-     */
-    public void clearApiSessionSecret() {
-        if ( this.apiKeys != null ) {
-            this.apiKeys.forEach(UserApiKeys::disable);
-        }
-    }
-
 
     /**
      * When the password is changed, it is necessary to rekey all information, as the password is used as a key
@@ -594,6 +585,38 @@ public class User implements CloneableObject<User> {
             throw new ITParseException("user-login-hashing-issue");
         }
     }
+
+    // ==============================================
+    // ApiKey special
+    // ==============================================
+
+
+    /**
+     * Verify if the given id is a regular user or an API Key
+     * requiring an indirection
+     * @param _login
+     * @return
+     */
+    public static boolean isApiKey(String _login) {
+        return _login.startsWith("apikey_");
+    }
+
+    public UserApiKeys getApiKey(String _login) throws ITNotFoundException {
+        for ( UserApiKeys k : this.apiKeys ) {
+            if ( k.getId().compareTo(_login) == 0) return k;
+        }
+        throw new ITNotFoundException("user-apikey-not-found");
+    }
+
+    /**
+     * Clear the API Session Secret, so the API can't be used anymore
+     */
+    public void clearApiSessionSecret() {
+        if ( this.apiKeys != null ) {
+            this.apiKeys.forEach(UserApiKeys::disable);
+        }
+    }
+
 
     // --- Email
 

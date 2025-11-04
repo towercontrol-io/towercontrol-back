@@ -161,6 +161,20 @@ public class Group implements CloneableObject<Group> {
         this.referringGroups.add(under.getShortId());
     }
 
+    /**
+     * Search if the related group is the given group or one of the referring groups (parents)
+     * @param groupId
+     * @return
+     */
+    public boolean isAChildOf(String groupId) {
+        if ( this.shortId.compareTo(groupId) == 0 ) return true;
+        if ( this.referringGroups != null ) {
+            for ( String g : this.referringGroups ) {
+                if ( g.compareTo(groupId) == 0 ) return true;
+            }
+        }
+        return false;
+    }
 
     // ========================================
 

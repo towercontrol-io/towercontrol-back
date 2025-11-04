@@ -162,7 +162,6 @@ public class UserApiTokenService {
             }
             // add the roles related to the user creation process
             allowedRoles.add(UsersRolesCache.StandardRoles.ROLE_REGISTERED_USER.getRoleName());
-            allowedRoles.add(UsersRolesCache.StandardRoles.ROLE_LOGIN_API.getRoleName());
             apiKey.setRoles(allowedRoles);
 
             // We have the right user with the authorization to create the token

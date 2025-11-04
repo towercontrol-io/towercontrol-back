@@ -1040,10 +1040,9 @@ public class User implements CloneableObject<User> {
      * @param group - shortID of the group to search
      */
     public boolean isInGroup(String group, boolean scanAcl, boolean addVirtual) {
-        if ( this.getAllGroups(true,scanAcl,addVirtual) != null ) {
-            for ( String g : this.getGroups() ) {
-                if ( g.compareTo(group) == 0 ) return true;
-            }
+        ArrayList<String> groups = this.getAllGroups(true,scanAcl,addVirtual);
+        for ( String g : groups ) {
+            if ( g.compareTo(group) == 0 ) return true;
         }
         return false;
     }

@@ -17,7 +17,8 @@ The project is organized in a modular way. Each module is a package and has its 
     - interfaces (api definition)
     - security (public vs protected endpoints)
   - config (configuration)
-  - interfaces (data model out of datbase and APIs)
+  - interfaces (data model out of database and APIs)
+  - tests (functional tests)
 
 ## Customization
 The custom directory contains specific customization project, it will have a sub package corresponding to the related custom 
@@ -25,7 +26,6 @@ project. The directory structure under this package corresponds to the standard 
 
 ## Rules
 - A service can only refer a Repository belonging to the same module
-- 
 
 ## Project naming conventions
 The collection and databases are prefixed by the module name. As an example, the table containing the list of 
@@ -42,3 +42,13 @@ The logging level respects the following rules:
 - `warn`: report a situation that is not normal, but the software can handle it.
 - `error`: report a situation that is not normal, the software can't handle it, as a consequence 
 it impacts the execution.
+
+## Functional tests
+
+Functional tests are executed by the application directly within the target standard run context, so they are  
+included as code that runs automatically when the test flag is enabled. The `common.test.enabled` variable must 
+be set to true via the `COMMON_TEST_ENABLED` environment variable. This must not be enabled in production.
+
+Tests are chained from the `ItcApplication` class, which will execute them in sequence. Service tests are written 
+inside each service and will terminate by throwing an `ITParseException` in case of an error. The first error stops 
+the tests and the error message is shown in the exception's message. Whenever possible, tests are kept minimally verbose...

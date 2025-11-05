@@ -166,4 +166,13 @@ public class CommonConfig {
         return wifiMacCacheLogPeriod;
     }
 
+    // ----------------------------------------------
+    // Test activation
+    // ----------------------------------------------
+    @Value("${common.test.enabled:false}")
+    protected boolean commonTestEnabled;
+    public boolean isCommonTestEnabled() {
+        return commonTestEnabled;
+    }
+
 }

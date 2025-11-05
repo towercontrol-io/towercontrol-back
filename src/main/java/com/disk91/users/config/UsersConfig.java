@@ -309,4 +309,14 @@ public class UsersConfig {
         return usersSessionSecurityBlockPeriod;
     }
 
+    // --------------------------------------------
+    // Non Community Edition
+    // --------------------------------------------
+
+    @Value("${users.nce.enable.captcha:true}")
+    protected boolean usersNceEnableCaptcha;
+    public boolean isUsersNceEnableCaptcha() {
+        return usersNceEnableCaptcha;
+    }
+
 }

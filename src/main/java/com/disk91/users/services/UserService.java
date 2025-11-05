@@ -929,6 +929,7 @@ public class UserService {
             userConfigResponse.setPasswordMinDigits(usersConfig.getUsersPasswordMinNumbers());
             userConfigResponse.setDeletionPurgatoryDelayHours(usersConfig.getUsersDeletionPurgatoryDuration());
             userConfigResponse.setSubGroupUnderVirtualAllowed(groupsConfig.isGroupVituralAllowsSub());
+            userConfigResponse.setNonCommunityEdition(commonConfig.isCommonNceEnable());
         }
         return userConfigResponse;
     }

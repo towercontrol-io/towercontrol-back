@@ -19,6 +19,8 @@
  */
 package com.disk91.common.tools;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -94,4 +96,12 @@ public class Tools {
         return false;
     }
 
+    /**
+     * Get the remote IP from the request, taking into account possible reverse proxy header
+     * @param req
+     * @return IP address as a String
+     */
+    public static String getRemoteIp(HttpServletRequest req) {
+        return (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : req.getRemoteAddr();
+    }
 }

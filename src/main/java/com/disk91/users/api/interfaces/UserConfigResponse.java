@@ -111,6 +111,14 @@ public class UserConfigResponse {
     )
     protected boolean subGroupUnderVirtualAllowed;
 
+    @Schema(
+            description = "The running version is Non Community Edition",
+            example = "false",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    protected boolean nonCommunityEdition;
+
+
 
     // ==========================
     // Getters & Setters
@@ -210,5 +218,13 @@ public class UserConfigResponse {
 
     public void setSubGroupUnderVirtualAllowed(boolean subGroupUnderVirtualAllowed) {
         this.subGroupUnderVirtualAllowed = subGroupUnderVirtualAllowed;
+    }
+
+    public boolean isNonCommunityEdition() {
+        return nonCommunityEdition;
+    }
+
+    public void setNonCommunityEdition(boolean nonCommunityEdition) {
+        this.nonCommunityEdition = nonCommunityEdition;
     }
 }

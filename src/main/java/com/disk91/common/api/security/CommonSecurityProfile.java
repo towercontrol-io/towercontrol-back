@@ -60,8 +60,11 @@ public class CommonSecurityProfile {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // Allow internal api
                         .requestMatchers("/").permitAll()
-                        .requestMatchers("/common/3.0/exit").permitAll()
-                        .requestMatchers("/common/3.0/health").permitAll()
+                        .requestMatchers("/common/3.0/exit").permitAll() // @TODO make stop endpoint (restricted to local)
+                        .requestMatchers("/common/3.0/health").permitAll() // @TODO make health endpoint (restricted to local)
+
+                        // Captcha
+                        .requestMatchers("/common/1.0/captcha/**").permitAll()
 
                         // swagger documentation
                         .requestMatchers("/api/**").permitAll()

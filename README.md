@@ -18,3 +18,12 @@ $ make setup_nginx
 # The system is ready to start
 $ make start
 ```
+
+
+## Non Community Edition
+
+...
+
+### Additional Features
+ 
+- Captcha support on registration

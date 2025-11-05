@@ -21,11 +21,8 @@ package com.disk91.users.api;
 
 import com.disk91.common.api.interfaces.ActionResult;
 import com.disk91.common.tools.exceptions.ITRightException;
-import com.disk91.custom.quakecore.api.interfaces.QcDeviceOwnedBody;
 import com.disk91.users.api.interfaces.UserAccessibleRolesResponse;
-import com.disk91.users.api.interfaces.UserConfigResponse;
 import com.disk91.users.services.UserGroupRolesService;
-import com.disk91.users.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;

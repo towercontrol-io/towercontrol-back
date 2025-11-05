@@ -12,6 +12,7 @@ import com.disk91.users.config.UsersConfig;
 import com.disk91.users.mdb.entities.Role;
 import com.disk91.users.mdb.entities.User;
 import com.disk91.users.mdb.entities.sub.UserAcl;
+import com.disk91.users.mdb.entities.sub.UserApiKeys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -79,16 +80,29 @@ public class UserGroupRolesService {
         try {
             User user = userCache.getUser(u);
             ArrayList<UserAccessibleRolesResponse> ret = new ArrayList<>();
-            if (user.isInRole(UsersRolesCache.StandardRoles.ROLE_GOD_ADMIN.name())) {
-                // all roles are accessible
-                List<Role> _ret = usersRolesCache.getRoles();
-                for ( Role r : _ret ) {
-                    ret.add(UserAccessibleRolesResponse.getUserAccessibleRolesResponseFromRole(r));
+            if ( User.isApiKey(u) ) {
+                UserApiKeys k = user.getApiKey(u);
+                for ( String r : k.getRoles() ) {
+                    try {
+                        Role role = usersRolesCache.getRole(r);
+                        ret.add(UserAccessibleRolesResponse.getUserAccessibleRolesResponseFromRole(role));
+                    } catch (ITNotFoundException x) {
+                        // if the role does not exist, we do not affect it.
+                    }
                 }
             } else {
-                List<Role> rs = getAvailableRoles(user);
-                for (Role r : rs) {
-                    ret.add(UserAccessibleRolesResponse.getUserAccessibleRolesResponseFromRole(r));
+
+                if (user.isInRole(UsersRolesCache.StandardRoles.ROLE_GOD_ADMIN.name())) {
+                    // all roles are accessible
+                    List<Role> _ret = usersRolesCache.getRoles();
+                    for (Role r : _ret) {
+                        ret.add(UserAccessibleRolesResponse.getUserAccessibleRolesResponseFromRole(r));
+                    }
+                } else {
+                    List<Role> rs = getAvailableRoles(user);
+                    for (Role r : rs) {
+                        ret.add(UserAccessibleRolesResponse.getUserAccessibleRolesResponseFromRole(r));
+                    }
                 }
             }
             return ret;
@@ -161,24 +175,33 @@ public class UserGroupRolesService {
       */
     public List<GroupsHierarchySimplified> getAvailableGroups(String u, boolean includesGroups, boolean includesAcls, boolean includesVirtual)
         throws ITParseException {
-
         try {
-            User user = userCache.getUser(u);
-            // compose the user group list (head of the hierarchy)
-            // this includes the user default group and the standard groups and acls
-            ArrayList<String> userGroups = user.getAllGroups(includesGroups,includesAcls,includesVirtual);
-            List<GroupsHierarchySimplified> ret = groupsServices.getGroupsForDisplay(userGroups);
-            // We need to enrich with the ACLs local modification if any
-            List<UserAcl> acls = user.getAcls();
-            for ( GroupsHierarchySimplified h : ret) {
-                enrichGroupHierarchyWithUserAcls(h, acls);
+
+            if ( User.isApiKey(u) ) {
+                User user = userCache.getUser(u);
+                UserApiKeys k = user.getApiKey(u);
+                ArrayList<String> userGroups = new ArrayList<String>();
+                for ( UserAcl acl : k.getAcls() ) {
+                    userGroups.add(acl.getGroup());
+                }
+                return groupsServices.getGroupsForDisplay(userGroups);
+            } else {
+                User user = userCache.getUser(u);
+                // compose the user group list (head of the hierarchy)
+                // this includes the user default group and the standard groups and acls
+                ArrayList<String> userGroups = user.getAllGroups(includesGroups, includesAcls, includesVirtual);
+                List<GroupsHierarchySimplified> ret = groupsServices.getGroupsForDisplay(userGroups);
+                // We need to enrich with the ACLs local modification if any
+                List<UserAcl> acls = user.getAcls();
+                for (GroupsHierarchySimplified h : ret) {
+                    enrichGroupHierarchyWithUserAcls(h, acls);
+                }
+                return ret;
             }
-            return ret;
         } catch (ITNotFoundException x) {
             log.warn("[users] user or some of the groups assigned to user {} do not exist : {}", u, x.getMessage());
             throw new ITParseException("user-group-missing-elements");
         }
-
     }
 
     /**

@@ -30,8 +30,8 @@ import com.disk91.groups.config.ActionCatalog;
 import com.disk91.groups.config.GroupsConfig;
 import com.disk91.groups.mdb.entities.Group;
 import com.disk91.users.mdb.entities.User;
-import com.disk91.users.mdb.entities.sub.UserAcl;
 import com.disk91.users.services.UserCache;
+import com.disk91.users.services.UserCommon;
 import com.disk91.users.services.UserGroupRolesService;
 import com.disk91.users.services.UsersRolesCache;
 import org.slf4j.Logger;
@@ -57,6 +57,9 @@ public class GroupsChangeServices {
 
     @Autowired
     protected UserCache userCache;
+
+    @Autowired
+    protected UserCommon userCommon;
 
     @Autowired
     protected UserGroupRolesService userGroupRolesService;
@@ -94,58 +97,20 @@ public class GroupsChangeServices {
             throw new ITNotFoundException("groups-get-not-found");
         }
 
-        // Make sure the user can create a subgroup
         User user = null;
         try {
-            user = userCache.getUser(userId);
-            boolean authorized = false;
-            // is the user is ADMIN / LOCAL_ADMIN / GOD_ADMIN to manipulate its attached groups
-            if (user.isInRole(UsersRolesCache.StandardRoles.ROLE_GOD_ADMIN)) {
-                authorized = true;
-            } else if (
-                    user.isInRole(UsersRolesCache.StandardRoles.ROLE_GROUP_ADMIN)
-                 || user.isInRole(UsersRolesCache.StandardRoles.ROLE_GROUP_LADMIN)
-            ) {
-                // make sure the user attachment to this group
-                if ( user.isInGroup(group.getShortId(),false, groupsConfig.isGroupVituralAllowsSub()) ) {
-                    authorized = true;
-                }
-                for ( String upper : group.getReferringGroups()) {
-                    if ( user.isInGroup(upper,false, groupsConfig.isGroupVituralAllowsSub()) ) {
-                        authorized = true;
-                        break;
-                    }
-                }
-            }
-            if ( !authorized ) {
-                // check the ACL
-                try {
-                    UserAcl acl = user.searchAclGroup(group.getShortId());
-                    if (   acl.isInRole(UsersRolesCache.StandardRoles.ROLE_GROUP_ADMIN)
-                        || acl.isInRole(UsersRolesCache.StandardRoles.ROLE_GROUP_LADMIN)
-                    ) {
-                        authorized = true;
-                    }
-                    // search hierarchy
-                    for ( String upper : group.getReferringGroups()) {
-                        acl = user.searchAclGroup(upper);
-                        if (   acl.isInRole(UsersRolesCache.StandardRoles.ROLE_GROUP_ADMIN)
-                            || acl.isInRole(UsersRolesCache.StandardRoles.ROLE_GROUP_LADMIN)
-                        ) {
-                            authorized = true;
-                            break;
-                        }
-                    }
-                } catch (ITNotFoundException x) {
-                    // not authorized, nothing to change
-                }
-            }
-            if (!authorized) throw new ITRightException("groups-group-creation-refused");
-
-        } catch (ITNotFoundException x) {
-            // user not found ... not a normal situation
+             user = userCommon.getUserWithRolesAndGroups(
+                    userId,
+                    UsersRolesCache.StandardRoles.ROLE_GROUP_ADMIN.getRoleName(),
+                    UsersRolesCache.StandardRoles.ROLE_GROUP_LADMIN.getRoleName(),
+                    group.getShortId(),
+                    groupsConfig.isGroupVituralAllowsSub()
+            );
+        } catch (ITNotFoundException x){
             log.error("[groups] Sub group creation for a not existing user");
             throw new ITParseException("groups-invalid-user-request");
+        } catch (ITRightException x) {
+            throw new ITRightException("groups-group-creation-refused");
         }
 
         // Here the user and the group rights are ok to proceed.
@@ -200,22 +165,18 @@ public class GroupsChangeServices {
         // Make sure the user can create a group
         User user = null;
         try {
-            user = userCache.getUser(userId);
-            boolean authorized = false;
-            // is the user is ADMIN / LOCAL_ADMIN / GOD_ADMIN to manipulate its attached groups
-            if (user.isInRole(UsersRolesCache.StandardRoles.ROLE_GOD_ADMIN)) {
-                authorized = true;
-            } else if (
-                    user.isInRole(UsersRolesCache.StandardRoles.ROLE_GROUP_ADMIN)
-            ) {
-                authorized = true;
-            }
-            if (!authorized) throw new ITRightException("groups-group-creation-refused");
-
-        } catch (ITNotFoundException x) {
-            // user not found ... not a normal situation
-            log.error("[groups] Group creation for a not existing user");
+            user = userCommon.getUserWithRolesAndGroups(
+                    userId,
+                    UsersRolesCache.StandardRoles.ROLE_GROUP_ADMIN.getRoleName(),
+                    null,
+                    null,
+                    false
+            );
+        } catch (ITNotFoundException x){
+            log.error("[groups] Sub group creation for a not existing user");
             throw new ITParseException("groups-invalid-user-request");
+        } catch (ITRightException x) {
+            throw new ITRightException("groups-group-creation-refused");
         }
 
         // Here the user and the group rights are ok to proceed.
@@ -246,10 +207,6 @@ public class GroupsChangeServices {
     // =====================================================================================================
 
 
-
-    // =====================================================================================================
-    //
-    // =====================================================================================================
 
 
 }

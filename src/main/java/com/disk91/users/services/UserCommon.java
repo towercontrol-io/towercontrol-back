@@ -152,15 +152,23 @@ public class UserCommon {
      * are checked first.
      * @param login - user login, it can be an apikey
      * @param requiredRole - role expected, can be null when no role required
+     * @param orRole - second possible role expected, inclusive or
      * @param groupShort - group short id, can be null when no group context
      * @return the User structure (not the apikey entry, related user)
      * @throws ITNotFoundException - when not found user / apikey
      * @throws ITRightException - when the user does not have the required role or group context
      */
-    public User getUserWithRolesAndGroups(String login, String requiredRole, String groupShort )
-        throws ITNotFoundException, ITRightException
+    public User getUserWithRolesAndGroups(
+            String login,
+            String requiredRole,
+            String orRole,
+            String groupShort,
+            boolean includesVirtualGroups
+    ) throws ITNotFoundException, ITRightException
     {
         if ( User.isApiKey(login) ) {
+            // ---
+            // API KEYS
             // check the rights of the apikey.
             // apikey can't be GOD_ADMIN
             try {
@@ -176,36 +184,41 @@ public class UserCommon {
                     for (UserAcl a : k.getAcls()) {
                         if (g.isAChildOf(a.getGroup())) {
                             // Found the group, check the role
-                            if (requiredRole != null) {
-                                if (a.isInRole(requiredRole)) {
-                                    return _u;
-                                } else {
-                                    throw new ITRightException("users-rights-role-not-found-in-apikey");
-                                }
-                            } else {
-                                // No specific role required, group found is enough
+                            if ( requiredRole != null && a.isInRole(requiredRole)
+                                || ( orRole != null && a.isInRole(orRole) )
+                            ) {
                                 return _u;
+                            } else {
+                                if ( requiredRole != null || orRole != null ) {
+                                    throw new ITRightException("users-rights-role-not-found-in-apikey");
+                                } else {
+                                    // No specific role required, group found is enough
+                                    return _u;
+                                }
                             }
                         }
                     }
                     throw new ITRightException("users-rights-role-not-found-in-apikey");
                 } else {
                     // No group required, check the role on the apikey directly
-                    if ( requiredRole != null ) {
-                        if ( k.isInRole(requiredRole) ) {
-                            return _u;
-                        } else {
-                            throw new ITRightException("users-rights-role-not-found-in-apikey");
-                        }
-                    } else {
-                        // no specific role required
+                    if ( requiredRole != null && k.isInRole(requiredRole)
+                            || ( orRole != null && k.isInRole(orRole) )
+                    ) {
                         return _u;
+                    } else {
+                        if (requiredRole != null || orRole != null) {
+                            throw new ITRightException("users-rights-role-not-found-in-apikey");
+                        } else {
+                            // No specific role required, group found is enough
+                            return _u;
+                        }
                     }
                 }
             } catch (ITNotFoundException e) {
                 throw new ITNotFoundException("users-apikey-or-group-not-found");
             }
         } else {
+            // ----
             // Regular accounts works a bit differently, we have the GOD_ADMIN case
             try {
                 User _u = userCache.getUser(login);
@@ -215,18 +228,20 @@ public class UserCommon {
                 if ( groupShort != null ) {
                     // We need to get the group for checking rights
                     Group g = groupsServices.getGroupByShortId(groupShort); // raise ITNotFoundException if not found
-                    for ( String ug : _u.getGroups() ) {
+                    for ( String ug : _u.getAllGroups(true,false,includesVirtualGroups) ) {
                         if ( g.isAChildOf(ug) ) {
                             // Found the group, check the role
-                            if (requiredRole != null) {
-                                if (_u.isInRole(requiredRole)) {
-                                    return _u;
-                                } else {
-                                    throw new ITRightException("users-rights-role-not-found-in-apikey");
-                                }
-                            } else {
-                                // No specific role required, group found is enough
+                            if ( requiredRole != null && _u.isInRole(requiredRole)
+                                    || ( orRole != null &&  _u.isInRole(orRole) )
+                            ) {
                                 return _u;
+                            } else {
+                                if (requiredRole != null || orRole != null) {
+                                    throw new ITRightException("users-rights-role-not-found-in-apikey");
+                                } else {
+                                    // No specific role required, group found is enough
+                                    return _u;
+                                }
                             }
                         }
                     }
@@ -234,30 +249,34 @@ public class UserCommon {
                     for (UserAcl a : _u.getAcls()) {
                         if (g.isAChildOf(a.getGroup())) {
                             // Found the group, check the role
-                            if (requiredRole != null) {
-                                if (a.isInRole(requiredRole)) {
-                                    return _u;
-                                } else {
-                                    throw new ITRightException("users-rights-role-not-found-in-apikey");
-                                }
-                            } else {
-                                // No specific role required, group found is enough
+                            if ( requiredRole != null && a.isInRole(requiredRole)
+                                    || ( orRole != null &&  a.isInRole(orRole) )
+                            ) {
                                 return _u;
+                            } else {
+                                if (requiredRole != null || orRole != null) {
+                                    throw new ITRightException("users-rights-role-not-found-in-apikey");
+                                } else {
+                                    // No specific role required, group found is enough
+                                    return _u;
+                                }
                             }
                         }
                     }
                     throw new ITRightException("users-rights-role-not-found-in-apikey");
                 } else {
                     // No group required, check the role on the apikey directly
-                    if ( requiredRole != null ) {
-                        if ( _u.isInRole(requiredRole) ) {
-                            return _u;
-                        } else {
-                            throw new ITRightException("users-rights-role-not-found-in-apikey");
-                        }
-                    } else {
-                        // no specific role required
+                    if ( requiredRole != null && _u.isInRole(requiredRole)
+                            || ( orRole != null &&  _u.isInRole(orRole) )
+                    ) {
                         return _u;
+                    } else {
+                        if (requiredRole != null || orRole != null) {
+                            throw new ITRightException("users-rights-role-not-found-in-apikey");
+                        } else {
+                            // No specific role required, group found is enough
+                            return _u;
+                        }
                     }
                 }
             } catch (ITNotFoundException e) {

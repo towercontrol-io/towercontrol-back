@@ -22,7 +22,7 @@ public class UsersTestsService {
 
         int v = new Random().nextInt(1000);
         if ( v > 500 ) {
-            throw new ITParseException("Test exception");
+            //throw new ITParseException("Test exception");
         }
 
     }

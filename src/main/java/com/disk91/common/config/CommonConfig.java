@@ -175,9 +175,9 @@ public class CommonConfig {
         return commonTestEnabled;
     }
 
-    // --------------------------------------------
-    // Non Community Edition
-    // --------------------------------------------
+    // ----------------------------------------------
+    // Non Community activation (also required the associated classes)
+    // ----------------------------------------------
 
     @Value("${common.nce.enable:false}")
     protected boolean commonNceEnable;

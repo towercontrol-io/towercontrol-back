@@ -105,6 +105,9 @@ public class UserService {
     @Autowired
     protected GroupsConfig groupsConfig;
 
+    @Autowired
+    protected CrossUserWrapperService  crossUserWrapperService;
+
     /**
      * User Login verification, search for a corresponding user & email.
      * When the user has been deactivated, this reactivates the user. The
@@ -929,7 +932,8 @@ public class UserService {
             userConfigResponse.setPasswordMinDigits(usersConfig.getUsersPasswordMinNumbers());
             userConfigResponse.setDeletionPurgatoryDelayHours(usersConfig.getUsersDeletionPurgatoryDuration());
             userConfigResponse.setSubGroupUnderVirtualAllowed(groupsConfig.isGroupVituralAllowsSub());
-            userConfigResponse.setNonCommunityEdition(commonConfig.isCommonNceEnable());
+            userConfigResponse.setNonCommunityEdition(crossUserWrapperService.isNceEnabled());
+            userConfigResponse.setRegistrationCaptchaRequired(crossUserWrapperService.isNceEnabled() && usersConfig.isUsersNceEnableCaptcha());
         }
         return userConfigResponse;
     }

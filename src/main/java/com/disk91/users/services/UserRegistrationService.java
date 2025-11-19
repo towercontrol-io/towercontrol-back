@@ -85,8 +85,8 @@ public class UserRegistrationService {
     protected AuditIntegration auditIntegration;
 
     /**
-     * Create a UserPending entry when the user request format is valid, emil not filtered and do nos already exists
-     * The function will att delay to limit the ability to understand the underlaying behavior and even if reports
+     * Create a UserPending entry when the user request format is valid, email not filtered and do not already exist
+     * The function will add delay to limit the ability to understand the underlying behavior and even if reports
      * the reason of refusal, the upper layer may silently refuse the request (responding OK en errors)
      * The function sent Email on success
      * @throws ITParseException

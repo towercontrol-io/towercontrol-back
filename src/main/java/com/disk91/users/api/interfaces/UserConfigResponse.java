@@ -118,6 +118,12 @@ public class UserConfigResponse {
     )
     protected boolean nonCommunityEdition;
 
+    @Schema(
+            description = "Registration process requires a captcha validation (NCE edition)",
+            example = "false",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    protected boolean registrationCaptchaRequired;
 
 
     // ==========================
@@ -226,5 +232,13 @@ public class UserConfigResponse {
 
     public void setNonCommunityEdition(boolean nonCommunityEdition) {
         this.nonCommunityEdition = nonCommunityEdition;
+    }
+
+    public boolean isRegistrationCaptchaRequired() {
+        return registrationCaptchaRequired;
+    }
+
+    public void setRegistrationCaptchaRequired(boolean registrationCaptchaRequired) {
+        this.registrationCaptchaRequired = registrationCaptchaRequired;
     }
 }

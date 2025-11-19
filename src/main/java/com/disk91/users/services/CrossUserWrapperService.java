@@ -47,7 +47,7 @@ public class CrossUserWrapperService {
             try {
                 Class<?> clazz = Class.forName("com.disk91.users.services.PrivUserWrapperService");
                 privUserWrapperService = clazz.getDeclaredConstructor().newInstance();
-                log.info("[Users] Running Non Community Edition features");
+                log.info("\u001B[34m[Users] Running Non Community Edition features\u001B[0m");
                 return;
             } catch (ClassNotFoundException e) {
                 privUserWrapperService = null;
@@ -58,6 +58,35 @@ public class CrossUserWrapperService {
         log.info("[Users] Running Community Edition");
     }
 
+    public boolean isNceEnabled() {
+        return ( privUserWrapperService != null && commonConfig.isCommonNceEnable() );
+    }
+
+    /**
+     * Function to verify captcha during user registration, return true if captcha is valid
+     * false if not correctly completed. This function calls the NCE implementation if available,
+     * otherwise returns true (no captcha in CE)
+     *
+     * @param secret
+     * @return
+     */
+    public boolean userRegistrationVerifyCaptcha(String secret) {
+        if ( isNceEnabled() ) {
+            try {
+                return (boolean) privUserWrapperService.getClass()
+                        .getMethod("userRegistrationVerifyCaptcha", String.class)
+                        .invoke(privUserWrapperService, secret);
+            } catch (Exception e) {
+                log.error("[Users] Failed to call userRegistrationVerifyCaptcha : {}", e.getMessage());
+            }
+        }
+        // default Community Edition behavior : no captcha
+        if ( commonConfig.isCommonNceEnable() ) {
+            log.warn("[Users] Captcha verification failed to call NCE code with NCE enabled, refusing captcha");
+            return false;
+        }
+        return true;
+    }
 
 
 }

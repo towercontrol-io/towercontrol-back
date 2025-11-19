@@ -88,6 +88,9 @@ public class UserCreationService {
     @Autowired
     protected UserGroupRolesService userGroupRolesService;
 
+    @Autowired
+    protected CrossUserWrapperService crossUserWrapperService;
+
     /**
      * Once the validity of the request has been verified, the user is created
      * When a validation ID has been provided, email field is ignored if present
@@ -298,6 +301,15 @@ public class UserCreationService {
             Now.randomSleep(15, 45);
             this.incCreationsFailed();
             throw new ITParseException("user-creation-account-self-creation-not-allowed");
+        }
+
+        // Check the captcha (Non Community version)
+        // The validation ID is used in the captcha API for the generation & verification
+        // there is no more captcha configuration in the users module for this mechanism
+        if ( !crossUserWrapperService.userRegistrationVerifyCaptcha(body.getValidationID()) ) {
+            Now.randomSleep(15, 45);
+            this.incCreationsFailed();
+            throw new ITRightException("user-creation-account-captcha-refused");
         }
 
         // Make sure the password is correctly set

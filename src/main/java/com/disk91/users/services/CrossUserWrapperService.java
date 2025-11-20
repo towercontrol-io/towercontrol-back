@@ -24,6 +24,7 @@ import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -34,6 +35,9 @@ public class CrossUserWrapperService {
 
     @Autowired
     protected CommonConfig commonConfig;
+
+    @Autowired(required = false)
+    private AutowireCapableBeanFactory beanFactory;
 
     /**
      * To wrap the Non Community Edition Feature, transparently, with no compilation
@@ -46,7 +50,7 @@ public class CrossUserWrapperService {
         if ( commonConfig.isCommonNceEnable() ) {
             try {
                 Class<?> clazz = Class.forName("com.disk91.users.services.PrivUserWrapperService");
-                privUserWrapperService = clazz.getDeclaredConstructor().newInstance();
+                privUserWrapperService = beanFactory.createBean(clazz);
                 log.info("\u001B[34m[Users] Running Non Community Edition features\u001B[0m");
                 return;
             } catch (ClassNotFoundException e) {

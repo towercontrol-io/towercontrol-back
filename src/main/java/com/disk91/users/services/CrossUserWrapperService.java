@@ -92,5 +92,28 @@ public class CrossUserWrapperService {
         return true;
     }
 
+    /**
+     * Function to force validation of a captcha for testing purpose only
+     *
+     * @param secret
+     * @return
+     */
+    public void userRegistrationForceCaptcha(String secret) {
+        if ( isNceEnabled() ) {
+            try {
+                privUserWrapperService.getClass()
+                        .getMethod("userRegistrationForceCaptcha", String.class)
+                        .invoke(privUserWrapperService, secret);
+                return;
+            } catch (Exception e) {
+                log.error("[Users] Failed to call userRegistrationForceCaptcha : {}", e.getMessage());
+            }
+        }
+        // default Community Edition behavior : no captcha
+        if ( commonConfig.isCommonNceEnable() ) {
+            log.warn("[Users] Captcha force failed to call NCE code with NCE enabled, refusing captcha");
+        }
+    }
+
 
 }

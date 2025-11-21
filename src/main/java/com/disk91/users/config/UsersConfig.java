@@ -199,13 +199,13 @@ public class UsersConfig {
         return usersDeletionPurgatoryDuration;
     }
 
-    @Value("${users.default.roles:")
+    @Value("${users.default.roles:}")
     protected String userDefaultRoles;
     public String getUserDefaultRoles() {
         return userDefaultRoles;
     }
 
-    @Value("${users.apikey.authorized.roles:")
+    @Value("${users.apikey.authorized.roles:}")
     protected String userApiKeyAuthorizedRoles;
     public String getUserApiKeyAuthorizedRoles() {
         return userApiKeyAuthorizedRoles;

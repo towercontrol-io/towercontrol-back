@@ -73,7 +73,11 @@ public class UserRegistration {
 
 
     @Transient
-    private String __iv = "4fee88822bce7d331d6db0d69d978492";
+    private static final String __iv = "4fee88822bce7d331d6db0d69d978492";
+
+    public static String getEncodedEmail(String _email, String encryptionKey) throws ITParseException {
+        return EncryptionHelper.encrypt(_email, __iv, encryptionKey);
+    }
 
     /**
      * Init the UserPending Structure with the given email ; protect it with encryption and setup the expiration

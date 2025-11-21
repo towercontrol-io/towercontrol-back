@@ -73,11 +73,11 @@ public class ItcApplication implements CommandLineRunner, ExitCodeGenerator {
         if ( commonConfig.isCommonTestEnabled() ) {
             System.out.println(ANSI_BLUE+"================ Running Tests ========================"+ANSI_RESET);
             try {
-                System.out.println(ANSI_GREEN+"================ TESTS SUCCESS ========================"+ANSI_RESET);
-
                 usersTestsService.runTests();
 
 
+
+                System.out.println(ANSI_GREEN+"================ TESTS SUCCESS ========================"+ANSI_RESET);
             } catch (ITParseException e) {
                 System.out.println(ANSI_RED+"[ERROR] "+e.getMessage()+ANSI_RESET);
                 System.out.println(ANSI_RED+"================ TESTS FAILED ========================"+ANSI_RESET);

@@ -19,6 +19,7 @@ The project is organized in a modular way. Each module is a package and has its 
   - config (configuration)
   - interfaces (data model out of database and APIs)
   - tests (functional tests)
+  - drivers (services used for third party integration)
 
 ## Customization
 The custom directory contains specific customization project, it will have a sub package corresponding to the related custom 

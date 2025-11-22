@@ -8,7 +8,7 @@ but only metadata, while aiming to be generic with respect to possible integrati
 ```json
 {
   "rxUuid": "string",                        // Unique identifier of received data
-  "rxTimestamp": "long",                     // Reception Timestamp of the data reception in milliseconds since epoch
+  "rxTimestampMs": "long",                   // Reception Timestamp of the data reception in milliseconds since epoch
   "rxCaptureId": "string",                   // Source identifier (e.g., capture endpoint ID)
   "payload": "string",                       // Raw data payload as a string (can be encoded)
   "nwkStatus" : "enum",                      // Status of the frame seen by network (e.g., "RECEIVED", "PROCESSED", "ERROR")
@@ -39,6 +39,7 @@ but only metadata, while aiming to be generic with respect to possible integrati
     nwkTimeNs: "long",                       // Original data timestamp nanoseconds part (when available)
     nwkDeviceId: "string",                   // Device Id as identified on the network
     deviceId: "string",                      // Device Id as identified in the platform
+    sessionCounter: "int",                  // Session counter when available or deducted
     frameCounter: "int",                     // Frame counter when available
     framePort: "int",                        // Frame port when available
     confirmReq: "boolean",                   // Whether the frame has confirme request flag

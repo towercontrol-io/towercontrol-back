@@ -13,13 +13,12 @@ It is defined by the following structure, which allows it to be created by an ad
   "ref": "string",                           // Unique reference of the capture endpoint, used in the endpoint URL or topic
   "owner" : "string",                        // Owner identifier apiUser or apikey owner (it must match the authentication)
   "description": "string",                   // Description of the capture endpoint
-  "type": "enum",                            // Type of the capture endpoint (e.g., "HTTP_PUSH", "MQTT", "HTTP_PULL", ...)
-  "protocol": "enum",                        // Protocol used by the capture endpoint (e.g., "Helium", "Sigfox")
-  "version": "enum",                         // Protocol version used, can be a version "v1", "v2", or "json", "protobuf", or combination...
+  "protocolId": "string",                    // Identifier of the protocol driver used to handle this capture endpoint
   "customConfig": [{                         // Custom configuration specific to the protocol and type
     "key" : "string",                        // Protocol-specific configuration parameters
     "value" : "string"
   }],
+  "creationMs": "long"                       // Creation timestamp in milliseconds since epoch
 }
 ```
 
@@ -30,4 +29,29 @@ options. The goal is to extend capabilities without heavily impacting frontend d
 possible to dynamically specify `customConfig` options required by the protocol. These options will always be strings 
 and will be evaluated as needed.
 
+### Supported protocols
+
+The field `protocolId` represents an identifier that refers to a protocol definition which itself is associated with a 
+driver responsible for handling that protocol. This driver provides functions related to data reception, but also 
+implements the full lifecycle features — for example device commissioning, management of bidirectional communications, etc. 
+It is therefore a fairly rich component that must implement a common interface.
+
+This link is associated with several types of structures such as capture links or device families. The goal is for this 
+to be extensible without impacting the main processing logic. To describe a protocol, the following structure is used 
+which, like roles, has a static in-memory definition for very fast access but can be supplemented by additional database 
+entries.
+
+```json
+{
+  "id": "string",                            // Unique identifier of the protocol
+  "protocolFamily": "string",                // Protocol family (e.g., Sigfox, LoRaWan...)
+  "protocolType": "string",                  // Protocol type (e.g., lorawan-helium)
+  "protocolVersion" : "string",              // Protocol version (e.g., lorawan-helium-chirpstack-v4)
+  "description": "string",                   // Description of the protocol (slug for i18n)
+  "enDescription": "string",                 // English description of the protocol
+  "processingClassName": "string",           // Fully qualified class name of the driver implementing this protocol
+  "creationMs": "long",                      // Creation timestamp in milliseconds since epoch
+  "createdBy": "string"                      // Creator identifier (system or user)
+}
+```
 

@@ -31,7 +31,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "users_roles")
 @CompoundIndexes({
-    @CompoundIndex(name = "login", def = "{'login': 'hashed'}"),
+    @CompoundIndex(name = "name", def = "{'name': 'hashed'}"),
 })
 public class Role implements CloneableObject<Role>  {
 

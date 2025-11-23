@@ -174,9 +174,9 @@ public class UserCommon {
             try {
                 User _u = userCache.getUserByApiKey(login);
                 UserApiKeys k = _u.getApiKey(login);
-                if ( ! _u.isActive() || _u.isLocked() ) throw new ITRightException("users-rights-inactive-locked");
-                if ( ! _u.isInRole(UsersRolesCache.StandardRoles.ROLE_REGISTERED_USER)) throw new ITRightException("users-rights-not-registered-user");
-                if ( ! _u.isInRole(UsersRolesCache.StandardRoles.ROLE_LOGIN_API)) throw new ITRightException("users-rights-not-signed-user");
+                if ( ! _u.isActive() || _u.isLocked() ) throw new ITRightException("user-rights-inactive-locked");
+                if ( ! _u.isInRole(UsersRolesCache.StandardRoles.ROLE_REGISTERED_USER)) throw new ITRightException("user-rights-not-registered-user");
+                if ( ! _u.isInRole(UsersRolesCache.StandardRoles.ROLE_LOGIN_API)) throw new ITRightException("user-rights-not-signed-user");
 
                 if ( groupShort != null ) {
                     // We need to get the group for checking rights
@@ -190,7 +190,7 @@ public class UserCommon {
                                 return _u;
                             } else {
                                 if ( requiredRole != null || orRole != null ) {
-                                    throw new ITRightException("users-rights-role-not-found-in-apikey");
+                                    throw new ITRightException("user-rights-role-not-found-in-apikey");
                                 } else {
                                     // No specific role required, group found is enough
                                     return _u;
@@ -198,7 +198,7 @@ public class UserCommon {
                             }
                         }
                     }
-                    throw new ITRightException("users-rights-role-not-found-in-apikey");
+                    throw new ITRightException("user-rights-role-not-found-in-apikey");
                 } else {
                     // No group required, check the role on the apikey directly
                     if ( requiredRole != null && k.isInRole(requiredRole)
@@ -207,7 +207,7 @@ public class UserCommon {
                         return _u;
                     } else {
                         if (requiredRole != null || orRole != null) {
-                            throw new ITRightException("users-rights-role-not-found-in-apikey");
+                            throw new ITRightException("user-rights-role-not-found-in-apikey");
                         } else {
                             // No specific role required, group found is enough
                             return _u;
@@ -215,15 +215,15 @@ public class UserCommon {
                     }
                 }
             } catch (ITNotFoundException e) {
-                throw new ITNotFoundException("users-apikey-or-group-not-found");
+                throw new ITNotFoundException("user-apikey-or-group-not-found");
             }
         } else {
             // ----
             // Regular accounts works a bit differently, we have the GOD_ADMIN case
             try {
                 User _u = userCache.getUser(login);
-                if ( ! _u.isActive() || _u.isLocked() ) throw new ITRightException("users-rights-inactive-locked");
-                if ( ! _u.isInRole(UsersRolesCache.StandardRoles.ROLE_REGISTERED_USER)) throw new ITRightException("users-rights-not-registered-user");
+                if ( ! _u.isActive() || _u.isLocked() ) throw new ITRightException("user-rights-inactive-locked");
+                if ( ! _u.isInRole(UsersRolesCache.StandardRoles.ROLE_REGISTERED_USER)) throw new ITRightException("user-rights-not-registered-user");
 
                 if ( groupShort != null ) {
                     // We need to get the group for checking rights
@@ -237,7 +237,7 @@ public class UserCommon {
                                 return _u;
                             } else {
                                 if (requiredRole != null || orRole != null) {
-                                    throw new ITRightException("users-rights-role-not-found-in-apikey");
+                                    throw new ITRightException("user-rights-role-not-found-in-apikey");
                                 } else {
                                     // No specific role required, group found is enough
                                     return _u;
@@ -255,7 +255,7 @@ public class UserCommon {
                                 return _u;
                             } else {
                                 if (requiredRole != null || orRole != null) {
-                                    throw new ITRightException("users-rights-role-not-found-in-apikey");
+                                    throw new ITRightException("user-rights-role-not-found-in-apikey");
                                 } else {
                                     // No specific role required, group found is enough
                                     return _u;
@@ -263,7 +263,7 @@ public class UserCommon {
                             }
                         }
                     }
-                    throw new ITRightException("users-rights-role-not-found-in-apikey");
+                    throw new ITRightException("user-rights-role-not-found-in-apikey");
                 } else {
                     // No group required, check the role on the apikey directly
                     if ( requiredRole != null && _u.isInRole(requiredRole)
@@ -272,7 +272,7 @@ public class UserCommon {
                         return _u;
                     } else {
                         if (requiredRole != null || orRole != null) {
-                            throw new ITRightException("users-rights-role-not-found-in-apikey");
+                            throw new ITRightException("user-rights-role-not-found-in-apikey");
                         } else {
                             // No specific role required, group found is enough
                             return _u;
@@ -280,8 +280,31 @@ public class UserCommon {
                     }
                 }
             } catch (ITNotFoundException e) {
-                throw new ITNotFoundException("users-group-not-found");
+                throw new ITNotFoundException("user-group-not-found");
             }
+        }
+    }
+
+    /**
+     * Get a user structure from a login or an apikey, verifying the user is active & registered
+     * @param login - user login or apikey
+     * @return the User structure
+     * @throws ITNotFoundException - when not found or not active / registered
+     */
+    public User getUser(String login) throws ITNotFoundException {
+        if ( User.isApiKey(login) ) {
+            // API KEY
+            User _u = userCache.getUserByApiKey(login);
+            if ( ! _u.isActive() || _u.isLocked() ) throw new ITNotFoundException("user-rights-inactive-locked");
+            if ( ! _u.isInRole(UsersRolesCache.StandardRoles.ROLE_REGISTERED_USER)) throw new ITNotFoundException("user-rights-not-registered-user");
+            if ( ! _u.isInRole(UsersRolesCache.StandardRoles.ROLE_LOGIN_API)) throw new ITNotFoundException("user-rights-not-signed-user");
+            return _u;
+        } else {
+            // Regular user
+            User _u = userCache.getUser(login);
+            if ( ! _u.isActive() || _u.isLocked() ) throw new ITNotFoundException("user-rights-inactive-locked");
+            if ( ! _u.isInRole(UsersRolesCache.StandardRoles.ROLE_REGISTERED_USER)) throw new ITNotFoundException("user-rights-not-registered-user");
+            return _u;
         }
     }
 

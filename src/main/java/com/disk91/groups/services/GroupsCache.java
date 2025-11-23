@@ -79,7 +79,7 @@ public class GroupsCache {
             this.groupCache = new ObjectCache<String, Group>(
                     "GroupsROCache",
                     groupsConfig.getGroupsCacheMaxSize(),
-                    groupsConfig.getGroupsCacheExpiration()*1000
+                    groupsConfig.getGroupsCacheExpiration()*1000L
             ) {
                 @Override
                 synchronized public void onCacheRemoval(String key, Group obj, boolean batch, boolean last) {
@@ -112,7 +112,7 @@ public class GroupsCache {
         if ( groupsConfig.getGroupsCacheMaxSize() > 0 ) {
             groupCache.deleteCache();
         }
-        log.info("[groups] UserCache stopped");
+        log.info("[groups] GroupCache stopped");
     }
 
     @Scheduled(fixedRateString = "${groups.cache.log.period:PT24H}", initialDelay = 3600_000)
@@ -166,14 +166,14 @@ public class GroupsCache {
             if (!this.serviceEnable || groupsConfig.getGroupsCacheMaxSize() == 0) {
                 // direct access from database
                 Group u = groupRepository.findOneGroupByShortId(shortId);
-                if (u == null) throw new ITNotFoundException("Group not found");
+                if (u == null) throw new ITNotFoundException("groups-get-not-found");
                 return u.clone();
             } else {
                 Group u = this.groupCache.get(shortId);
                 if (u == null) {
                     // not in cache, get it from the database
                     u = groupRepository.findOneGroupByShortId(shortId);
-                    if (u == null) throw new ITNotFoundException("Group not found");
+                    if (u == null) throw new ITNotFoundException("groups-get-not-found");
                     this.groupCache.put(u, u.getShortId());
                 }
                 return u.clone();
@@ -192,7 +192,6 @@ public class GroupsCache {
     /**
      * Remove a group from the local cache if exists (this is when the user has been updated somewhere else
      * @param shortId - groupId to be removed
-     * @return
      */
     protected void flushGroup(String shortId) {
         if ( shortId.startsWith("user_") ) return; // virtual group, do nothing

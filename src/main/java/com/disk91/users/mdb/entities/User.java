@@ -1028,7 +1028,7 @@ public class User implements CloneableObject<User> {
                 if ( acl.getGroup().compareTo(group) == 0 ) return acl;
             }
         }
-        throw new ITNotFoundException("users-group-not-in-acl");
+        throw new ITNotFoundException("user-group-not-in-acl");
     }
 
 

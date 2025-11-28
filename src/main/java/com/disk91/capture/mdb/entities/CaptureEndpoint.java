@@ -51,6 +51,12 @@ public class CaptureEndpoint implements CloneableObject<CaptureEndpoint> {
     // Ower who created the capture endpoint
     protected String owner;
 
+    // When the source can be any device directly with dedicated authorization key, we can't match with an ower
+    protected boolean wideOpen;
+
+    // When true, the sensitive data will be encrypted like the payload in the pivot objet stored in DB
+    protected boolean encrypted;
+
     // Creation time
     protected long creationMs;
 
@@ -74,6 +80,8 @@ public class CaptureEndpoint implements CloneableObject<CaptureEndpoint> {
         p.setOwner(this.owner);
         p.setCreationMs(this.creationMs);
         p.setProtocolId(this.protocolId);
+        p.setWideOpen(this.wideOpen);
+        p.setEncrypted(this.encrypted);
         p.setCustomConfig(new ArrayList<>());
         if ( this.customConfig != null ) {
             for ( CustomField cf : this.customConfig ) {
@@ -148,5 +156,21 @@ public class CaptureEndpoint implements CloneableObject<CaptureEndpoint> {
 
     public void setCustomConfig(List<CustomField> customConfig) {
         this.customConfig = customConfig;
+    }
+
+    public boolean isWideOpen() {
+        return wideOpen;
+    }
+
+    public void setWideOpen(boolean wideOpen) {
+        this.wideOpen = wideOpen;
+    }
+
+    public boolean isEncrypted() {
+        return encrypted;
+    }
+
+    public void setEncrypted(boolean encrypted) {
+        this.encrypted = encrypted;
     }
 }

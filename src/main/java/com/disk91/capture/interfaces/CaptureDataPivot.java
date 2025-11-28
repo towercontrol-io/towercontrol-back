@@ -72,7 +72,7 @@ public class CaptureDataPivot implements CloneableObject<CaptureDataPivot>  {
     protected String rxCaptureId;
 
     @Schema(
-            description = "The raw payload from the network, stored as base64 encoded string",
+            description = "The raw payload from the network, stored as base64 encoded string, encrypted when required",
             example = "....",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED
     )
@@ -91,8 +91,9 @@ public class CaptureDataPivot implements CloneableObject<CaptureDataPivot>  {
     protected NetworkStatus nwkStatus;
 
     public enum CaptureStatus {
-        CAP_STATUS_SUCCESS,
-        CAP_STATUS_FAILURE,
+        CAP_STATUS_SUCCESS, // Data received and fully processed
+        CAP_STATUS_PARTIAL, // Data not completely received, processing decision to be managed by the next layer
+        CAP_STATUS_FAILURE, // Functional Failure during capture processing, the frame will be stored but not processed further
     }
 
     @Schema(
@@ -100,7 +101,28 @@ public class CaptureDataPivot implements CloneableObject<CaptureDataPivot>  {
             example = "CAP_STATUS_SUCCESS",
             requiredMode = Schema.RequiredMode.REQUIRED
     )
-    protected NetworkStatus status;
+    protected CaptureStatus status;
+
+    @Schema(
+            description = "In case of ingestion error, the protocol can store as raw data the incoming packet for later analysis. empty most of the time. String Base64 encoded, encrypted when required",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    protected String coredDump;
+
+    @Schema(
+            description = "Store the owner identity comming from the JWT token used during ingestion",
+            example = "D1C445E8...CA25",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    protected String ingestOwnerId;
+
+    @Schema(
+            description = "IP address of the incoming data frame for traceability, filtering.... encrypted",
+            example = "10.0.1.2",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    protected String fromIp;
+
 
     @Schema(
             description = "Headers received from the network or capture point, stored as key/value pairs",
@@ -143,6 +165,9 @@ public class CaptureDataPivot implements CloneableObject<CaptureDataPivot>  {
         copy.payload = this.payload;
         copy.nwkStatus = this.nwkStatus;
         copy.status = this.status;
+        copy.ingestOwnerId = this.ingestOwnerId;
+        copy.fromIp = this.fromIp;
+        copy.coredDump = this.coredDump;
 
         copy.headers = new ArrayList<>();
         if (this.headers != null) {
@@ -177,6 +202,8 @@ public class CaptureDataPivot implements CloneableObject<CaptureDataPivot>  {
                 copy.nwkStations.add(s.clone());
             }
         }
+
+
         return copy;
     }
 
@@ -224,11 +251,11 @@ public class CaptureDataPivot implements CloneableObject<CaptureDataPivot>  {
         this.nwkStatus = nwkStatus;
     }
 
-    public NetworkStatus getStatus() {
+    public CaptureStatus getStatus() {
         return status;
     }
 
-    public void setStatus(NetworkStatus status) {
+    public void setStatus(CaptureStatus status) {
         this.status = status;
     }
 
@@ -270,5 +297,29 @@ public class CaptureDataPivot implements CloneableObject<CaptureDataPivot>  {
 
     public void setNwkStations(List<CaptureNwkStation> nwkStations) {
         this.nwkStations = nwkStations;
+    }
+
+    public String getIngestOwnerId() {
+        return ingestOwnerId;
+    }
+
+    public void setIngestOwnerId(String ingestOwnerId) {
+        this.ingestOwnerId = ingestOwnerId;
+    }
+
+    public String getFromIp() {
+        return fromIp;
+    }
+
+    public void setFromIp(String fromIp) {
+        this.fromIp = fromIp;
+    }
+
+    public String getCoredDump() {
+        return coredDump;
+    }
+
+    public void setCoredDump(String coredDump) {
+        this.coredDump = coredDump;
     }
 }

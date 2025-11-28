@@ -33,6 +33,40 @@ public class CaptureConfig {
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
     // ----------------------------------------------
+    // Ingestion config
+    // ----------------------------------------------
+    @Value("${capture.raw.store.sync:true}")
+    protected boolean captureRawStoreSync;
+    public boolean isCaptureRawStoreSync() {
+        return captureRawStoreSync;
+    }
+
+    @Value("${capture.raw.store.async:true}")
+    protected boolean captureRawStoreAsync;
+    public boolean isCaptureRawStoreAsync() {
+        return captureRawStoreAsync;
+    }
+
+    @Value("${capture.raw.store.async.batch.size:100}")
+    protected int captureRawStoreAsyncBatchSize;
+    public int getCaptureRawStoreAsyncBatchSize() {
+        return captureRawStoreAsyncBatchSize;
+    }
+
+    @Value("${capture.raw.store.async.batch.timeout:60000}")
+    protected int captureRawStoreAsyncBatchTimeout;
+    public int getCaptureRawStoreAsyncBatchTimeout() {
+        return captureRawStoreAsyncBatchTimeout;
+    }
+
+    @Value("${capture.processor.threads.count:1}")
+    protected int captureProcessorThreadsCount;
+    public int getCaptureProcessorThreadsCount() {
+        return captureProcessorThreadsCount;
+    }
+
+
+    // ----------------------------------------------
     // Common setup
     // ----------------------------------------------
 

@@ -81,6 +81,9 @@ public class Protocols implements CloneableObject<Protocols> {
 
     protected List<MandatoryField> mandatoryFields;
 
+    // This indicates the default value for wide open when creating a capture endpoint with this protocol
+    protected boolean defaultWideOpen;
+
     // --------------------------------
 
     @Override
@@ -95,6 +98,7 @@ public class Protocols implements CloneableObject<Protocols> {
         p.setCreationMs(this.creationMs);
         p.setDescription(this.description);
         p.setEnDescription(this.enDescription);
+        p.setDefaultWideOpen(this.defaultWideOpen);
         p.setMandatoryFields(new ArrayList<>());
         if ( this.mandatoryFields != null ) {
             for ( MandatoryField mf : this.mandatoryFields ) {
@@ -193,5 +197,13 @@ public class Protocols implements CloneableObject<Protocols> {
 
     public void setMandatoryFields(List<MandatoryField> mandatoryFields) {
         this.mandatoryFields = mandatoryFields;
+    }
+
+    public boolean isDefaultWideOpen() {
+        return defaultWideOpen;
+    }
+
+    public void setDefaultWideOpen(boolean defaultWideOpen) {
+        this.defaultWideOpen = defaultWideOpen;
     }
 }

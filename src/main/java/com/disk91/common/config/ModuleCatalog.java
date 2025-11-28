@@ -6,6 +6,7 @@ public class ModuleCatalog {
         GROUPS,
         AUDIT,
         DEVICES,
+        CAPTURE,
         CUSTOM
     }
 
@@ -18,6 +19,8 @@ public class ModuleCatalog {
             return "audit";
         } else if (service == ModuleCatalog.Modules.DEVICES) {
             return "devices";
+        } else if (service == ModuleCatalog.Modules.CAPTURE) {
+            return "capture";
         } else if (service == ModuleCatalog.Modules.CUSTOM) {
             return "custom";
         }

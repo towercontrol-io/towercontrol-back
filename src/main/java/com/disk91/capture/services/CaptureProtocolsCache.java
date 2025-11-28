@@ -57,7 +57,7 @@ public class CaptureProtocolsCache {
     private final String [] pfProtocols = {
         "{'id':'system-lorawan-helium-chirpstack-v4'," +
                 "'protocolFamily':'protocol-lorawan', 'protocolType':'protocol-helium', 'protocol-version':'protocol-version-chirpstack-v4', 'description':'lorawan-helium-chirpstack-v4','enDescription':'Helium running Chirpstack V4', " +
-                "'processingClassName':'com.disk91.capture.drivers.LoraWanHeliumChirpstackV4Driver', 'creationBy':'system', 'creationMs':0," +
+                "'processingClassName':'com.disk91.capture.drivers.LoraWanHeliumChirpstackV4Driver', 'creationBy':'system', 'creationMs':0, 'defaultWideOpen':false, " +
                 "'mandatoryFields':[ " +
                   "{ 'name':'protocol-server-api-endpoint', 'valueType':'string,^http[s]://', 'description':'protocol-lorawan-helium-chirp-v4-api-endpoint', 'enDescription': 'Helium Chirpstack Api Endpoint'}" +
                 "]" +

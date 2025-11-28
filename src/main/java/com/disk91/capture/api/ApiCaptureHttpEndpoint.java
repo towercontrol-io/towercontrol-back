@@ -1,12 +1,31 @@
+/*
+ * Copyright (c) - Paul Pinault (aka disk91) - 2025.
+ *
+ *    Permission is hereby granted, free of charge, to any person obtaining a copy of this software
+ *    and associated documentation files (the "Software"), to deal in the Software without restriction,
+ *    including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ *    sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ *    furnished to do so, subject to the following conditions:
+ *
+ *    The above copyright notice and this permission notice shall be included in all copies or
+ *    substantial portions of the Software.
+ *
+ *    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+ *    FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS
+ *    OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ *    WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
+ *    IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 package com.disk91.capture.api;
 
+import com.disk91.capture.api.interfaces.CaptureResponseItf;
 import com.disk91.capture.services.CaptureIngestService;
 import com.disk91.common.api.interfaces.ActionResult;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITRightException;
 import com.disk91.common.tools.exceptions.ITTooManyException;
-import com.disk91.users.api.interfaces.UserAccountRegistrationBody;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -17,7 +36,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -53,11 +74,14 @@ public class ApiCaptureHttpEndpoint {
                     @ApiResponse(responseCode = "204", description = "Data accepted", content = @Content(schema = @Schema(implementation = String.class))),
                     @ApiResponse(responseCode = "400", description = "Parsing error", content = @Content(schema = @Schema(implementation = ActionResult.class))),
                     @ApiResponse(responseCode = "403", description = "Right error", content = @Content(schema = @Schema(implementation = ActionResult.class))),
+                    @ApiResponse(responseCode = "503", description = "Service Unavailable", content = @Content(schema = @Schema(implementation = ActionResult.class)))
             }
     )
     @RequestMapping(
             value = "/{captureId}/",
-            method = RequestMethod.POST
+            method = RequestMethod.POST,
+            produces = MediaType.ALL_VALUE,
+            consumes = MediaType.ALL_VALUE
     )
     @PreAuthorize("hasRole('ROLE_BACKEND_CAPTURE')")
     // ----------------------------------------------------------------------
@@ -65,14 +89,27 @@ public class ApiCaptureHttpEndpoint {
             HttpServletRequest request,
             @Parameter(required = true, name = "captureId", description = "Capture endpoint unique identifier")
             @PathVariable("captureId") String captureId,
-            @RequestBody(required = true) String body
+            @RequestBody(required = true) byte[] body
     ) {
         try {
-            return captureIngestService.ingestData(request, captureId, body);
-        } catch ( ITParseException | ITNotFoundException | ITTooManyException x) {
-            return new ResponseEntity<>(ActionResult.BADREQUEST("capture-ingest-parse-error"), HttpStatus.BAD_REQUEST);
+            CaptureResponseItf r = captureIngestService.ingestData(request, body, captureId);
+            if ( r.getStatus() == HttpStatus.NO_CONTENT ) {
+                return new ResponseEntity<>(null, r.getHeaders(), r.getStatus());
+            }
+            return new ResponseEntity<>(r.getData(), r.getHeaders(), r.getStatus());
+
+        } catch ( ITParseException | ITNotFoundException x) {
+            HttpHeaders h = new HttpHeaders();
+            h.add("Content-Type", "application/json");
+            return new ResponseEntity<>(ActionResult.BADREQUEST("capture-ingest-parse-error"), h, HttpStatus.BAD_REQUEST);
+        } catch ( ITTooManyException x ) {
+            HttpHeaders h = new HttpHeaders();
+            h.add("Content-Type", "application/json");
+            return new ResponseEntity<>(ActionResult.PARTIAL(x.getMessage()), h, HttpStatus.SERVICE_UNAVAILABLE);
         } catch ( ITRightException x) {
-            return new ResponseEntity<>(ActionResult.FORBIDDEN("capture-ingest-forbidden"), HttpStatus.FORBIDDEN);
+            HttpHeaders h = new HttpHeaders();
+            h.add("Content-Type", "application/json");
+            return new ResponseEntity<>(ActionResult.FORBIDDEN("capture-ingest-forbidden"), h, HttpStatus.FORBIDDEN);
         }
     }
 

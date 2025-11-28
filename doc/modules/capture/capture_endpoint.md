@@ -14,6 +14,7 @@ It is defined by the following structure, which allows it to be created by an ad
   "owner" : "string",                        // Owner identifier apiUser or apikey owner (it must match the authentication)
   "description": "string",                   // Description of the capture endpoint
   "protocolId": "string",                    // Identifier of the protocol driver used to handle this capture endpoint
+  "wideOpen": "boolean",                     // If true, the endpoint is accessible to authenticated user not only the owner
   "customConfig": [{                         // Custom configuration specific to the protocol and type
     "key" : "string",                        // Protocol-specific configuration parameters
     "value" : "string"
@@ -51,7 +52,34 @@ entries.
   "enDescription": "string",                 // English description of the protocol
   "processingClassName": "string",           // Fully qualified class name of the driver implementing this protocol
   "creationMs": "long",                      // Creation timestamp in milliseconds since epoch
-  "createdBy": "string"                      // Creator identifier (system or user)
+  "createdBy": "string",                     // Creator identifier (system or user)
+  "encrypted": "boolean"                     // When true, the (sensitive) pivot objet data will be encrypted, slower so not a default behavior 
 }
 ```
 
+### Wide Open mode
+
+Depending on the type of integration, security may be restricted to the endpoint owner. This is the case, for example, 
+for a LoRaWan endpoint where the LNS is the sole source for the endpoint. In that case we verify that the connecting user 
+has the right to connect and upload data and that they are indeed the owner of that connection, to ensure another token 
+is not attempting to inject data into the wrong endpoint. This approach also allows accepting incoming devices and 
+performing auto-commissioning.
+
+However, for other types of devices such as devices connected via Wi-Fi, the device may have a direct connection to the 
+endpoint with its own identity. Authorization is therefore managed based on the device's identity rather than the endpoint's, 
+and only later, once the data has been translated into the pivot model. A flag thus indicates the interface mode to handle 
+security appropriately.
+
+### Ingestion error handling
+
+We can encounter several error situations during data ingestion. In some cases the error is, for example, a malformed
+payload that does not match the protocol and appears to be a submission of an invalid frame.
+In this situation, we may abandon the frame by rejecting it with an Exception; this will generate a simple log entry,
+while taking care not to produce too many similar entries because a missed protocol change could quickly spam the logs.
+It may also happen that we face a data interpretation issue, such as a field with an unexpected but overall valid value.
+In that case, if we cannot convert the data, we will keep the traces for analysis and mark the data as an error while
+still returning the Pivot structure.
+Its error status means it will likely not be processed further, but it will nevertheless be stored in the database
+with all received information, both raw and partially decoded.
+In the case of an identified attack, processing may also reject the frame without storing it, but with an audit log
+entry including information related to the source. Storage will be limited to avoid overloading the database.

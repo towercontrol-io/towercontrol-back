@@ -278,7 +278,7 @@ public class UserProfileService {
                         "User profile modified by {0} from {1}",
                         new String[]{
                                 _requestor.getLogin(),
-                                (req != null && req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"
+                                Tools.getRemoteIp(req)
                         }
                 );
             }
@@ -341,7 +341,7 @@ public class UserProfileService {
                     "User Condition validated by {0} from {1} with version {2}",
                     new String[]{
                             _requestor.getLogin(),
-                            (req != null && req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown",
+                            Tools.getRemoteIp(req),
                             p.getStringValue()
                     }
             );
@@ -467,7 +467,7 @@ public class UserProfileService {
                     ActionCatalog.getActionName(ActionCatalog.Actions.PASSWORD_RESET),
                     _user.getLogin(),
                     "Password reset from {0}",
-                    new String[]{(req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+                    new String[]{Tools.getRemoteIp(req)}
             );
 
         } catch (ITParseException x) {
@@ -579,7 +579,7 @@ public class UserProfileService {
                     ActionCatalog.getActionName(ActionCatalog.Actions.LOGOUT),
                     _user.getLogin(),
                     "Logout from {0}",
-                    new String[]{(req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+                    new String[]{Tools.getRemoteIp(req)}
             );
 
         } catch (ITNotFoundException x) {
@@ -650,7 +650,7 @@ public class UserProfileService {
                         ActionCatalog.getActionName(ActionCatalog.Actions.DELETION),
                         _user.getLogin(),
                         "User deletion by {0} from {1}",
-                        new String[]{_requestor.getLogin(), (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+                        new String[]{_requestor.getLogin(), Tools.getRemoteIp(req)}
                 );
             } else {
                 // delete immediately
@@ -661,7 +661,7 @@ public class UserProfileService {
                         ActionCatalog.getActionName(ActionCatalog.Actions.DELETION),
                         _user.getLogin(),
                         "User immediate deletion by {0} from {1}",
-                        new String[]{_requestor.getLogin(), (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+                        new String[]{_requestor.getLogin(), Tools.getRemoteIp(req)}
                 );
             }
         } catch (ITNotFoundException x) {
@@ -725,7 +725,7 @@ public class UserProfileService {
                     ActionCatalog.getActionName(ActionCatalog.Actions.RESTORATION),
                     _user.getLogin(),
                     "User restored form purgatory by {0} from {1}",
-                    new String[]{_requestor.getLogin(), (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+                    new String[]{_requestor.getLogin(), Tools.getRemoteIp(req)}
             );
 
         } else {
@@ -832,7 +832,7 @@ public class UserProfileService {
                     "User 2FA changed by {0} from {1} for method {2}",
                     new String[]{
                             _requestor.getLogin(),
-                            (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown",
+                            Tools.getRemoteIp(req),
                             String.valueOf(_user.getTwoFAType())
                     }
             );
@@ -889,7 +889,7 @@ public class UserProfileService {
                         ActionCatalog.getActionName(ActionCatalog.Actions.PROFILE_UPDATE),
                         _user.getLogin(),
                         (body.isState()?"User actived by {0} from {1}":"User de-activated by {0} from {1}"),
-                        new String[]{_requestor.getLogin(), (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+                        new String[]{_requestor.getLogin(), Tools.getRemoteIp(req)}
             );
         } catch (ITNotFoundException x) {
             log.error("[users] Requestor does not exists", x);
@@ -939,7 +939,7 @@ public class UserProfileService {
                     ActionCatalog.getActionName(ActionCatalog.Actions.PROFILE_UPDATE),
                     _user.getLogin(),
                     (body.isState()?"User locked by {0} from {1}":"User un-locked by {0} from {1}"),
-                    new String[]{_requestor.getLogin(), (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+                    new String[]{_requestor.getLogin(), Tools.getRemoteIp(req)}
             );
         } catch (ITNotFoundException x) {
             log.error("[users] Requestor does not exists", x);
@@ -996,7 +996,7 @@ public class UserProfileService {
                     ActionCatalog.getActionName(ActionCatalog.Actions.TWOFACTOR_CHANGE),
                     _user.getLogin(),
                     "User {0} has deactivate second factor from {1}",
-                    new String[]{_requestor.getLogin(), (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+                    new String[]{_requestor.getLogin(), Tools.getRemoteIp(req)}
             );
         } catch (ITNotFoundException x) {
             log.error("[users] Requestor does not exists", x);
@@ -1116,7 +1116,7 @@ public class UserProfileService {
                         ActionCatalog.getActionName(ActionCatalog.Actions.ROLE_CHANGE),
                         _user.getLogin(),
                         "User {0} added role {1} from {2}",
-                        new String[]{_requestor.getLogin(), r, (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+                        new String[]{_requestor.getLogin(), r, Tools.getRemoteIp(req)}
                 );
             }
             for ( String r : rolesToRemove ) {
@@ -1125,7 +1125,7 @@ public class UserProfileService {
                         ActionCatalog.getActionName(ActionCatalog.Actions.ROLE_CHANGE),
                         _user.getLogin(),
                         "User {0} removed role {1} from {2}",
-                        new String[]{_requestor.getLogin(), r, (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+                        new String[]{_requestor.getLogin(), r, Tools.getRemoteIp(req)}
                 );
             }
 
@@ -1258,7 +1258,7 @@ public class UserProfileService {
                     ActionCatalog.getActionName(ActionCatalog.Actions.GROUP_CHANGE),
                     _user.getLogin(),
                     "User {0} added group {1} from {2}",
-                    new String[]{_requestor.getLogin(), r, (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+                    new String[]{_requestor.getLogin(), r, Tools.getRemoteIp(req)}
             );
         }
         for ( String r : groupsToRemove ) {
@@ -1267,7 +1267,7 @@ public class UserProfileService {
                     ActionCatalog.getActionName(ActionCatalog.Actions.GROUP_CHANGE),
                     _user.getLogin(),
                     "User {0} removed group {1} from {2}",
-                    new String[]{_requestor.getLogin(), r, (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+                    new String[]{_requestor.getLogin(), r, Tools.getRemoteIp(req)}
             );
         }
         for ( String r : aclToRemove ) {
@@ -1276,7 +1276,7 @@ public class UserProfileService {
                     ActionCatalog.getActionName(ActionCatalog.Actions.ACL_CHANGE),
                     _user.getLogin(),
                     "User {0} removed ACL {1} from {2} due to group ownership addition",
-                    new String[]{_requestor.getLogin(), r, (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+                    new String[]{_requestor.getLogin(), r, Tools.getRemoteIp(req)}
             );
         }
 
@@ -1374,7 +1374,7 @@ public class UserProfileService {
                                         ActionCatalog.getActionName(ActionCatalog.Actions.ACL_CHANGE),
                                         _user.getLogin(),
                                         "User {0} add a role {3} in ACL {1} from {2}",
-                                        new String[]{_requestor.getLogin(), userAcl.getGroup(), (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown", add}
+                                        new String[]{_requestor.getLogin(), userAcl.getGroup(), Tools.getRemoteIp(req), add}
                                 );
                             } else {
                                 throw new ITRightException("user-profile-acl-change-not-owned");
@@ -1398,7 +1398,7 @@ public class UserProfileService {
                                         ActionCatalog.getActionName(ActionCatalog.Actions.ACL_CHANGE),
                                         _user.getLogin(),
                                         "User {0} remove a role {3} in ACL {1} from {2}",
-                                        new String[]{_requestor.getLogin(), userAcl.getGroup(), (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown", remove}
+                                        new String[]{_requestor.getLogin(), userAcl.getGroup(), Tools.getRemoteIp(req), remove}
                                 );
                             } else {
                                 throw new ITRightException("user-profile-acl-change-not-owned");
@@ -1480,7 +1480,7 @@ public class UserProfileService {
                     ActionCatalog.getActionName(ActionCatalog.Actions.ACL_CHANGE),
                     _user.getLogin(),
                     "User {0} add an ACL for {1} with roles {3} from {2}",
-                    new String[]{_requestor.getLogin(), a.getGroup(), (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown", String.join(",", a.getRoles()) }
+                    new String[]{_requestor.getLogin(), a.getGroup(), Tools.getRemoteIp(req), String.join(",", a.getRoles()) }
             );
         }
         for ( UserAcl a : aclToRemove ) {
@@ -1489,7 +1489,7 @@ public class UserProfileService {
                     ActionCatalog.getActionName(ActionCatalog.Actions.ACL_CHANGE),
                     _user.getLogin(),
                     "User {0} remove an ACL for {1} from {2}",
-                    new String[]{_requestor.getLogin(), a.getGroup(), (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown" }
+                    new String[]{_requestor.getLogin(), a.getGroup(), Tools.getRemoteIp(req) }
             );
         }
 

@@ -152,7 +152,7 @@ public class UserRegistrationService {
         ur.init(
                 body.getEmail(),
                 body.getRegistrationCode(),
-                (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown",
+                Tools.getRemoteIp(req),
                 usersConfig.getUsersRegistrationLinkExpiration() * 1000,
                 commonConfig.getEncryptionKey()
         );
@@ -198,7 +198,7 @@ public class UserRegistrationService {
                 ActionCatalog.getActionName(ActionCatalog.Actions.REGISTRATION),
                 User.encodeLogin(body.getEmail()),
                 "{0} registration from IP {1}",
-                new String[]{body.getEmail(), (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+                new String[]{body.getEmail(), Tools.getRemoteIp(req)}
         );
 
     }

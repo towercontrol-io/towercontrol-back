@@ -27,6 +27,7 @@ import com.disk91.common.pdb.repositories.ParamRepository;
 import com.disk91.common.tools.EmailTools;
 import com.disk91.common.tools.HexCodingTools;
 import com.disk91.common.tools.Now;
+import com.disk91.common.tools.Tools;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITRightException;
@@ -145,7 +146,7 @@ public class UserService {
         String loginHash = User.encodeLogin(body.getEmail());
 
         // Verify Brute Force Blocking
-        if ( this.isBlocked(loginHash, (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown")) {
+        if ( this.isBlocked(loginHash, Tools.getRemoteIp(req)) ) {
             this.incLoginFailed();
             throw new ITParseException("Possible brute force attack");
         }
@@ -175,7 +176,7 @@ public class UserService {
             u.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
             String _password = usersConfig.getUsersPasswordHeader() + body.getPassword() + usersConfig.getUsersPasswordFooter();
             if ( !u.isRightPassword(_password) ) {
-                this.registerFailure(u, (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown");
+                this.registerFailure(u, Tools.getRemoteIp(req));
                 this.incLoginFailed();
                 throw new ITRightException("Invalid password");
             }
@@ -278,7 +279,7 @@ public class UserService {
                     ActionCatalog.getActionName(ActionCatalog.Actions.LOGIN),
                     u.getLogin(),
                     "Login from {0}",
-                    new String[]{(req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+                    new String[]{Tools.getRemoteIp(req)}
             );
             // And metrics
             this.incLoginSuccess();
@@ -336,7 +337,7 @@ public class UserService {
         }
 
         // Verify Brute Force Blocking
-        if ( this.isBlocked(user, (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown")) {
+        if ( this.isBlocked(user, Tools.getRemoteIp(req))) {
             this.incLoginFailed();
             throw new ITParseException("user-upgrade-brute-force");
         }
@@ -383,7 +384,7 @@ public class UserService {
                                 && !twoFaCode.isEmpty()            // not empty
                         ) {
                             // this can be a brute force attack
-                            this.registerFailure(u,(req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown");
+                            this.registerFailure(u,Tools.getRemoteIp(req));
                         }
                     }
                     case AUTHENTICATOR -> {
@@ -402,7 +403,7 @@ public class UserService {
                         ) {
                             // Even if the code is rolling, we can imagine someone trying to brute force the code
                             // in the limited amount of time the code is valid.
-                            this.registerFailure(u,(req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown");
+                            this.registerFailure(u,Tools.getRemoteIp(req));
                         }
                     }
                 }

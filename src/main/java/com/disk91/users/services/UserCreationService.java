@@ -25,6 +25,7 @@ import com.disk91.common.config.ModuleCatalog;
 import com.disk91.common.pdb.entities.Param;
 import com.disk91.common.pdb.repositories.ParamRepository;
 import com.disk91.common.tools.Now;
+import com.disk91.common.tools.Tools;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITRightException;
@@ -173,7 +174,7 @@ public class UserCreationService {
                         ActionCatalog.getActionName(ActionCatalog.Actions.EULA_VALIDATION),
                         u.getLogin(),
                         "{0} Accepted the EULA version "+ p.getStringValue() +" from {1}",
-                        new String[]{body.getEmail(), (req!=null && req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+                        new String[]{body.getEmail(), Tools.getRemoteIp(req)}
                 );
             } else {
                 u.setConditionValidationVer("");
@@ -182,7 +183,7 @@ public class UserCreationService {
         }
 
         // Set fields
-        u.setEncRegistrationIP( ( req != null && req.getHeader("x-real-ip") != null )?req.getHeader("x-real-ip"):"Unknown" );
+        u.setEncRegistrationIP( Tools.getRemoteIp(req) );
         u.setEncEmail(body.getEmail());
         // Init fields
         u.setEncProfileGender("");
@@ -347,7 +348,7 @@ public class UserCreationService {
                     ActionCatalog.getActionName(ActionCatalog.Actions.CREATION),
                     u.getLogin(),
                     "{0} account creation from IP {1}",
-                    new String[]{u.getEncEmail(), (req.getHeader("x-real-ip") != null) ? req.getHeader("x-real-ip") : "Unknown"}
+                    new String[]{u.getEncEmail(), Tools.getRemoteIp(req)}
             );
             u.cleanKeys();
             this.incCreationsSuccess();

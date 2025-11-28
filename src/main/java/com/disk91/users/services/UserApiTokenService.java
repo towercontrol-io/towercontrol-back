@@ -234,7 +234,7 @@ public class UserApiTokenService {
                     ActionCatalog.getActionName(ActionCatalog.Actions.APIKEY_CREATION),
                     _user.getLogin(),
                     "Apikey creation from {0} requested by {1} for user {2} with name {3} and expiration {4}",
-                    new String[]{(request.getHeader("x-real-ip") != null) ? request.getHeader("x-real-ip") : "Unknown",_requestor.getLogin(), _user.getLogin(),apiKey.getName(), Long.toString(apiKey.getExpiration())}
+                    new String[]{Tools.getRemoteIp(request),_requestor.getLogin(), _user.getLogin(),apiKey.getName(), Long.toString(apiKey.getExpiration())}
             );
 
             // Add the API key to the user list and store it
@@ -356,7 +356,7 @@ public class UserApiTokenService {
                         ActionCatalog.getActionName(ActionCatalog.Actions.APIKEY_DELETION),
                         _user.getLogin(),
                         "Apikey deletion from {0} requested by {1} for user {2} with name {3}",
-                        new String[]{(request.getHeader("x-real-ip") != null) ? request.getHeader("x-real-ip") : "Unknown",_requestor.getLogin(), _user.getLogin(),toRemove.getName()}
+                        new String[]{Tools.getRemoteIp(request),_requestor.getLogin(), _user.getLogin(),toRemove.getName()}
                 );
 
                 // clear cache

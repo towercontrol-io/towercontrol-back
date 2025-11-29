@@ -67,8 +67,8 @@ start-clean:
 
 stop:
 	@if [ -d $(CONF_DIR)/nginx/ssl/accounts ]; then \
-		cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc --profile nginx --profile monitoring stop ; cd - ;\
+		cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc --profile nginx --profile monitoring -t 600 stop ; cd - ;\
 	else \
-		cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc --profile monitoring stop ; cd - ;\
+		cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc --profile monitoring stop -t 600 ; cd - ;\
     fi
 

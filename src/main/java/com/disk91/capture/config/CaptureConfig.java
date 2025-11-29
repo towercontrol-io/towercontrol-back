@@ -65,6 +65,17 @@ public class CaptureConfig {
         return captureProcessorThreadsCount;
     }
 
+    @Value("${capture.async.queue.warning.threshold:2000}")
+    protected int captureAsyncQueueWarningThreshold;
+    public int getCaptureAsyncQueueWarningThreshold() {
+        return captureAsyncQueueWarningThreshold;
+    }
+
+    @Value("${capture.async.queue.max.size:5000}")
+    protected int captureAsyncQueueMaxSize;
+    public int getCaptureAsyncQueueMaxSize() {
+        return captureAsyncQueueMaxSize;
+    }
 
     // ----------------------------------------------
     // Common setup

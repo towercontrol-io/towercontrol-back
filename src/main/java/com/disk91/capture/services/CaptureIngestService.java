@@ -208,7 +208,7 @@ public class CaptureIngestService {
                         if (canLog()) {
                             log.error("[capture] Ingest data failed, hacking detection error for captureId {} protocolId {} from {}", captureId, e.getProtocolId(), Tools.getRemoteIp(req));
                             auditIntegration.auditLog(
-                                    ModuleCatalog.Modules.USERS,
+                                    ModuleCatalog.Modules.CAPTURE,
                                     ActionCatalog.getActionName(ActionCatalog.Actions.HACKING_DETECTED),
                                     u.getLogin(),
                                     "Hacking alert during ingest by {0} from {1} on captureId {2} protocolId {3}",

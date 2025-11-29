@@ -143,7 +143,7 @@ public class Now {
     public static void sleep(long ms) {
         try {
             Thread.sleep(ms);
-        } catch ( InterruptedException x ) {};
+        } catch ( InterruptedException ignored ) {};
     }
 
     public static void randomSleep(long min, long max) {

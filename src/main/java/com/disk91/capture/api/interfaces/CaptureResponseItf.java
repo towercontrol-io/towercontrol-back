@@ -42,7 +42,7 @@ public class CaptureResponseItf {
         this.data = data;
         this.status = status;
         this.headers = new HttpHeaders();
-        this.addHeader("Content-Type", contentType);
+        this.headers.add("Content-Type", contentType);
     }
 
     // ==========================================

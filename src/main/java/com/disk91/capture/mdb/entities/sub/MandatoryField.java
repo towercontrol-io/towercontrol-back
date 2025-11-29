@@ -48,7 +48,7 @@ public class MandatoryField implements CloneableObject<MandatoryField> {
 
     public MandatoryField(String name, String valueType, String description, String enDescription) {
         this.name = name;
-        this.valueType = getValueType();
+        this.valueType = valueType;
         this.description = description;
         this.enDescription = enDescription;
     }

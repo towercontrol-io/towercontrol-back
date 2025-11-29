@@ -45,7 +45,7 @@ public class CaptureSecurityProfile {
 
     @Order(1)
     @Bean
-    public SecurityFilterChain usersFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain captureFilterChain(HttpSecurity http) throws Exception {
         http
                 .securityMatcher("/capture/**")
                 .csrf(AbstractHttpConfigurer::disable)

@@ -129,7 +129,7 @@ public class CaptureEndpointCache {
      * @return the object
      * @throws ITNotFoundException if not found
      */
-    protected CaptureEndpoint getCaptureEndpoint(String id) throws ITNotFoundException {
+    public CaptureEndpoint getCaptureEndpoint(String id) throws ITNotFoundException {
         if (!this.serviceEnable || config.getCaptureEndpointCacheMaxSize() == 0) {
             // direct access from database
             CaptureEndpoint o = repository.findOneByRef(id);
@@ -152,7 +152,7 @@ public class CaptureEndpointCache {
      * @param id - capture endpoint to be removed
      * @return
      */
-    protected void flushCaptureEndpoint(String id) {
+    public void flushCaptureEndpoint(String id) {
         if ( this.serviceEnable && config.getCaptureEndpointCacheMaxSize() > 0 ) {
             this.cache.remove(id,false);
         }

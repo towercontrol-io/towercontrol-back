@@ -5,6 +5,7 @@ public class ActionCatalog {
         HACKING_DETECTED,
         INGEST_QUEUE_FULL,
         INGEST_SERVICE_RESTORED,
+        CREATE,
 
         UNKNOWN
     }
@@ -17,6 +18,8 @@ public class ActionCatalog {
                 return "ingest_queue_full";
             case INGEST_SERVICE_RESTORED:
                 return "ingest_service_restored";
+            case CREATE:
+                return "create";
             case UNKNOWN:
             default:
                 return "unknown";

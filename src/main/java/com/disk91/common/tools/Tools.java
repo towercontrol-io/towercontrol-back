@@ -130,12 +130,12 @@ public class Tools {
         }
 
         // by config
-        if ( req.getHeaders("x-real-ip") != null ) {
+        if ( req.getHeader("x-real-ip") != null && !req.getHeader("x-real-ip").isEmpty()) {
             return req.getHeader("x-real-ip");
         }
 
         // most relevant is x-forwarded-for
-        if ( req.getHeader("x-forwarded-for") != null ) {
+        if ( req.getHeader("x-forwarded-for") != null && !req.getHeader("x-forwarded-for").isEmpty() ) {
             return req.getHeader("x-forwarded-for");
         }
 

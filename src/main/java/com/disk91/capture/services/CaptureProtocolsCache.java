@@ -55,9 +55,9 @@ public class CaptureProtocolsCache {
 
     // Platform protocols definitions, the database only stores custom protocols
     private final String [] pfProtocols = {
-        "{'id':'system-lorawan-helium-chirpstack-v4'," +
-                "'protocolFamily':'protocol-lorawan', 'protocolType':'protocol-helium', 'protocol-version':'protocol-version-chirpstack-v4', 'description':'lorawan-helium-chirpstack-v4','enDescription':'Helium running Chirpstack V4', " +
-                "'processingClassName':'com.disk91.capture.drivers.LoraWanHeliumChirpstackV4Driver', 'creationBy':'system', 'creationMs':0, 'defaultWideOpen':false, " +
+        "{'id':'system-lorawan-helium-chirpstack-v4', 'version':1, " +
+                "'protocolFamily':'protocol-lorawan', 'protocolType':'protocol-helium', 'protocolVersion':'protocol-helium-chirpstack-v4', 'description':'lorawan-helium-chirpstack-v4','enDescription':'Helium running Chirpstack V4', " +
+                "'processingClassName':'com.disk91.capture.drivers.standard.LoraWanHeliumChirpstackV4Driver', 'creationBy':'system', 'creationMs':0, 'defaultWideOpen':false, " +
                 "'mandatoryFields':[ " +
                   "{ 'name':'protocol-server-api-endpoint', 'valueType':'string,^http[s]://', 'description':'protocol-lorawan-helium-chirp-v4-api-endpoint', 'enDescription': 'Helium Chirpstack Api Endpoint'}" +
                 "]" +
@@ -182,7 +182,7 @@ public class CaptureProtocolsCache {
         }
         // load the custom roles if any
         all.forEach((r) -> protocolsCache.putIfAbsent(r.getId(), r));
-        log.info("[capture] {} Roles (re)loaded", protocolsCache.size());
+        log.info("[capture] {} Protocols (re)loaded", protocolsCache.size());
     }
 
     /**

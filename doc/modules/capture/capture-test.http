@@ -1,0 +1,95 @@
+### ###########################################################
+### CAPTURE MODULE TESTS
+
+# ###
+# The JWT token used is obtained running the test suite and printed in the console logs
+# The refId is also obtained running the test suite and printed in the console logs
+@apiserver=http://localhost:8091
+@jwt=eyJ0eXAiOiJKV1QiLCJzdWIiOiIzQzMxQkMyODdDQUI1N0MyMTc5NzZBNTgwNjY1MTUzRDNENDkyQ0IwMjNERUZCQjlGRThCQ0EyRDU3MjdBNDhFIiwiYWxnIjoiSFM1MTIifQ.eyJzdWIiOiIzQzMxQkMyODdDQUI1N0MyMTc5NzZBNTgwNjY1MTUzRDNENDkyQ0IwMjNERUZCQjlGRThCQ0EyRDU3MjdBNDhFIiwiZXhwIjoxNzY0NjI0Mzc2LCJyb2xlcyI6WyJST0xFX0xPR0lOXzFGQSIsIlJPTEVfTE9HSU5fQ09NUExFVEUiLCJST0xFX1BFTkRJTkdfVVNFUiIsIlJPTEVfUkVHSVNURVJFRF9VU0VSIiwiUk9MRV9ERVZJQ0VfUkVBRCIsIlJPTEVfREVWSUNFX1dSSVRFIiwiUk9MRV9CQUNLRU5EX0NBUFRVUkUiLCJST0xFX0JBQ0tFTkRfQ0FQVFVSRSJdfQ.q6rsKO-gQ8Q-bAoH7f4LebxQUDqOtKTAHIBJjP90yOECIsTYmxZoHBps-z1uCAWxF1jRfO1F-M5uNJOtVSSuvQ
+
+@endpointRefId=PUBDYYCJJL
+
+# ###
+### Test capture with Chirpstack content
+POST {{apiserver}}/capture/1.0/ingest/{{endpointRefId}}/
+Content-Type: application/json
+Authorization: Bearer {{jwt}}
+
+{
+    "deduplicationId":"49403db7-8722-49b4-8d49-c3b119c534e5",
+    "time":"2023-05-29T19:50:10+00:00",
+    "deviceInfo":{
+        "tenantId":"c9316fdb-d2fe-453d-bd28-4917f7e227ce",
+        "tenantName":"migration",
+        "applicationId":"ace3452a-87f3-4a86-b9a8-fe8507b47ff3",
+        "applicationName":"test",
+        "deviceProfileId":"7fc8491b-ab6a-4871-9eb9-a57431b982a0",
+        "deviceProfileName":"(EU868) Migration OTAA Without label",
+        "deviceName":"disk91_test1",
+        "devEui":"6081f9dde602cd71",
+        "deviceClassEnabled":"CLASS_A",
+        "tags":{
+            "label":"Without label"
+        }
+    },
+    "devAddr":"480007a0",
+    "dr":3,
+    "adr":false,
+    "fCnt":22772,
+    "fPort":1,
+    "confirmed":false,
+    "data":"HQ==",
+    "object":{
+        "other":"123",
+        "temp":22.5
+    },
+    "rxInfo":[
+        {
+            "gatewayId":"c986398a305dee5a",
+            "uplinkId":65489,
+            "gwTime":"2024-01-07T11:05:31+00:00",
+            "nsTime":"2024-01-07T11:05:31.577525935+00:00",
+            "rssi":-41,
+            "snr":7.8,
+            "location" : {
+            },
+            "context":"EbkTFA==",
+            "metadata":{
+                "region_common_name":"EU868",
+                "region_config_id":"eu868",
+                "gateway_h3index" : "61105",
+                "gateway_lat" : "45.80",
+                "gateway_long" : "3.09",
+                "gateway_name" : "mythical-xxx...",
+                "gateway_id":"11o8R9inbpc...3XA",
+                "lat": 0.0,
+                "lon": 0.0
+            },
+            "crcStatus":"CRC_OK"
+        },
+        {
+            "gatewayId":"3c408850a5b4f27c",
+            "uplinkId":11888,
+            "gwTime":"2024-02-27T18:07:11+00:00",
+            "nsTime":"2024-02-27T18:07:11.115026956+00:00",
+            "rssi":-22,
+            "snr":8.0,
+            "context":"yIKGwQ==",
+            "metadata":{
+                "region_common_name":"EU868",
+                "region_name":"eu868"
+            }
+        }
+    ],
+    "txInfo":{
+        "frequency":867500000,
+        "modulation":{
+            "lora":{
+                "bandwidth":125000,
+                "spreadingFactor":9,
+                "codeRate":"CR_4_5",
+                "polarizationInversion":false
+            }
+        }
+    }
+}

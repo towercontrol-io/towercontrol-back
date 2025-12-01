@@ -22,7 +22,6 @@ package com.disk91.capture.services;
 import com.disk91.audit.integration.AuditIntegration;
 import com.disk91.capture.api.interfaces.CaptureResponseItf;
 import com.disk91.capture.interfaces.AbstractProtocol;
-import com.disk91.capture.interfaces.CaptureDataPivot;
 import com.disk91.capture.interfaces.CaptureIngestResponse;
 import com.disk91.capture.mdb.entities.CaptureEndpoint;
 import com.disk91.capture.mdb.entities.Protocols;

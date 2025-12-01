@@ -1,8 +1,13 @@
-package com.disk91.users.tests;
+package com.disk91.capture.tests;
 
+import com.disk91.capture.api.interfaces.CaptureEndpointCreationBody;
+import com.disk91.capture.mdb.entities.CaptureEndpoint;
+import com.disk91.capture.mdb.repositories.CaptureEndpointRepository;
+import com.disk91.capture.services.CaptureEndpointCache;
+import com.disk91.capture.services.CaptureEndpointService;
 import com.disk91.common.config.CommonConfig;
 import com.disk91.common.tests.CommonTestsService;
-import com.disk91.common.tools.EncryptionHelper;
+import com.disk91.common.tools.CustomField;
 import com.disk91.common.tools.RandomString;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
@@ -10,14 +15,16 @@ import com.disk91.common.tools.exceptions.ITRightException;
 import com.disk91.common.tools.exceptions.ITTooManyException;
 import com.disk91.users.api.interfaces.UserAccountCreationBody;
 import com.disk91.users.api.interfaces.UserAccountRegistrationBody;
-import com.disk91.users.api.interfaces.UserLoginBody;
-import com.disk91.users.api.interfaces.UserLoginResponse;
 import com.disk91.users.config.UsersConfig;
 import com.disk91.users.mdb.entities.User;
 import com.disk91.users.mdb.entities.UserRegistration;
 import com.disk91.users.mdb.repositories.UserRegistrationRepository;
 import com.disk91.users.mdb.repositories.UserRepository;
-import com.disk91.users.services.*;
+import com.disk91.users.services.CrossUserWrapperService;
+import com.disk91.users.services.UserCache;
+import com.disk91.users.services.UserCreationService;
+import com.disk91.users.services.UserRegistrationService;
+import com.disk91.users.tests.UsersTestsService;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
 import org.slf4j.Logger;
@@ -32,44 +39,26 @@ import java.security.Principal;
 import java.util.*;
 
 @Service
-public class UsersTestsService {
+public class CaptureTestsService {
 
     private final Logger log = LoggerFactory.getLogger(this.getClass());
+
+    public final String TEST_ENDPOINT_NAME = "Test Chirpstack V4 Endpoint";
 
     @Autowired
     protected CommonTestsService commonTestsService;
 
     @Autowired
-    protected UserRepository userRepository;
-
-    @Autowired
-    protected UserRegistrationRepository userRegistrationRepository;
-
-    @Autowired
-    protected UserCache userCache;
-
-    @Autowired
-    protected UserService userService;
-
-    @Autowired
-    protected UserRegistrationService userRegistrationService;
-
-    @Autowired
-    protected UserCreationService userCreationService;
-
-    @Autowired
-    protected CrossUserWrapperService crossUserWrapperService;
-
-    @Autowired
     protected CommonConfig commonConfig;
 
     @Autowired
-    protected UsersConfig usersConfig;
+    protected CaptureEndpointService captureEndpointService;
 
-    public static String testNormalUserEmail = "john.doe@test.foo.bar";
-    public static String testNormalUserPassword = "";
-    public static String testNormalUserLogin = "";
-    public static User testNormalUser = null;
+    @Autowired
+    protected CaptureEndpointRepository captureEndpointRepository;
+
+    @Autowired
+    protected CaptureEndpointCache captureEndpointCache;
 
     /**
      * This function is creating tests for the Users module
@@ -78,6 +67,9 @@ public class UsersTestsService {
      * @throws ITParseException
      */
     public void runTests() throws ITParseException {
+
+        // Create a endpoint service for chirpstack protocol when not already existing
+        // Delete it when existing
 
         HttpServletRequest req = new HttpServletRequest() {
             @Override
@@ -152,7 +144,12 @@ public class UsersTestsService {
 
             @Override
             public Principal getUserPrincipal() {
-                return null;
+                return new Principal() {
+                    @Override
+                    public String getName() {
+                        return UsersTestsService.testNormalUserLogin;
+                    }
+                };
             }
 
             @Override
@@ -431,137 +428,44 @@ public class UsersTestsService {
             }
         };
 
-        // Test use the public API and this need to be authorized, later we could manage different type of creation
-        // so it will be possible to test the different cases
-        // @TODO
-        if (!usersConfig.isUsersRegistrationSelf()) {
-            commonTestsService.error("[users] Self registration is disabled, cannot run tests, please enable it in config");
-            throw new ITParseException("[users] failed in new user creation");
+        CaptureEndpoint ce = captureEndpointRepository.findFirstByName(TEST_ENDPOINT_NAME);
+        if ( ce != null ) {
+            commonTestsService.info("[capture] Removing the test endpoint previously created");
+            // delete it
+            captureEndpointRepository.delete(ce);
         }
 
-        commonTestsService.info("[users] Attempt to create {} user",testNormalUserEmail);
-        testNormalUserLogin = User.encodeLogin(testNormalUserEmail);
-        String testNormalUserEmailEnc = UserRegistration.getEncodedEmail(testNormalUserEmail,commonConfig.getEncryptionKey());
-
-        // check if a request is pending
-        UserRegistration ur = userRegistrationRepository.findOneUserRegistrationByEmail(testNormalUserEmailEnc);
-        if ( ur != null ) {
-            commonTestsService.info("[users] UserRequest {} already exist, deleting it",testNormalUserEmail);
-            userRegistrationRepository.delete(ur);
-        }
-
-        // check if exist (like previous test)
-        User u = userRepository.findOneUserByLogin(testNormalUserLogin);
-        if ( u != null ) {
-            commonTestsService.info("[users] User {} already exist, deleting it",testNormalUserEmail);
-            userRepository.delete(u);
-            userCache.flushUser(u.getLogin());
-        }
-
-        // Create the request for this user, we may have no issue
-        UserAccountRegistrationBody jd = new UserAccountRegistrationBody();
-        jd.setEmail(testNormalUserEmail);
-        jd.setRegistrationCode("");
+        CaptureEndpoint endp = null;
         try {
-            userRegistrationService.requestAccountCreation(jd, req);
-        } catch ( ITTooManyException x) {
-            commonTestsService.error("[users] {} already existing even if deleted or pending", testNormalUserEmail);
-            throw new ITParseException("[users] failed in new user creation");
-        } catch (ITRightException x) {
-            commonTestsService.error("[users] Right Exception");
-            throw new ITParseException("[users] failed in new user creation");
-        } catch (ITParseException x) {
-            commonTestsService.error("[users] {} format seems invalid", testNormalUserEmail);
-            throw new ITParseException("[users] failed in new user creation");
+            commonTestsService.info("[capture] Creating the default Chirpstack V4 endpoint");
+            CaptureEndpointCreationBody reqBody = new CaptureEndpointCreationBody();
+            reqBody.setName(TEST_ENDPOINT_NAME);
+            reqBody.setDescription("test endpoint for Chirpstack V4");
+            reqBody.setEncrypted(false);
+            reqBody.setProtocolId("system-lorawan-helium-chirpstack-v4");
+            reqBody.setForceWideOpen(false);
+            reqBody.setCustomConfig(new ArrayList<>());
+            reqBody.getCustomConfig().add(new CustomField("protocol-server-api-endpoint","https://console.heyiot.xyz/api"));
+
+            endp = captureEndpointService.createCaptureEndpoint(
+                req,
+                reqBody
+            );
+
+            commonTestsService.success("[capture] Default Chirpstack V4 endpoint created successfully with RefId {}", endp.getRef());
+        } catch (ITRightException | ITNotFoundException  | ITParseException e) {
+            commonTestsService.error("[capture] Error creating default Chirpstack V4 endpoint {} ", e.getMessage());
+            throw new ITParseException("[capture] Error creating default Chirpstack V4 endpoint: " + e.getMessage());
         }
 
-        // get the associated registration key
-        UserRegistration exists = userRegistrationRepository.findOneUserRegistrationByEmail(testNormalUserEmailEnc);
-        if ( exists == null ) {
-            commonTestsService.error("[users] UserRegistration for {} not found",testNormalUserEmail);
-            throw new ITParseException("[users] failed to confirm user registration");
-        }
-
-        commonTestsService.success("[users] User {} creation request passed successfully",testNormalUserEmail);
-
-        // Validate the registration
-        testNormalUserPassword = RandomString.getRandomAZString(15)+"!1";
-        UserAccountCreationBody ucb = new UserAccountCreationBody();
-        ucb.setEmail(testNormalUserEmail);
-        ucb.setPassword(testNormalUserPassword);
-        ucb.setConditionValidation(true);
-        ucb.setValidationID(exists.getValidationId());
-        if ( usersConfig.isUsersNceEnableCaptcha() ) {
-            try {
-                // We expect the call to fail due to captcha missing
-                userCreationService.createUserSelf(ucb, req);
-                commonTestsService.error("[users] {} created even with captcha not validated", testNormalUserEmail);
-                throw new ITParseException("[users] failed in new user creation");
-            } catch (ITTooManyException | ITParseException x) {
-                commonTestsService.error("[users] {} creation failed for an unexpected reason {}", testNormalUserEmail,x.getMessage());
-                throw new ITParseException("[users] failed in new user creation");
-            } catch (ITRightException ignored) {
-                // normal behavior
-            }
-        }
-        commonTestsService.success("[users] Captcha requirement for {} enforced successfully",testNormalUserEmail);
-
-        crossUserWrapperService.userRegistrationForceCaptcha(exists.getValidationId());
+        // make sure we can get the endpoint
         try {
-            userCreationService.createUserSelf(ucb, req);
-        } catch (ITTooManyException | ITParseException | ITRightException x) {
-            commonTestsService.error("[users] {} creation failed for an unexpected reason {}", testNormalUserEmail,x.getMessage());
-            throw new ITParseException("[users] failed in new user creation");
-        }
-
-        try {
-            testNormalUser = userCache.getUser(testNormalUserLogin);
-            // Add right for other tests to that user
-            // ROLE_BACKEND_CAPTURE for capture tests
-            commonTestsService.info("[users] Adding ROLE_BACKEND_CAPTURE to {}",testNormalUserEmail);
-            testNormalUser.getRoles().add("ROLE_BACKEND_CAPTURE");
-            userCache.saveUser(testNormalUser);
+            captureEndpointCache.getCaptureEndpoint(endp.getRef());
+            commonTestsService.success("[capture] Created endpoint retrieved successfully from cache");
         } catch (ITNotFoundException x) {
-            commonTestsService.error("[users] {} not found after creation",testNormalUserEmail);
-            throw new ITParseException("[users] failed in new user creation");
-        }
-        commonTestsService.success("[users] User {} created successfully with ID {}",testNormalUserEmail,testNormalUserLogin);
-
-        // Test login and print the JWT for HTTP tests
-        commonTestsService.info("[users] Attempt to login {}",testNormalUserEmail);
-        UserLoginBody loginBody = new UserLoginBody();
-        loginBody.setEmail(testNormalUserEmail);
-
-        // Do a test with a wrong password
-        loginBody.setPassword("wrongPassword");
-        try {
-            userService.userLogin(
-                    loginBody,
-                    req
-            );
-            commonTestsService.error("[users] {} login passed with wrong password",testNormalUserEmail);
-            throw new ITParseException("[users] failed in new user signin");
-        } catch (ITRightException x) {
-            // normal behavior
-            commonTestsService.success("[users] {} login failed as expected for wrong password",testNormalUserEmail);
-        } catch (Exception e) {
-            commonTestsService.error("[users] {} login failed for an unexpected reason",testNormalUserEmail);
-            throw new ITParseException("[users] failed in new user signin");
+            commonTestsService.error("[capture] Error getting created endpoint {} ", x.getMessage());
+            throw new ITParseException("[capture] Error getting created endpoint: " + x.getMessage());
         }
 
-        loginBody.setPassword(testNormalUserPassword);
-        try {
-            UserLoginResponse resp = userService.userLogin(
-                    loginBody,
-                    req
-            );
-            commonTestsService.info("[users] {} login JWT: {}",testNormalUserEmail, resp.getJwtToken());
-        } catch (Exception e) {
-            commonTestsService.error("[users] {} login failed after creation",testNormalUserEmail);
-            throw new ITParseException("[users] failed in new user signin");
-        }
-
-        commonTestsService.success("[users] User {} logged successfully ",testNormalUserEmail);
     }
-
 }

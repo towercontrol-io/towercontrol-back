@@ -29,4 +29,7 @@ public interface CaptureEndpointRepository extends MongoRepository<CaptureEndpoi
 
     CaptureEndpoint findOneByRef(String ref);
 
+    CaptureEndpoint findFirstByName(String name);
+
 }
+

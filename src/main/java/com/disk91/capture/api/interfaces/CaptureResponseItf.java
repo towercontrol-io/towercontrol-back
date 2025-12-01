@@ -22,8 +22,6 @@ package com.disk91.capture.api.interfaces;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 
-import java.util.List;
-
 /**
  * What the capture injection function returns to match the expected response
  */

@@ -71,7 +71,15 @@ public class CaptureMetaData implements CloneableObject<CaptureMetaData> {
             example = "42",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED
     )
-    protected int frameCounter;
+    protected int frameCounterUp;
+
+    @Schema(
+            description = "Downlink Frame counter when available",
+            example = "42",
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED
+    )
+    protected int frameCounterDwn;
+
 
     @Schema(
             description = "Frame port when available",
@@ -99,14 +107,14 @@ public class CaptureMetaData implements CloneableObject<CaptureMetaData> {
             example = "false",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED
     )
-    protected boolean donwlinkReq;
+    protected boolean downlinkReq;
 
     @Schema(
             description = "When the frame corresponds to a downlink response",
             example = "false",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED
     )
-    protected boolean donwlinkResp;
+    protected boolean downlinkResp;
 
     @Schema(
             description = "Radio metadata when available",
@@ -130,12 +138,13 @@ public class CaptureMetaData implements CloneableObject<CaptureMetaData> {
         o.nwkDeviceId = this.nwkDeviceId;
         o.deviceId = this.deviceId;
         o.sessionCounter = this.sessionCounter;
-        o.frameCounter = this.frameCounter;
+        o.frameCounterUp = this.frameCounterUp;
+        o.frameCounterDwn = this.frameCounterDwn;
         o.framePort = this.framePort;
         o.confirmReq = this.confirmReq;
         o.confirmed = this.confirmed;
-        o.donwlinkReq = this.donwlinkReq;
-        o.donwlinkResp = this.donwlinkResp;
+        o.downlinkReq = this.downlinkReq;
+        o.downlinkResp = this.downlinkResp;
         if (this.radioMetadata != null) {
             o.radioMetadata = this.radioMetadata.clone();
         } else {
@@ -199,12 +208,12 @@ public class CaptureMetaData implements CloneableObject<CaptureMetaData> {
         this.sessionCounter = sessionCounter;
     }
 
-    public int getFrameCounter() {
-        return frameCounter;
+    public int getFrameCounterUp() {
+        return frameCounterUp;
     }
 
-    public void setFrameCounter(int frameCounter) {
-        this.frameCounter = frameCounter;
+    public void setFrameCounterUp(int frameCounterUp) {
+        this.frameCounterUp = frameCounterUp;
     }
 
     public int getFramePort() {
@@ -231,20 +240,20 @@ public class CaptureMetaData implements CloneableObject<CaptureMetaData> {
         this.confirmed = confirmed;
     }
 
-    public boolean isDonwlinkReq() {
-        return donwlinkReq;
+    public boolean isDownlinkReq() {
+        return downlinkReq;
     }
 
-    public void setDonwlinkReq(boolean donwlinkReq) {
-        this.donwlinkReq = donwlinkReq;
+    public void setDownlinkReq(boolean downlinkReq) {
+        this.downlinkReq = downlinkReq;
     }
 
-    public boolean isDonwlinkResp() {
-        return donwlinkResp;
+    public boolean isDownlinkResp() {
+        return downlinkResp;
     }
 
-    public void setDonwlinkResp(boolean donwlinkResp) {
-        this.donwlinkResp = donwlinkResp;
+    public void setDownlinkResp(boolean downlinkResp) {
+        this.downlinkResp = downlinkResp;
     }
 
     public CaptureRadioMetadata getRadioMetadata() {
@@ -261,5 +270,13 @@ public class CaptureMetaData implements CloneableObject<CaptureMetaData> {
 
     public void setCalculatedLocation(CaptureCalcLocation calculatedLocation) {
         this.calculatedLocation = calculatedLocation;
+    }
+
+    public int getFrameCounterDwn() {
+        return frameCounterDwn;
+    }
+
+    public void setFrameCounterDwn(int frameCounterDwn) {
+        this.frameCounterDwn = frameCounterDwn;
     }
 }

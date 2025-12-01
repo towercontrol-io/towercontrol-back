@@ -65,14 +65,14 @@ public class CaptureDataPivot implements CloneableObject<CaptureDataPivot>  {
     protected long rxTimestampMs;
 
     @Schema(
-            description = "The associated CaptureEndpoint ID",
-            example = "1762503324",
+            description = "The associated CaptureEndpoint Reference ID",
+            example = "AZGFBRDJ",
             requiredMode = Schema.RequiredMode.REQUIRED
     )
-    protected String rxCaptureId;
+    protected String rxCaptureRef;
 
     @Schema(
-            description = "The raw payload from the network, stored as base64 encoded string, encrypted when required",
+            description = "The raw payload from the network, stored as base64 encoded string, encrypted when required, encrypted string starts with $",
             example = "....",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED
     )
@@ -110,7 +110,7 @@ public class CaptureDataPivot implements CloneableObject<CaptureDataPivot>  {
     protected String coredDump;
 
     @Schema(
-            description = "Store the owner identity comming from the JWT token used during ingestion",
+            description = "Store the owner identity (LoginID) coming from the JWT token used during ingestion",
             example = "D1C445E8...CA25",
             requiredMode = Schema.RequiredMode.REQUIRED
     )
@@ -161,7 +161,7 @@ public class CaptureDataPivot implements CloneableObject<CaptureDataPivot>  {
         CaptureDataPivot copy = new CaptureDataPivot();
         copy.rxUuid = this.rxUuid;
         copy.rxTimestampMs = this.rxTimestampMs;
-        copy.rxCaptureId = this.rxCaptureId;
+        copy.rxCaptureRef = this.rxCaptureRef;
         copy.payload = this.payload;
         copy.nwkStatus = this.nwkStatus;
         copy.status = this.status;
@@ -227,12 +227,12 @@ public class CaptureDataPivot implements CloneableObject<CaptureDataPivot>  {
         this.rxTimestampMs = rxTimestampMs;
     }
 
-    public String getRxCaptureId() {
-        return rxCaptureId;
+    public String getRxCaptureRef() {
+        return rxCaptureRef;
     }
 
-    public void setRxCaptureId(String rxCaptureId) {
-        this.rxCaptureId = rxCaptureId;
+    public void setRxCaptureRef(String rxCaptureRef) {
+        this.rxCaptureRef = rxCaptureRef;
     }
 
     public String getPayload() {

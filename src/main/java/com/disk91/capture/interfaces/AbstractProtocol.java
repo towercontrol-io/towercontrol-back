@@ -22,11 +22,24 @@ package com.disk91.capture.interfaces;
 import com.disk91.capture.api.interfaces.CaptureResponseItf;
 import com.disk91.capture.mdb.entities.CaptureEndpoint;
 import com.disk91.capture.mdb.entities.Protocols;
+import com.disk91.common.tools.RandomString;
 import com.disk91.common.tools.exceptions.*;
 import com.disk91.users.mdb.entities.User;
 import jakarta.servlet.http.HttpServletRequest;
 
+import java.util.UUID;
+
 public abstract class AbstractProtocol {
+
+    /**
+     * This function is used to create a unique RX UUID that will be used to trace the frame over the different
+     * processing steps and splits.
+     *
+     * @return
+     */
+    protected UUID getRxUUID() {
+        return UUID.randomUUID();
+    }
 
     /**
      * Convert a data ingested from any endpoint into a pivot objet we can manipulate in a generic way later.

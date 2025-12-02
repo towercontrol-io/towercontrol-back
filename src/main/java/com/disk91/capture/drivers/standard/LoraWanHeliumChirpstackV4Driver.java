@@ -23,15 +23,14 @@ import com.disk91.capture.api.interfaces.CaptureResponseItf;
 import com.disk91.capture.interfaces.AbstractProtocol;
 import com.disk91.capture.interfaces.CaptureDataPivot;
 import com.disk91.capture.interfaces.CaptureIngestResponse;
-import com.disk91.capture.interfaces.sub.CaptureCalcLocation;
-import com.disk91.capture.interfaces.sub.CaptureError;
-import com.disk91.capture.interfaces.sub.CaptureMetaData;
-import com.disk91.capture.interfaces.sub.CaptureRadioMetadata;
+import com.disk91.capture.interfaces.sub.*;
 import com.disk91.capture.mdb.entities.CaptureEndpoint;
 import com.disk91.capture.mdb.entities.Protocols;
 import com.disk91.common.config.CommonConfig;
 import com.disk91.common.interfaces.chirpstack.ChirpstackV4HeliumPayload;
 import com.disk91.common.tools.*;
+import com.disk91.common.tools.computeLocation.ComputeLocation;
+import com.disk91.common.tools.computeLocation.Location;
 import com.disk91.common.tools.exceptions.ITHackerException;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
@@ -41,6 +40,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.uber.h3core.H3Core;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -48,6 +48,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 
@@ -61,6 +62,7 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
 
     // Init once
     protected ObjectMapper mapper;
+    protected H3Core h3;
 
     // Add a driver seeed
     private static final String IV = "90f7adcf874990333cf159c1857fe539";
@@ -75,6 +77,14 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         mapper.enable(JsonReadFeature.ALLOW_TRAILING_COMMA.mappedFeature());
         mapper.enable(JsonReadFeature.ALLOW_SINGLE_QUOTES.mappedFeature());
+        try {
+            // get the hex corresponding in a resolution of 14 - 3m2
+            h3 = H3Core.newInstance();
+        } catch (IOException ioException) {
+            h3 = null;
+            log.error("[LoraWanHeliumChirpstackV4Driver] Failed to initialize H3Core: {}", ioException.getMessage());
+        }
+
     }
 
     public CaptureIngestResponse toPivot(
@@ -123,7 +133,9 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
         p.setNwkStatus(CaptureDataPivot.NetworkStatus.NWK_STATUS_SUCCESS);
         p.setCoredDump("");
         p.setIngestOwnerId(user.getLogin());
-        p.setFromIp(Tools.getRemoteIp(request));
+        // IP source - potential personal data
+        String _ip = EncryptionHelper.encrypt(Tools.getRemoteIp(request), IV, commonConfig.getEncryptionKey());
+        p.setFromIp(_ip);
 
         // Copy the headers except Authorization
         p.setHeaders(new ArrayList<>());
@@ -152,6 +164,8 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
             e.setLevel(CAP_ERROR_WARNING);
             e.setMessage("capture-driver-helium-chirpstackv4-bad-timestamp-format");
             p.getErrors().add(e);
+            meta.setNwkTimestamp(Now.NowUtcMs());
+            meta.setNwkTimeNs(0);
         }
         meta.setNwkDeviceId(payload.getDeviceInfo().getDevEui());
         // @TODO : device ID
@@ -171,14 +185,92 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
         crmeta.setDataRate(""+payload.getDr());
         meta.setRadioMetadata(crmeta);
 
-        // @TODO : complete metadata
-        CaptureCalcLocation ccmeta = new CaptureCalcLocation();
-        ccmeta.setAccuracy(0);
-        ccmeta.setAltitude(0);
-        ccmeta.setLatitude(0.0);
-        ccmeta.setLatitude(0.0);
-        ccmeta.setHexagonId("");
-        meta.setCalculatedLocation(ccmeta);
+        // Network stations
+        ArrayList<Location> locs = new ArrayList<>();
+        if ( payload.getRxInfo() != null ) {
+            payload.getRxInfo().forEach(ri -> {
+                CaptureNwkStation ns = new CaptureNwkStation();
+                ns.setCustomParams(new ArrayList<>());
+
+                try {
+                    if ( ri.getNsTime() != null && !ri.getNsTime().isEmpty() ) {
+                        ns.setNkwTimestamp(DateConverters.StringNsDateToMs(ri.getNsTime()));
+                        ns.setNkwTimeNs(DateConverters.StringNsDateToNsRemaining(ri.getNsTime()));
+                    } else {
+                        ns.setNkwTimestamp(DateConverters.StringDateToMs(ri.getTime()));
+                        ns.setNkwTimeNs(0);
+                    }
+                } catch (ITParseException x) {
+                    CaptureError e = new CaptureError();
+                    e.setCode("002");
+                    e.setLevel(CAP_ERROR_WARNING);
+                    e.setMessage("capture-driver-helium-chirpstackv4-bad-timestamp-format");
+                    p.getErrors().add(e);
+                    ns.setNkwTimestamp(0);
+                    ns.setNkwTimeNs(0);
+                }
+                if ( ri.getMetadata() != null ) {
+                    if ( ri.getMetadata().getGateway_id() != null ) {
+                        ns.setStationId(ri.getMetadata().getGateway_id());
+                    } else {
+                        CaptureError e = new CaptureError();
+                        e.setCode("003");
+                        e.setLevel(CAP_ERROR_WARNING);
+                        e.setMessage("capture-driver-helium-chirpstackv4-missing-gateway-id");
+                        p.getErrors().add(e);
+                        ns.setStationId(ri.getGatewayId()); // use mac as backup
+                    }
+                    CaptureCalcLocation loc = new CaptureCalcLocation();
+                    loc.setLatitude(ri.getMetadata().getLat());
+                    loc.setLongitude(ri.getMetadata().getLon());
+                    loc.setAccuracy(300);
+                    loc.setAltitude(0);
+                    loc.setHexagonId(ri.getMetadata().getGateway_h3index());
+                    ns.setStationLocation(loc);
+                    ns.getCustomParams().add(new CustomField("gateway-name", ri.getMetadata().getGateway_name()));
+                    ns.getCustomParams().add(new CustomField("gateway-region", ri.getMetadata().getRegion_common_name()));
+                    if ( GeolocationTools.isAValidCoordinate(loc.getLatitude(),loc.getLongitude())) {
+                        locs.add( new Location(loc.getLatitude(), loc.getLongitude(), 300, ri.getRssi()) );
+                    }
+                }
+                ns.setRssi(ri.getRssi());
+                ns.setSnr(ri.getSnr());
+                p.getNwkStations().add(ns);
+            });
+
+
+
+            CaptureCalcLocation ccmeta = new CaptureCalcLocation();
+            if ( locs.isEmpty() ) {
+                ccmeta.setAccuracy(0);
+                ccmeta.setAltitude(0);
+                ccmeta.setLatitude(0.0);
+                ccmeta.setLatitude(0.0);
+                ccmeta.setHexagonId("");
+            } else {
+                try {
+                    Location l = ComputeLocation.computeLocation(locs);
+                    ccmeta.setLatitude(l.lat);
+                    ccmeta.setLongitude(l.lng);
+                    ccmeta.setAccuracy(l.radius);
+                    ccmeta.setAltitude(0);
+                    if ( h3 != null ) {
+                        // get the hex corresponding in a resolution of 14 - 3m2
+                        ccmeta.setHexagonId(h3.latLngToCellAddress(ccmeta.getLatitude(), ccmeta.getLongitude(),14));
+                    } else ccmeta.setHexagonId("");
+                } catch (ITNotFoundException x) {
+                    ccmeta.setAccuracy(0);
+                    ccmeta.setAltitude(0);
+                    ccmeta.setLatitude(0.0);
+                    ccmeta.setLongitude(0.0);
+                    ccmeta.setHexagonId("");
+                }
+            }
+            meta.setCalculatedLocation(ccmeta);
+
+        }
+
+        p.setMetadata(meta);
         p.setStatus(CAP_STATUS_SUCCESS);
 
         return new CaptureIngestResponse(

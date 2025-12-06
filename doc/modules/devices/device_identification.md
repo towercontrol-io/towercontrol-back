@@ -27,4 +27,11 @@ specific entity with its own attributes, usable in other modules.
 - **Communication Ids**: This is a set of elements enabling communication and network management. For example, on Sigfox, 
 you will find the devId and the PAC; on LoRaWan, the deveui, appeui, appkey, etc.
 
+### Network Identification
+
+The network identification depends on the communication protocol used by the device. A device can use multiple.
+
+#### LoRaWan
+- DevEUI : type to be used is `LoRa_devEui` and the value is a hexadecimal string of 16 characters (8 bytes), lower case
+
 

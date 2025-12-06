@@ -22,6 +22,7 @@ package com.disk91.capture.services;
 import com.disk91.audit.integration.AuditIntegration;
 import com.disk91.capture.api.interfaces.CaptureEndpointCreationBody;
 import com.disk91.capture.config.ActionCatalog;
+import com.disk91.capture.config.CaptureConfig;
 import com.disk91.capture.mdb.entities.CaptureEndpoint;
 import com.disk91.capture.mdb.entities.Protocols;
 import com.disk91.capture.mdb.entities.sub.MandatoryField;
@@ -60,6 +61,9 @@ public class CaptureEndpointService {
 
     @Autowired
     protected CaptureEndpointRepository captureEndpointRepository;
+
+    @Autowired
+    protected CaptureConfig captureConfig;
 
     // =====================================================================================================
     // FRONT-END API / Endpoint Creation
@@ -142,6 +146,9 @@ public class CaptureEndpointService {
                 } else {
                     endp.setWideOpen(p.isDefaultWideOpen());
                 }
+
+                // Add the default data processor
+                endp.setProcessingClassName(captureConfig.getCaptureDataProcessorClass());
 
                 // Save the endpoint
                 captureEndpointRepository.save(endp);

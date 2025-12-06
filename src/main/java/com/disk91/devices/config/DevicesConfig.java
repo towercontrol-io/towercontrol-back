@@ -52,7 +52,7 @@ public class DevicesConfig {
 
 
     // --------------------------------------------
-    // Group Cache
+    // Device Cache
     // --------------------------------------------
 
     @Value("${devices.cache.max.size:1000}")
@@ -71,6 +71,29 @@ public class DevicesConfig {
     protected String devicesCacheLogPeriod;
     public String getDevicesCacheLogPeriod() {
         return devicesCacheLogPeriod;
+    }
+
+
+    // --------------------------------------------
+    // Device NwkId Cache
+    // --------------------------------------------
+
+    @Value("${devices.nwkid.cache.max.size:1000}")
+    protected int devicesNwkIdCacheMaxSize;
+    public int getDevicesNwkIdCacheMaxSize() {
+        return devicesNwkIdCacheMaxSize;
+    }
+
+    @Value("${devices.nwkid.cache.expiration_s:0}")
+    protected int devicesNwkIdCacheExpiration;
+    public int getDevicesNwkIdCacheExpiration() {
+        return devicesNwkIdCacheExpiration;
+    }
+
+    @Value("${devices.nwkid.cache.log.period:PT24H}")
+    protected String devicesNwkIdCacheLogPeriod;
+    public String getDevicesNwkIdCacheLogPeriod() {
+        return devicesNwkIdCacheLogPeriod;
     }
 
 }

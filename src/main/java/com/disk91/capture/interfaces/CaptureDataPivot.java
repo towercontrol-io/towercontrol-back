@@ -155,6 +155,13 @@ public class CaptureDataPivot implements CloneableObject<CaptureDataPivot>  {
     protected List<CaptureNwkStation> nwkStations;
 
 
+    @Schema(
+            description = "The fully qualified class name to be use for the processing chain",
+            example = "com.disk91.capture.drivers.standard.DefaultProcessorForPivot",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    protected String processingChainClass;
+
     // -------------------------------------------
 
     public CaptureDataPivot clone() {

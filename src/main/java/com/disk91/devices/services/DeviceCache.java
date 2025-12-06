@@ -39,6 +39,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 
 @Service
@@ -116,7 +117,7 @@ public class DeviceCache {
     }
 
     @Scheduled(fixedRateString = "${devices.cache.log.period:PT24H}", initialDelay = 3600_000)
-    protected void groupCacheStatus() {
+    protected void devicesCacheStatus() {
         try {
             Duration duration = Duration.parse(deviceConfig.getDevicesCacheLogPeriod());
             if (duration.toMillis() >= Now.ONE_FULL_DAY ) return;
@@ -131,7 +132,7 @@ public class DeviceCache {
 
     /**
      * Get the device from the cache or from the database if not in cache
-     * @param deviceId - groupId to be retrieved
+     * @param deviceId - devicesId to be retrieved
      * @return the device object
      * @throws ITNotFoundException if not found
      */
@@ -139,17 +140,31 @@ public class DeviceCache {
         if (!this.serviceEnable || deviceConfig.getDevicesCacheMaxSize() == 0) {
             // direct access from database
             Device u = devicesRepository.findOneDeviceById(deviceId);
-            if (u == null) throw new ITNotFoundException("Device not found");
+            if (u == null) throw new ITNotFoundException("device-not-found");
             return u.clone();
         } else {
             Device u = this.devicesCache.get(deviceId);
             if (u == null) {
                 // not in cache, get it from the database
                 u = devicesRepository.findOneDeviceById(deviceId);
-                if (u == null) throw new ITNotFoundException("Device not found");
+                if (u == null) throw new ITNotFoundException("device-not-found");
                 this.devicesCache.put(u, u.getId());
             }
             return u.clone();
+        }
+    }
+
+    /**
+     * Add a device to the local cache when not already in this is to avoid database read
+     * when the device has been extracted from another source
+     * @param device device to be added
+     */
+    public void addDevicesToCache(Device device) {
+        if ( this.serviceEnable && deviceConfig.getDevicesCacheMaxSize() > 0 ) {
+           Device u = this.devicesCache.get(device.getId());
+           if (u == null) {
+              this.devicesCache.put(device, device.getId());
+           }
         }
     }
 
@@ -162,7 +177,7 @@ public class DeviceCache {
      */
     public List<Device> getDevicesByDataStream(String streamId) throws ITNotFoundException {
         List<Device> devices = devicesRepository.findDevicesByDataStreamId(streamId);
-        if (devices == null || devices.isEmpty()) throw new ITNotFoundException("Device not found");
+        if (devices == null || devices.isEmpty()) throw new ITNotFoundException("device-not-found");
         if (!this.serviceEnable || deviceConfig.getDevicesCacheMaxSize() == 0) {
             for ( Device device : devices ) {
                 Device u = this.devicesCache.get(device.getId());

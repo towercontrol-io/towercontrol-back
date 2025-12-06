@@ -20,6 +20,7 @@
 
 package com.disk91.devices.mdb.repositories;
 
+import com.disk91.devices.interfaces.DeviceState;
 import com.disk91.devices.mdb.entities.Device;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
@@ -35,4 +36,15 @@ public interface DevicesRepository extends MongoRepository<Device,String> {
 
         @Query(value = "{ 'associatedGroups.groupId': { $in: ?0 } }")
         List<Device> findDevicesByAssociatedGroups(List<String> groupIds);
+
+
+    /**
+     * Search a device based on one of it's communicationId (like a LoRaWAN DevEUI)
+     * @param type
+     * @param value
+     * @return
+     */
+    @Query(value = "{ 'communicationIds': { $elemMatch: { 'type': ?0, 'param': ?1 } }, 'devState': { $in: ?2 } }")
+    List<Device> findDevicesByCommunicationIdTypeAndParamAndStates(String type, String value, List<DeviceState> states);
+
 }

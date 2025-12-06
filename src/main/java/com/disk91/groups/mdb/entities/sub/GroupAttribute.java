@@ -1,5 +1,6 @@
 package com.disk91.groups.mdb.entities.sub;
 
+import com.disk91.common.interfaces.KeyValues;
 import com.disk91.common.tools.CloneableObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -23,7 +24,7 @@ public class GroupAttribute implements CloneableObject<GroupAttribute> {
             description = "Associated parameters, content depends on type",
             example = "",
             requiredMode = Schema.RequiredMode.REQUIRED
-    ) protected List<GroupAttributeParam> params;
+    ) protected List<KeyValues> params;
 
     // === CLONE ===
 
@@ -31,7 +32,7 @@ public class GroupAttribute implements CloneableObject<GroupAttribute> {
         GroupAttribute u = new GroupAttribute();
         u.setType(type);
         u.setParams(new ArrayList<>());
-        for (GroupAttributeParam param : params) {
+        for (KeyValues param : params) {
             u.getParams().add(param.clone());
         }
         return u;
@@ -48,11 +49,11 @@ public class GroupAttribute implements CloneableObject<GroupAttribute> {
         this.type = type;
     }
 
-    public List<GroupAttributeParam> getParams() {
+    public List<KeyValues> getParams() {
         return params;
     }
 
-    public void setParams(List<GroupAttributeParam> params) {
+    public void setParams(List<KeyValues> params) {
         this.params = params;
     }
 }

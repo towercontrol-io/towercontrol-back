@@ -57,6 +57,7 @@ import static com.disk91.devices.interfaces.DeviceState.IDENTIFIED;
         @CompoundIndex(name = "customerId", def = "{'customerId': 'hashed'}"),
         @CompoundIndex(name = "dataStreamId", def = "{'dataStreamId': 'hashed'}"),
         @CompoundIndex(name = "name", def = "{'name': 'hashed'}"),
+        @CompoundIndex(name = "comm_type_param_idx", def = "{'communicationIds.type': 1, 'communicationIds.param': 1}")
 })
 public class Device implements CloneableObject<Device> {
 

@@ -67,6 +67,11 @@ public class CaptureEndpoint implements CloneableObject<CaptureEndpoint> {
     // we can have extra parameters here as well
     protected List<CustomField> customConfig;
 
+    // Processing class name is the full qualified java class name that will process the payload
+    // This is not the same level as the protocol processing class. This class is the one used
+    // to process the pivot object after protocol processing.
+    protected String processingClassName;
+
 
     // --------------------------------
 
@@ -82,6 +87,7 @@ public class CaptureEndpoint implements CloneableObject<CaptureEndpoint> {
         p.setProtocolId(this.protocolId);
         p.setWideOpen(this.wideOpen);
         p.setEncrypted(this.encrypted);
+        p.setProcessingClassName(this.processingClassName);
         p.setCustomConfig(new ArrayList<>());
         if ( this.customConfig != null ) {
             for ( CustomField cf : this.customConfig ) {
@@ -172,5 +178,13 @@ public class CaptureEndpoint implements CloneableObject<CaptureEndpoint> {
 
     public void setEncrypted(boolean encrypted) {
         this.encrypted = encrypted;
+    }
+
+    public String getProcessingClassName() {
+        return processingClassName;
+    }
+
+    public void setProcessingClassName(String processingClassName) {
+        this.processingClassName = processingClassName;
     }
 }

@@ -1,5 +1,23 @@
-## Capture endpoint definition
+## Data Ingestion Flow
 
+A data item arriving from outside follows a dynamic path before being processed. It reaches an endpoint (for HTTP push 
+data), but it can also arrive on a topic or other channel. This entry point is an endpoint created dynamically by a user 
+with `ROLE_BACKEND_CAPTURE` and `ROLE_DEVICE_ADMIN` rights. This endpoint references a protocol that contains the 
+processing functions associated with the data stream.
+
+The received data, whose format depends on the protocol, will be converted into a pivot format that is the same 
+regardless of the data source. In this pivot format, a link is made with the platform's `device` object. 
+This link is normally established from the network identifiers present in the structure processed by the protocol, 
+for example, a DevEUI in the case of LoRaWan.
+
+The protocol will use identifiers present in the stream to find the associated device; there must be only one entry in 
+the device table matching that identifier.
+
+The pivot objects are then processed asynchronously (depending on the `capture.(a)sync.processing` settings) and in 
+parallel (depending on the `ccapture.processor.threads.count` parameter) to be transformed via a dynamic function 
+allowing specific processing or by invoking a generic, user-programmable function.
+
+## Capture endpoint definition
 
 A capture endpoint is a dynamically created interface that must be able to scale across multiple nodes to handle the load.
 It is defined by the following structure, which allows it to be created by an administrator or by a user with the 
@@ -83,3 +101,4 @@ Its error status means it will likely not be processed further, but it will neve
 with all received information, both raw and partially decoded.
 In the case of an identified attack, processing may also reject the frame without storing it, but with an audit log
 entry including information related to the source. Storage will be limited to avoid overloading the database.
+

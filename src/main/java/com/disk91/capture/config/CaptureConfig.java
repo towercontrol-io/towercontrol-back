@@ -77,6 +77,12 @@ public class CaptureConfig {
         return captureAsyncQueueMaxSize;
     }
 
+    @Value(("${capture.dataprocessor.class:com.disk91.capture.drivers.standard.DefaultProcessorForPivot}"))
+    protected String captureDataProcessorClass;
+    public String getCaptureDataProcessorClass() {
+        return captureDataProcessorClass;
+    }
+
     // ----------------------------------------------
     // Common setup
     // ----------------------------------------------

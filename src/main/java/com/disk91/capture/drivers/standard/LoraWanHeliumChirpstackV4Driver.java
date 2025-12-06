@@ -35,6 +35,8 @@ import com.disk91.common.tools.exceptions.ITHackerException;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITRightException;
+import com.disk91.devices.mdb.entities.Device;
+import com.disk91.devices.services.DevicesNwkCache;
 import com.disk91.users.mdb.entities.User;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -51,6 +53,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.Locale;
 
 import static com.disk91.capture.interfaces.CaptureDataPivot.CaptureStatus.CAP_STATUS_SUCCESS;
 import static com.disk91.capture.interfaces.sub.CaptureError.CaptureErrorLevel.CAP_ERROR_WARNING;
@@ -69,6 +72,9 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
 
     @Autowired
     protected CommonConfig commonConfig;
+
+    @Autowired
+    protected DevicesNwkCache devicesNwkCache;
 
     @PostConstruct
     private void initLoraWanHeliumChirpstackV4Driver() {
@@ -124,7 +130,26 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
         log.info("[HeliumChirpstackV4Protocol] Recceived ChirpstackV4Helium payload: {}", payload.getDeduplicationId());
         log.info("[HeliumChirpstackV4Protocol] toPivot called - rawData size: {}", rawData != null ? rawData.length : 0);
 
-        // Manage Payload, it will be Base64 encoded and ancrypted is required
+        // Get the associated device if exists
+        Device d = null;
+        try {
+            d = devicesNwkCache.getDevice("LoRa_devEui", payload.getDeviceInfo().getDevEui().toLowerCase());
+
+            // Check rights on device
+
+            // When the endpoint is not wide open, we must ensure the user has rights on the device
+            // So he needs to be part of the same groups with WRITE access on it and this applies to
+            // the apikey right and not the owner rights
+
+            // When wide Open, we need to make sure the user owns the device directly.
+
+
+        } catch (ITNotFoundException x) {
+            // This device is not known
+            throw new ITRightException("capture-driver-helium-chirpstackv4-unknown-device");
+        }
+
+        // Manage Payload, it will be Base64 encoded and encrypted is required
         String toStoreData = payload.getData();
         if ( endpoint.isEncrypted() ) {
             toStoreData = "$"+EncryptionHelper.encrypt(payload.getData(), IV, commonConfig.getEncryptionKey());
@@ -168,8 +193,8 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
             meta.setNwkTimeNs(0);
         }
         meta.setNwkDeviceId(payload.getDeviceInfo().getDevEui());
-        // @TODO : device ID
-        // @TODO : session Counter
+        meta.setDeviceId(d.getId());
+        meta.setSessionCounter(0);
         meta.setFrameCounterUp(payload.getfCnt());
         meta.setFrameCounterDwn(payload.getfCntDown());
         meta.setFramePort(payload.getfPort());
@@ -237,8 +262,6 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
                 ns.setSnr(ri.getSnr());
                 p.getNwkStations().add(ns);
             });
-
-
 
             CaptureCalcLocation ccmeta = new CaptureCalcLocation();
             if ( locs.isEmpty() ) {

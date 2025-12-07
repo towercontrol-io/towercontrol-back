@@ -44,7 +44,7 @@ public interface DevicesRepository extends MongoRepository<Device,String> {
      * @param value
      * @return
      */
-    @Query(value = "{ 'communicationIds': { $elemMatch: { 'type': ?0, 'param': ?1 } }, 'devState': { $in: ?2 } }")
-    List<Device> findDevicesByCommunicationIdTypeAndParamAndStates(String type, String value, List<DeviceState> states);
+    @Query(value = "{ 'communicationIds': { $elemMatch: { 'type': ?0, 'params.key': ?1, 'params.values' : ?2 } }, 'devState': { $in: ?3 } }")
+    List<Device> findDevicesByCommunicationIdTypeAndParamAndStates(String type, String key, String value, List<DeviceState> states);
 
 }

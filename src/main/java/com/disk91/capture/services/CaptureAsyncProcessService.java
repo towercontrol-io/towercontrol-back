@@ -22,7 +22,7 @@ package com.disk91.capture.services;
 import com.disk91.audit.integration.AuditIntegration;
 import com.disk91.capture.config.ActionCatalog;
 import com.disk91.capture.config.CaptureConfig;
-import com.disk91.capture.interfaces.AbstractProtocol;
+import com.disk91.capture.interfaces.AbstractProcessor;
 import com.disk91.capture.interfaces.CaptureDataPivot;
 import com.disk91.capture.mdb.entities.CapturePivotRaw;
 import com.disk91.capture.mdb.repositories.CapturePivotRawRepository;
@@ -44,6 +44,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
@@ -72,9 +73,6 @@ public class CaptureAsyncProcessService {
 
     @Autowired
     protected AuditIntegration auditIntegration;
-
-    // Cache the protocols class to avoid recreation each time
-    protected HashMap<String, AbstractProtocol> protocolCache = new HashMap<>();
 
     protected class EnQueuedDataPivot {
         public CaptureDataPivot pivot;
@@ -162,6 +160,13 @@ public class CaptureAsyncProcessService {
         }
     }
 
+    // ================================================================================================
+    // Process a single pivot
+    // ================================================================================================
+
+    // Cache the protocols class to avoid recreation each time
+    protected final HashMap<String, AbstractProcessor> processorCache = new HashMap<>();
+
     /**
      * Process a single pivot (parallelizable), this function is called by the async workers
      *
@@ -171,7 +176,28 @@ public class CaptureAsyncProcessService {
         // Minimal action : log
         long start = Now.NowUtcMs();
         try {
-            log.debug("Processing pivot: {}", pivot);
+            AbstractProcessor ap = processorCache.get(pivot.getProcessingChainClass());
+            if (ap == null) {
+                synchronized (processorCache) {
+                    // Manage async call, block on cache and when released make sure another thread did not create it in the meantime
+                    ap = processorCache.get(pivot.getProcessingChainClass());
+                    if (ap == null) {
+                        try {
+                            Class<?> clazz = Class.forName(pivot.getProcessingChainClass());
+                            ap = (AbstractProcessor) beanFactory.createBean(clazz);
+                            processorCache.put(pivot.getProcessingChainClass(), ap);
+                        } catch (Exception ex) {
+                            log.error("[capture] Process data failed, processor class {} instantiation error for pivot Id {}", pivot.getProcessingChainClass(), pivot.getRxUuid());
+                            return;
+                        }
+                    }
+                }
+            }
+            ap.getClass()
+                        .getMethod("process", CaptureDataPivot.class)
+                        .invoke(ap, pivot);
+        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException x) {
+            log.debug("[capture] Process data failed, processor class {} reason {}", pivot.getProcessingChainClass(), x.getMessage());
         } finally {
             this.addProcessTime(Now.NowUtcMs() - start);
         }

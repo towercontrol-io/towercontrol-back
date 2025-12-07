@@ -22,7 +22,6 @@ package com.disk91.capture.interfaces;
 import com.disk91.capture.api.interfaces.CaptureResponseItf;
 import com.disk91.capture.mdb.entities.CaptureEndpoint;
 import com.disk91.capture.mdb.entities.Protocols;
-import com.disk91.common.tools.RandomString;
 import com.disk91.common.tools.exceptions.*;
 import com.disk91.users.mdb.entities.User;
 import jakarta.servlet.http.HttpServletRequest;
@@ -60,6 +59,7 @@ public abstract class AbstractProtocol {
      * @throws ITHackerException When a hacking attempt is detected, frame won't be stored
      */
     public abstract CaptureIngestResponse toPivot(
+            String jwtUser,                     // User in the Jwt token (may be an api key)
             User user,                          // User calling the endpoint
             CaptureEndpoint endpoint,           // Corresponding endpoint
             Protocols protocol,                 // Corresponding protocol

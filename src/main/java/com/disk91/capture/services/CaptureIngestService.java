@@ -101,7 +101,7 @@ public class CaptureIngestService {
         try {
             // Get the endpoint information
             CaptureEndpoint e = captureEndpointCache.getCaptureEndpoint(captureId);
-            // Check the ownership
+            // Check the ownership - get the real User behind the request
             User u = userCommon.getUser(req.getUserPrincipal().getName());
             if ( !e.isWideOpen() && e.getOwner().compareTo(u.getLogin()) != 0) {
                 log.debug("[capture] Ingest data failed, right error for captureId {} and user {}", captureId, u.getLogin());
@@ -134,13 +134,14 @@ public class CaptureIngestService {
                 try {
                     Object result = ap.getClass()
                             .getMethod("toPivot",
+                                    String.class,
                                     User.class,
                                     CaptureEndpoint.class,
                                     Protocols.class,
                                     byte[].class,
                                     HttpServletRequest.class
                             )
-                            .invoke(ap, u, e, p, body, req);
+                            .invoke(ap, req.getUserPrincipal().getName(), u, e, p, body, req);
                     CaptureIngestResponse pivot = (CaptureIngestResponse) result;
 
                     // Input processed, the underlying level will manage the database saving
@@ -219,12 +220,13 @@ public class CaptureIngestService {
                         // no logs (use debug for this)
                         incrementIngestFailed();
                         log.debug("[capture] Ingest data failed, right error for captureId {} protocolId {} from {}", captureId, e.getProtocolId(), Tools.getRemoteIp(req));
-                        throw new ITRightException("capture-ingest-right-error");
+                        throw new ITRightException(_expect.getMessage());
                     } else {
                         // Unknown exception, log it
                         incrementIngestFailed();
                         if (canLog()) {
-                            log.error("[capture] Ingest data failed, we have an unexpected exception or for captureId {} protocolId {} from {}", captureId, e.getProtocolId(), Tools.getRemoteIp(req));
+                            log.error("[capture] Ingest data failed, we have an unexpected exception or for captureId {} protocolId {} from {} exception {}", captureId, e.getProtocolId(), Tools.getRemoteIp(req), x.getCause().getMessage());
+                            x.getCause().printStackTrace();
                         }
                         throw new ITParseException("capture-ingest-parse-error");
                     }

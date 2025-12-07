@@ -116,6 +116,14 @@ public class Group implements CloneableObject<Group> {
     }
 
     // ========================================
+    public static boolean isVirtualGroup(String groupId) {
+        return groupId.startsWith("user_");
+    }
+
+    public static String getVirutalGroup(String userLogin) {
+        return "user_"+userLogin;
+    }
+
     public Group clone() {
         Group u = new Group();
         u.setId(id);

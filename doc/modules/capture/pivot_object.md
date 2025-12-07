@@ -11,10 +11,12 @@ but only metadata, while aiming to be generic with respect to possible integrati
   "rxTimestampMs": "long",                   // Reception Timestamp of the data reception in milliseconds since epoch
   "rxCaptureId": "string",                   // Source identifier (e.g., capture endpoint ID)
   "payload": "String",                       // Raw data payload as a string (base64) (encrypted when enabled)
+  "decodedPayload": "String",                // Decoded data payload as a string (base64) (encrypted when enabled)
   "nwkStatus" : "enum",                      // Status of the frame seen by network (e.g., "RECEIVED", "PROCESSED", "ERROR")
   "status" : "enum",                         // status of the frame in the platform (e.g., "NEW", "PENDING", "PROCESSED", "ERROR")
   "coreDump" : "String",                     // Core dump data when available as a string (base64) (encrypted when enabled), contains the raw packet when we detected a platfomr error
   "ingestOwerId": "string",                  // Identifier of the owner of the ingesting entity (capture endpoint presented identity)
+  "processingChainClass": "string",          // Fully qualified class name of the driver processing the pivot data (mostly used for customization)
   "fromIp": "string",                        // Source IP address of the data (tracability) (encrypted)
   "headers" : [
     { 

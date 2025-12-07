@@ -78,6 +78,13 @@ public class CaptureDataPivot implements CloneableObject<CaptureDataPivot>  {
     )
     protected String payload;
 
+    @Schema(
+            description = "The decoded payload from the network, stored as base64 encoded string, encrypted when required, encrypted string starts with $, empty when not existing",
+            example = "....",
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED
+    )
+    protected String decodedPayload;
+
     public enum NetworkStatus {
         NWK_STATUS_SUCCESS,
         NWK_STATUS_FAILURE,
@@ -170,11 +177,13 @@ public class CaptureDataPivot implements CloneableObject<CaptureDataPivot>  {
         copy.rxTimestampMs = this.rxTimestampMs;
         copy.rxCaptureRef = this.rxCaptureRef;
         copy.payload = this.payload;
+        copy.decodedPayload = this.decodedPayload;
         copy.nwkStatus = this.nwkStatus;
         copy.status = this.status;
         copy.ingestOwnerId = this.ingestOwnerId;
         copy.fromIp = this.fromIp;
         copy.coredDump = this.coredDump;
+        copy.processingChainClass = this.processingChainClass;
 
         copy.headers = new ArrayList<>();
         if (this.headers != null) {
@@ -328,5 +337,21 @@ public class CaptureDataPivot implements CloneableObject<CaptureDataPivot>  {
 
     public void setCoredDump(String coredDump) {
         this.coredDump = coredDump;
+    }
+
+    public String getProcessingChainClass() {
+        return processingChainClass;
+    }
+
+    public void setProcessingChainClass(String processingChainClass) {
+        this.processingChainClass = processingChainClass;
+    }
+
+    public String getDecodedPayload() {
+        return decodedPayload;
+    }
+
+    public void setDecodedPayload(String decodedPayload) {
+        this.decodedPayload = decodedPayload;
     }
 }

@@ -26,6 +26,7 @@ import com.disk91.common.tools.EncryptionHelper;
 import com.disk91.common.tools.HexCodingTools;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
+import com.disk91.groups.mdb.entities.Group;
 import com.disk91.users.mdb.entities.sub.*;
 import com.disk91.users.services.UsersRolesCache;
 import org.slf4j.Logger;
@@ -996,7 +997,7 @@ public class User implements CloneableObject<User> {
      */
     public ArrayList<String> getAllGroups(boolean scanGroups, boolean scanAcl, boolean addVirtual) {
         ArrayList<String> _groups = new ArrayList<>();
-        if ( addVirtual ) _groups.add("user_"+this.getLogin());
+        if ( addVirtual ) _groups.add(Group.getVirutalGroup(this.getLogin()));
         if ( scanGroups && this.groups != null ) _groups.addAll(this.getGroups());
         if ( scanAcl ) {
             for (UserAcl acl : this.acls) {
@@ -1011,7 +1012,7 @@ public class User implements CloneableObject<User> {
      * @return
      */
     public String getDefaultGroupId() {
-        return "user_"+this.getLogin();
+        return Group.getVirutalGroup(this.getLogin());
     }
 
 

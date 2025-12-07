@@ -37,19 +37,25 @@ This role allows a user to create and configure an owned group and self assign t
 
 
 ### `ROLE_DEVICE_ADMIN`
-this role allows to register devices
+This role allows to register devices
 
 ### `ROLE_DEVICE_READ`
-this role gives access to owned device data.
+This role gives access to owned device data.
 
 ### `ROLE_DEVICE_WRITE`
-this role gives access to device description metadata modifications.
+This role gives access to device description metadata modifications.
 
 ### `ROLE_DEVICE_CONFIG`
-this role allows to modify the device technical configuration
+This role allows to modify the device technical configuration
 
 ### `ROLE_DEVICE_ALERTING`
-this role allows to receive device alerts
+This role allows to receive device alerts
 
 ### `ROLE_BACKEND_CAPTURE`
-this role is dedicated to technical account allowed to report device data to the platform
+This role is dedicated to technical account allowed to report device data to the platform
+
+### `ROLE_GLOBAL_CAPTURE`
+This role is used on platforms dedicated to a single type of object with a single ingestion endpoint for all. In that 
+case, it is not necessary to control access rights to objects individually, and assigning this role to the ingestion 
+user will grant write access to all objects, simplifying processing and avoiding the need for a general group that 
+owns all objects. **Never affect that role to a standard user as it will give access to all devices in write mode.**

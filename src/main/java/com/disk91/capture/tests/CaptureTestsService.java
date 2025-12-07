@@ -5,25 +5,21 @@ import com.disk91.capture.mdb.entities.CaptureEndpoint;
 import com.disk91.capture.mdb.repositories.CaptureEndpointRepository;
 import com.disk91.capture.services.CaptureEndpointCache;
 import com.disk91.capture.services.CaptureEndpointService;
+import com.disk91.capture.services.CaptureIngestService;
 import com.disk91.common.config.CommonConfig;
+import com.disk91.common.interfaces.KeyValues;
 import com.disk91.common.tests.CommonTestsService;
 import com.disk91.common.tools.CustomField;
-import com.disk91.common.tools.RandomString;
+import com.disk91.common.tools.Now;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITRightException;
 import com.disk91.common.tools.exceptions.ITTooManyException;
-import com.disk91.users.api.interfaces.UserAccountCreationBody;
-import com.disk91.users.api.interfaces.UserAccountRegistrationBody;
-import com.disk91.users.config.UsersConfig;
-import com.disk91.users.mdb.entities.User;
-import com.disk91.users.mdb.entities.UserRegistration;
-import com.disk91.users.mdb.repositories.UserRegistrationRepository;
-import com.disk91.users.mdb.repositories.UserRepository;
-import com.disk91.users.services.CrossUserWrapperService;
-import com.disk91.users.services.UserCache;
-import com.disk91.users.services.UserCreationService;
-import com.disk91.users.services.UserRegistrationService;
+import com.disk91.devices.interfaces.DeviceState;
+import com.disk91.devices.mdb.entities.Device;
+import com.disk91.devices.mdb.entities.sub.DevAttribute;
+import com.disk91.devices.mdb.entities.sub.DeviceHistoryReason;
+import com.disk91.devices.services.DeviceCache;
 import com.disk91.users.tests.UsersTestsService;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
@@ -59,6 +55,12 @@ public class CaptureTestsService {
 
     @Autowired
     protected CaptureEndpointCache captureEndpointCache;
+
+    @Autowired
+    protected CaptureIngestService captureIngestService;
+
+    @Autowired
+    protected DeviceCache deviceCache;
 
     /**
      * This function is creating tests for the Users module
@@ -467,5 +469,165 @@ public class CaptureTestsService {
             throw new ITParseException("[capture] Error getting created endpoint: " + x.getMessage());
         }
 
+        // Deleting previous test device if any
+        try {
+            List<Device> devices =  deviceCache.getDevicesByDataStream("stream-test-device-capture-001");
+            if ( devices != null && !devices.isEmpty() ) {
+                for ( Device d : devices ) {
+                    commonTestsService.info("[capture] Removing previous test device in cache with id {}", d.getId());
+                    deviceCache.deleteDevice(d, DeviceHistoryReason.NO_REASON);
+                }
+            }
+        } catch (ITNotFoundException ignored) {}
+
+        // Create a test device
+        commonTestsService.info("[capture] Creating one test device in cache");
+        Device dev = new Device();
+        dev.setCreationBy("test-capture-module");
+        dev.setVersion(Device.DEVICE_VERSION);
+        dev.setPublicId("test-device-capture-001");
+        dev.setDataStreamId("stream-test-device-capture-001");
+        dev.setName("Test Device for Capture Module");
+        dev.setDevState(DeviceState.OPEN);
+        dev.setCreationOnMs(Now.NowUtcMs());
+        dev.setDataEncrypted(false);
+        dev.setCommunicationIds(new ArrayList<>());
+        DevAttribute a = new DevAttribute();
+        a.setType("LoRa");
+        a.setParams(new ArrayList<>());
+        KeyValues k = new KeyValues();
+        k.setKey("deveui");
+        k.setValues(new ArrayList<>());
+        k.getValues().add("6081f9dde602cd71");
+        a.getParams().add(k);
+        dev.getCommunicationIds().add(a);
+        dev.setAssociatedGroups(new ArrayList<>());
+        deviceCache.saveDevice(dev, DeviceHistoryReason.NO_REASON);
+
+        // check device presence
+        try {
+            List<Device> devices =  deviceCache.getDevicesByDataStream("stream-test-device-capture-001");
+            if ( devices == null || devices.isEmpty() ) {
+                commonTestsService.error("[capture] Test device not found after creation");
+                throw new ITParseException("[capture] Test device not found after creation");
+            } else {
+                commonTestsService.success("[capture] Test device found successfully after creation");
+            }
+        } catch (ITNotFoundException x) {
+            commonTestsService.error("[capture] Test device not found after creation");
+            throw new ITParseException("[capture] Test device not found after creation");
+        }
+
+        // Send a test payload
+        try {
+            commonTestsService.info("[capture] Sending a test payload to the created endpoint");
+            captureIngestService.ingestData(
+                    req,
+                    TEST_PAYLOAD.getBytes(),
+                    endp.getRef()
+            );
+            commonTestsService.success("[capture] Test payload sent successfully to the created endpoint");
+        } catch (ITRightException | ITParseException | ITNotFoundException | ITTooManyException e) {
+            commonTestsService.error("[capture] Error sending test payload to created endpoint {} ", e.getMessage());
+            throw new ITParseException("[capture] Error sending test payload to created endpoint: " + e.getMessage());
+        }
+
+        // Delete test device
+        try {
+            List<Device> devices =  deviceCache.getDevicesByDataStream("stream-test-device-capture-001");
+            if ( devices != null && !devices.isEmpty() ) {
+                for ( Device d : devices ) {
+                    commonTestsService.info("[capture] Removing previous test device in cache with id {}", d.getId());
+                    deviceCache.deleteDevice(d, DeviceHistoryReason.NO_REASON);
+                }
+            }
+        } catch (ITNotFoundException ignored) {}
+
+        // Delete endpoint
+        if ( ce != null ) captureEndpointRepository.delete(ce);
     }
+
+
+
+
+    public final String TEST_PAYLOAD = """
+            {
+                 "deduplicationId":"49403db7-8722-49b4-8d49-c3b119c534e5",
+                 "time":"2023-05-29T19:50:10+00:00",
+                 "deviceInfo":{
+                     "tenantId":"c9316fdb-d2fe-453d-bd28-4917f7e227ce",
+                     "tenantName":"migration",
+                     "applicationId":"ace3452a-87f3-4a86-b9a8-fe8507b47ff3",
+                     "applicationName":"test",
+                     "deviceProfileId":"7fc8491b-ab6a-4871-9eb9-a57431b982a0",
+                     "deviceProfileName":"(EU868) Migration OTAA Without label",
+                     "deviceName":"disk91_test1",
+                     "devEui":"6081f9dde602cd71",
+                     "deviceClassEnabled":"CLASS_A",
+                     "tags":{
+                         "label":"Without label"
+                     }
+                 },
+                 "devAddr":"480007a0",
+                 "dr":3,
+                 "adr":false,
+                 "fCnt":22772,
+                 "fPort":1,
+                 "confirmed":false,
+                 "data":"HQ==",
+                 "object":{
+                     "other":"123",
+                     "temp":22.5
+                 },
+                 "rxInfo":[
+                     {
+                         "gatewayId":"c986398a305dee5a",
+                         "uplinkId":65489,
+                         "gwTime":"2024-01-07T11:05:31+00:00",
+                         "nsTime":"2024-01-07T11:05:31.577525935+00:00",
+                         "rssi":-41,
+                         "snr":7.8,
+                         "location" : {
+                         },
+                         "context":"EbkTFA==",
+                         "metadata":{
+                             "region_common_name":"EU868",
+                             "region_config_id":"eu868",
+                             "gateway_h3index" : "61105",
+                             "gateway_lat" : "45.80",
+                             "gateway_long" : "3.09",
+                             "gateway_name" : "mythical-xxx...",
+                             "gateway_id":"11o8R9inbpc...3XA",
+                             "lat": 0.0,
+                             "lon": 0.0
+                         },
+                         "crcStatus":"CRC_OK"
+                     },
+                     {
+                         "gatewayId":"3c408850a5b4f27c",
+                         "uplinkId":11888,
+                         "gwTime":"2024-02-27T18:07:11+00:00",
+                         "nsTime":"2024-02-27T18:07:11.115026956+00:00",
+                         "rssi":-22,
+                         "snr":8.0,
+                         "context":"yIKGwQ==",
+                         "metadata":{
+                             "region_common_name":"EU868",
+                             "region_name":"eu868"
+                         }
+                     }
+                 ],
+                 "txInfo":{
+                     "frequency":867500000,
+                     "modulation":{
+                         "lora":{
+                             "bandwidth":125000,
+                             "spreadingFactor":9,
+                             "codeRate":"CR_4_5",
+                             "polarizationInversion":false
+                         }
+                     }
+                 }
+             }
+    """;
 }

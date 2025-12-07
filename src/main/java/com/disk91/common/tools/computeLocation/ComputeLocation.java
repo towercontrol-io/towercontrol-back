@@ -41,7 +41,7 @@ public class ComputeLocation {
         Location bestLocation = null;
         for (Location loc : locations) {
             // search for best station to make it simple
-            if ( loc.rssi > best && loc.radius <= 100 && GeolocationTools.isAValidCoordinate(loc.lat,loc.lng)) {
+            if ( loc.rssi > best && loc.radius <= 300 && GeolocationTools.isAValidCoordinate(loc.lat,loc.lng)) {
                 best = loc.rssi;
                 bestLocation = loc;
             }

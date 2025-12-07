@@ -147,30 +147,31 @@ public class DevicesNwkCache {
 
     /**
      * Get the device from the cache or from the database if not in cache
-     * @param type - type of networkId ( ex deveui )
-     * @param param - param of the search ( ex value for deveui)
+     * @param type - type of networkId ( ex LoRa )
+     * @param key - param of the search ( ex deveui)
+     * @param value - param of the search ( ex value for deveui)
      * @return the device object
      * @throws ITNotFoundException if not found
      */
-    public Device getDevice(String type, String param) throws ITNotFoundException {
+    public Device getDevice(String type, String key, String value) throws ITNotFoundException {
         if (!this.serviceEnable || deviceConfig.getDevicesNwkIdCacheMaxSize() == 0) {
             // direct access from database
-            List<Device> u = devicesRepository.findDevicesByCommunicationIdTypeAndParamAndStates(type, param, this.validStates);
-            if (u == null) throw new ITNotFoundException("device-not-found");
+            List<Device> u = devicesRepository.findDevicesByCommunicationIdTypeAndParamAndStates(type, key, value, this.validStates);
+            if (u == null || u.isEmpty()) throw new ITNotFoundException("device-not-found");
             if ( u.size() > 1 ) {
-                log.warn("[devices] getDevice multiple devices found for {}:{}", type, param);
+                log.warn("[devices] getDevice multiple devices found for {}:{}/{}", type, key,value);
             }
             deviceCache.addDevicesToCache(u.getFirst());
             return u.getFirst().clone();
         } else {
-            String searchKey = type + ":" + param;
+            String searchKey = type + ":" + key + ":" + value;
             DeviceNwkCacheEntry u = this.devicesCache.get(searchKey);
             if (u == null) {
                 // not in cache, get it from the database
-                List<Device> _u = devicesRepository.findDevicesByCommunicationIdTypeAndParamAndStates(type, param, this.validStates);
-                if (_u == null) throw new ITNotFoundException("device-not-found");
+                List<Device> _u = devicesRepository.findDevicesByCommunicationIdTypeAndParamAndStates(type, key, value, this.validStates);
+                if (_u == null || _u.isEmpty()) throw new ITNotFoundException("device-not-found");
                 if ( _u.size() > 1 ) {
-                    log.warn("[devices] getDevice multiple devices found for {}:{}", type, param);
+                    log.warn("[devices] getDevice multiple devices found for {}:{}/{}", type, key,value);
                 }
                 Device d = _u.getFirst();
                 deviceCache.addDevicesToCache(d);

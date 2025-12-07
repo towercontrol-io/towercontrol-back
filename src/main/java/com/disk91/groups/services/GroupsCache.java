@@ -138,7 +138,7 @@ public class GroupsCache {
      * @throws ITNotFoundException if not found
      */
     protected Group getGroup(String shortId) throws ITNotFoundException {
-        if ( shortId.startsWith("user_") ) {
+        if ( Group.isVirtualGroup(shortId) ) {
             // virtual group, build it from the user object
             String userId = shortId.substring(5);
             try {
@@ -182,7 +182,7 @@ public class GroupsCache {
     }
 
     protected boolean isInCache(String shortId) {
-        if ( shortId.startsWith("user_") ) return false; // virtual group, do nothing
+        if ( Group.isVirtualGroup(shortId) ) return false; // virtual group, do nothing
         if ( this.serviceEnable && groupsConfig.getGroupsCacheMaxSize() > 0 ) {
             return this.groupCache.get(shortId) != null;
         }
@@ -194,7 +194,7 @@ public class GroupsCache {
      * @param shortId - groupId to be removed
      */
     protected void flushGroup(String shortId) {
-        if ( shortId.startsWith("user_") ) return; // virtual group, do nothing
+        if ( Group.isVirtualGroup(shortId) ) return; // virtual group, do nothing
         if ( this.serviceEnable && groupsConfig.getGroupsCacheMaxSize() > 0 ) {
             this.groupCache.remove(shortId,false);
         }

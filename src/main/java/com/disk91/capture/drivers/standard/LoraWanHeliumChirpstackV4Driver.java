@@ -36,8 +36,12 @@ import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITRightException;
 import com.disk91.devices.mdb.entities.Device;
+import com.disk91.devices.mdb.entities.sub.DevGroupAssociated;
 import com.disk91.devices.services.DevicesNwkCache;
+import com.disk91.groups.services.GroupsServices;
 import com.disk91.users.mdb.entities.User;
+import com.disk91.users.services.UserCommon;
+import com.disk91.users.services.UsersRolesCache;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.json.JsonReadFeature;
@@ -52,8 +56,8 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Enumeration;
-import java.util.Locale;
 
 import static com.disk91.capture.interfaces.CaptureDataPivot.CaptureStatus.CAP_STATUS_SUCCESS;
 import static com.disk91.capture.interfaces.sub.CaptureError.CaptureErrorLevel.CAP_ERROR_WARNING;
@@ -76,6 +80,12 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
     @Autowired
     protected DevicesNwkCache devicesNwkCache;
 
+    @Autowired
+    protected UserCommon userCommon;
+
+    @Autowired
+    protected GroupsServices groupsServices;
+
     @PostConstruct
     private void initLoraWanHeliumChirpstackV4Driver() {
         log.info("[LoraWanHeliumChirpstackV4Driver] Initializing LoraWan Helium Chirpstack V4 Protocol Driver");
@@ -94,6 +104,7 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
     }
 
     public CaptureIngestResponse toPivot(
+            String jwtUser,                     // User in the Jwt token (may be an api key)
             User user,                          // User calling the endpoint
             CaptureEndpoint endpoint,           // Corresponding endpoint
             Protocols protocol,                 // Corresponding protocol
@@ -118,49 +129,90 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
             String json = new String(rawData);
             log.info(json); // @TODO remove after debug
             payload = mapper.readValue(json, ChirpstackV4HeliumPayload.class);
-        } catch ( JsonProcessingException x) {
+        } catch (JsonProcessingException x) {
             // @TODO process the ERROR message as an exception
 
             // failed to parse
-            log.info("[HeliumChirpstackV4Protocol] Conversion failed {}",x.getMessage()); // @TODO change for debug
+            log.info("[HeliumChirpstackV4Protocol] Conversion failed {}", x.getMessage()); // @TODO change for debug
             throw new ITParseException("capture-driver-helium-chirpstackv4-failed-to-parse-json");
         }
 
         // @TODO remove after debug
-        log.info("[HeliumChirpstackV4Protocol] Recceived ChirpstackV4Helium payload: {}", payload.getDeduplicationId());
+        log.info("[HeliumChirpstackV4Protocol] Received ChirpstackV4Helium payload: {}", payload.getDeduplicationId());
         log.info("[HeliumChirpstackV4Protocol] toPivot called - rawData size: {}", rawData != null ? rawData.length : 0);
 
         // Get the associated device if exists
         Device d = null;
         try {
-            d = devicesNwkCache.getDevice("LoRa_devEui", payload.getDeviceInfo().getDevEui().toLowerCase());
+            d = devicesNwkCache.getDevice("LoRa", "deveui", payload.getDeviceInfo().getDevEui().toLowerCase());
 
             // Check rights on device
+            // When the JWT user is in group ROLE_GLOBAL_CAPTURE it has global access on devices
+            boolean authorized = false;
+            try {
+                userCommon.getUserWithRolesAndGroups(
+                        jwtUser,
+                        UsersRolesCache.StandardRoles.ROLE_GLOBAL_CAPTURE.getRoleName(),
+                        null,
+                        null,
+                        false
+                );
+                authorized = true;
+            } catch (ITNotFoundException | ITRightException x) {
+                // Not a global capture user, we need to check device groups
 
-            // When the endpoint is not wide open, we must ensure the user has rights on the device
-            // So he needs to be part of the same groups with WRITE access on it and this applies to
-            // the apikey right and not the owner rights
-
-            // When wide Open, we need to make sure the user owns the device directly.
-
+                // When the JWT user is an apikey we need to check the apikey rights searching for the groups of the
+                // device and ensuring the apikey has write rights on at least one of them.
+                for (DevGroupAssociated g : d.getAssociatedGroups()) {
+                    try {
+                        userCommon.getUserWithRolesAndGroups(
+                                jwtUser,
+                                UsersRolesCache.StandardRoles.ROLE_DEVICE_WRITE.getRoleName(),
+                                null,
+                                g.getGroupId(),
+                                true
+                        );
+                        authorized = true;
+                        break; // found, no need to continue
+                    } catch (ITNotFoundException | ITRightException ignore) {
+                        // not in this group, try the next one
+                    }
+                }
+            }
+            if (!authorized) {
+                throw new ITHackerException("capture-driver-helium-chirpstackv4-no-rights-on-device");
+            }
 
         } catch (ITNotFoundException x) {
             // This device is not known
             throw new ITRightException("capture-driver-helium-chirpstackv4-unknown-device");
         }
+        // Once on this point, the authorization is OK
 
         // Manage Payload, it will be Base64 encoded and encrypted is required
         String toStoreData = payload.getData();
-        if ( endpoint.isEncrypted() ) {
-            toStoreData = "$"+EncryptionHelper.encrypt(payload.getData(), IV, commonConfig.getEncryptionKey());
+        if (endpoint.isEncrypted() || d.isDataEncrypted()) {
+            toStoreData = "$" + EncryptionHelper.encrypt(payload.getData(), IV, commonConfig.getEncryptionKey());
         }
         p.setPayload(toStoreData);
+
+        if (payload.getObject() != null && !payload.getObject().isEmpty()) {
+            if (endpoint.isEncrypted() || d.isDataEncrypted()) {
+                p.setDecodedPayload("$" + EncryptionHelper.encrypt(payload.getObject(), IV, commonConfig.getEncryptionKey()));
+            } else {
+                p.setDecodedPayload(Base64.getEncoder().encodeToString(payload.getObject().getBytes()));
+            }
+        } else {
+            p.setDecodedPayload("");
+        }
+
         p.setNwkStatus(CaptureDataPivot.NetworkStatus.NWK_STATUS_SUCCESS);
         p.setCoredDump("");
         p.setIngestOwnerId(user.getLogin());
         // IP source - potential personal data
         String _ip = EncryptionHelper.encrypt(Tools.getRemoteIp(request), IV, commonConfig.getEncryptionKey());
         p.setFromIp(_ip);
+        p.setProcessingChainClass(endpoint.getProcessingClassName());
 
         // Copy the headers except Authorization
         p.setHeaders(new ArrayList<>());
@@ -209,6 +261,9 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
         crmeta.setCustomParams(new ArrayList<>());
         crmeta.setDataRate(""+payload.getDr());
         meta.setRadioMetadata(crmeta);
+        if ( payload.getTxInfo() != null ) {
+            crmeta.setFrequency(payload.getTxInfo().getFrequency());
+        }
 
         // Network stations
         ArrayList<Location> locs = new ArrayList<>();
@@ -246,8 +301,14 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
                         ns.setStationId(ri.getGatewayId()); // use mac as backup
                     }
                     CaptureCalcLocation loc = new CaptureCalcLocation();
-                    loc.setLatitude(ri.getMetadata().getLat());
-                    loc.setLongitude(ri.getMetadata().getLon());
+                    loc.setLatitude(0.0);
+                    loc.setLongitude(0.0);
+                    try {
+                        if ( ri.getMetadata().getGateway_lat() != null && ri.getMetadata().getGateway_long() != null ) {
+                            loc.setLatitude(Double.parseDouble(ri.getMetadata().getGateway_lat()));
+                            loc.setLongitude(Double.parseDouble(ri.getMetadata().getGateway_long()));
+                        }
+                    } catch (NumberFormatException ignored) {}
                     loc.setAccuracy(300);
                     loc.setAltitude(0);
                     loc.setHexagonId(ri.getMetadata().getGateway_h3index());
@@ -290,7 +351,6 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
                 }
             }
             meta.setCalculatedLocation(ccmeta);
-
         }
 
         p.setMetadata(meta);

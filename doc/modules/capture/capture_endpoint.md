@@ -14,7 +14,7 @@ The protocol will use identifiers present in the stream to find the associated d
 the device table matching that identifier.
 
 The pivot objects are then processed asynchronously (depending on the `capture.(a)sync.processing` settings) and in 
-parallel (depending on the `ccapture.processor.threads.count` parameter) to be transformed via a dynamic function 
+parallel (depending on the `capture.processor.threads.count` parameter) to be transformed via a dynamic function 
 allowing specific processing or by invoking a generic, user-programmable function.
 
 ## Capture endpoint definition
@@ -37,7 +37,9 @@ It is defined by the following structure, which allows it to be created by an ad
     "key" : "string",                        // Protocol-specific configuration parameters
     "value" : "string"
   }],
-  "creationMs": "long"                       // Creation timestamp in milliseconds since epoch
+  "creationMs": "long",                      // Creation timestamp in milliseconds since epoch
+  "encrypted": "boolean",                    // When true, the (sensitive) pivot objet data will be encrypted, slower so not a default behavior 
+  "processingClassName" : "string"           // Fully qualified class name of the driver processing the pivot data (moslty used for customization)
 }
 ```
 
@@ -71,7 +73,13 @@ entries.
   "processingClassName": "string",           // Fully qualified class name of the driver implementing this protocol
   "creationMs": "long",                      // Creation timestamp in milliseconds since epoch
   "createdBy": "string",                     // Creator identifier (system or user)
-  "encrypted": "boolean"                     // When true, the (sensitive) pivot objet data will be encrypted, slower so not a default behavior 
+  "defaultWideOpen" : "boolean",             // Default value for wideOpen flag indicating each device will directly reach the endpoint
+  "mandatoryFields": [{
+      "name": "string",                        // Name of the mandatory field
+      "valueType": "string",                   // Value type of the mandatory field (string, boolean, number)
+      "description": "string",                 // Description of the mandatory field (I18N key formated slug)
+      "enDescription": "string"                // English description of the mandatory field
+    }]                                       // List of mandatory fields required to configure this protocol
 }
 ```
 
@@ -81,13 +89,37 @@ Depending on the type of integration, security may be restricted to the endpoint
 for a LoRaWan endpoint where the LNS is the sole source for the endpoint. In that case we verify that the connecting user 
 has the right to connect and upload data and that they are indeed the owner of that connection, to ensure another token 
 is not attempting to inject data into the wrong endpoint. This approach also allows accepting incoming devices and 
-performing auto-commissioning.
+performing auto-commissioning eventually (not yet implemented).
 
 However, for other types of devices such as devices connected via Wi-Fi, the device may have a direct connection to the 
 endpoint with its own identity. Authorization is therefore managed based on the device's identity rather than the endpoint's, 
 and only later, once the data has been translated into the pivot model. A flag thus indicates the interface mode to handle 
 security appropriately.
 
+In any case, the user's identity and the fact that they hold both `ROLE_BACKEND_CAPTURE` (to access the API) and 
+`ROLE_DEVICE_WRITE` (to be allowed to add data to that object) will allow the data to be accepted. 
+
+There is a particular case used when a platform is dedicated to a specific purpose and the integration is done globally 
+across the entire platform with an admin configuring a general endpoint. In that case, it is not necessary to manage 
+security at each device level, which simplifies processing and also avoids having a common group hierarchy to authorize 
+the whole fleet - which would ultimately be inefficient in terms of performance. In this case, the endpoint user can be 
+granted a specific role `ROLE_GLOBAL_CAPTURE` that gives write access to all platform objects. This must be used with 
+caution and never assigned to a standard user because it would grant write access to all platform objects. This role 
+does not prevent from owning `ROLE_BACKEND_CAPTURE` but is a kind of global `ROLE_DEVICE_WRITE` restricted to the ingestion 
+operations.
+
+#### Possible situation
+
+- A data item arrives on a non-existent object
+  - In non-wide-open mode, we can imagine this object to be created and affected to the owner of the endpoint automatically.
+  - On wide-open mode it is rejected.
+- A data item arrives at an object belonging to a different user than the sender
+  - Accepted when the sender has `ROLE_GLOBAL_CAPTURE`
+  - Rejected otherwise.
+- A data arrives at the endpoint from a different user than the endpoint owner
+  - Rejected in non wide-open mode
+  - Accepted in wide-open mode if the user has the right to write on the object
+  
 ### Ingestion error handling
 
 We can encounter several error situations during data ingestion. In some cases the error is, for example, a malformed

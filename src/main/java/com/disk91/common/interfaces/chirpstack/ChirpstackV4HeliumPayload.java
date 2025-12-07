@@ -2,6 +2,7 @@ package com.disk91.common.interfaces.chirpstack;
 
 import com.disk91.common.interfaces.chirpstack.sub.*;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import java.util.List;
 
@@ -131,7 +132,8 @@ public class ChirpstackV4HeliumPayload {
     private boolean confirmed;
     private boolean adr;
 
-    private KeyValue object;
+    @JsonDeserialize(using = RawJsonDeserializer.class)
+    private String object;
 
     private List<ChirpstackRxInfo> rxInfo;
 
@@ -258,14 +260,6 @@ public class ChirpstackV4HeliumPayload {
         this.adr = adr;
     }
 
-    public KeyValue getObject() {
-        return object;
-    }
-
-    public void setObject(KeyValue object) {
-        this.object = object;
-    }
-
     public String getLevel() {
         return level;
     }
@@ -344,5 +338,13 @@ public class ChirpstackV4HeliumPayload {
 
     public void setLocation(ChirpstackLocation location) {
         this.location = location;
+    }
+
+    public String getObject() {
+        return object;
+    }
+
+    public void setObject(String object) {
+        this.object = object;
     }
 }

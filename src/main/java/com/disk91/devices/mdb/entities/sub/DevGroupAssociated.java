@@ -9,8 +9,8 @@ public class DevGroupAssociated implements CloneableObject<DevGroupAssociated> {
 
     // Group Name
     @Schema(
-            description = "Id of the associated group",
-            example = "123456",
+            description = "ShortId of the associated group",
+            example = "JHSLJKZHDJZLn54561sdfds53df1dsf35sd1",
             requiredMode = Schema.RequiredMode.REQUIRED
     )
     protected String groupId;

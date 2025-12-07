@@ -138,7 +138,7 @@ public class GroupsServices {
      * @param g Group to be saved
      */
     synchronized public void saveGroup(Group g) {
-        if ( g.getShortId().startsWith("user_") ) return; // virtual group, do nothing
+        if ( Group.isVirtualGroup(g.getShortId()) ) return; // virtual group, do nothing
         synchronized (locker) {
             this.flushGroup(g.getShortId());
             groupRepository.save(g);

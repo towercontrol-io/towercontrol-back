@@ -519,7 +519,8 @@ public class UsersTestsService {
             // Add right for other tests to that user
             // ROLE_BACKEND_CAPTURE for capture tests
             commonTestsService.info("[users] Adding ROLE_BACKEND_CAPTURE to {}",testNormalUserEmail);
-            testNormalUser.getRoles().add("ROLE_BACKEND_CAPTURE");
+            testNormalUser.getRoles().add(UsersRolesCache.StandardRoles.ROLE_BACKEND_CAPTURE.getRoleName());
+            testNormalUser.getRoles().add(UsersRolesCache.StandardRoles.ROLE_GLOBAL_CAPTURE.getRoleName());
             userCache.saveUser(testNormalUser);
         } catch (ITNotFoundException x) {
             commonTestsService.error("[users] {} not found after creation",testNormalUserEmail);

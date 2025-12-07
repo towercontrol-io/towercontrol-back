@@ -164,7 +164,7 @@ public class GroupsShortIdCache {
      */
     protected GroupsList getGroupList(String shortId) throws ITNotFoundException {
         // virtual group management
-        if ( shortId.startsWith("user_") ) {
+        if ( Group.isVirtualGroup(shortId) ) {
             String userId = shortId.substring(5);
             try {
                 User u = userCache.getUser(userId);
@@ -202,7 +202,7 @@ public class GroupsShortIdCache {
      * @param g - group to be removed, flush all the referring groups as well
      */
     protected void flushGroup(Group g) {
-        if ( g.getShortId().startsWith("user_") ) return; // virtual group, do nothing
+        if ( Group.isVirtualGroup(g.getShortId()) ) return; // virtual group, do nothing
         if ( this.serviceEnable && groupsConfig.getGroupsCacheMaxSize() > 0 ) {
             for ( String shortId : g.getReferringGroups() ) {
                 this.groupCache.remove(shortId,false);

@@ -492,16 +492,19 @@ public class UsersTestsService {
         ucb.setConditionValidation(true);
         ucb.setValidationID(exists.getValidationId());
         if ( usersConfig.isUsersNceEnableCaptcha() ) {
-            try {
-                // We expect the call to fail due to captcha missing
-                userCreationService.createUserSelf(ucb, req);
-                commonTestsService.error("[users] {} created even with captcha not validated", testNormalUserEmail);
-                throw new ITParseException("[users] failed in new user creation");
-            } catch (ITTooManyException | ITParseException x) {
-                commonTestsService.error("[users] {} creation failed for an unexpected reason {}", testNormalUserEmail,x.getMessage());
-                throw new ITParseException("[users] failed in new user creation");
-            } catch (ITRightException ignored) {
-                // normal behavior
+            if ( crossUserWrapperService.isNceEnabled() ) {
+                // only for NCE
+                try {
+                    // We expect the call to fail due to captcha missing
+                    userCreationService.createUserSelf(ucb, req);
+                    commonTestsService.error("[users] {} created even with captcha not validated", testNormalUserEmail);
+                    throw new ITParseException("[users] failed in new user creation");
+                } catch (ITTooManyException | ITParseException x) {
+                    commonTestsService.error("[users] {} creation failed for an unexpected reason {}", testNormalUserEmail, x.getMessage());
+                    throw new ITParseException("[users] failed in new user creation");
+                } catch (ITRightException ignored) {
+                    // normal behavior
+                }
             }
         }
         commonTestsService.success("[users] Captcha requirement for {} enforced successfully",testNormalUserEmail);

@@ -22,6 +22,7 @@ package com.disk91.devices.mdb.repositories;
 
 import com.disk91.devices.interfaces.DeviceState;
 import com.disk91.devices.mdb.entities.Device;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -30,13 +31,14 @@ import java.util.List;
 
 @Repository
 public interface DevicesRepository extends MongoRepository<Device,String> {
-        public Device findOneDeviceById(String id);
 
-        public List<Device> findDevicesByDataStreamId(String dataStreamId);
+    public Device findOneDeviceById(String id);
 
-        @Query(value = "{ 'associatedGroups.groupId': { $in: ?0 } }")
-        List<Device> findDevicesByAssociatedGroups(List<String> groupIds);
+    public List<Device> findDevicesByDataStreamId(String dataStreamId);
 
+
+    @Query(value = "{ 'associatedGroups.groupId': { $in: ?0 } }")
+    List<Device> findDevicesByAssociatedGroups(List<String> groupIds);
 
     /**
      * Search a device based on one of it's communicationId (like a LoRaWAN DevEUI)
@@ -46,5 +48,15 @@ public interface DevicesRepository extends MongoRepository<Device,String> {
      */
     @Query(value = "{ 'communicationIds': { $elemMatch: { 'type': ?0, 'params.key': ?1, 'params.values' : ?2 } }, 'devState': { $in: ?3 } }")
     List<Device> findDevicesByCommunicationIdTypeAndParamAndStates(String type, String key, String value, List<DeviceState> states);
+
+    /**
+     * Get a list of devices with id greater than startId, ordered by id ascending
+     * Purpose is to process all the devices in batches
+     * @param startId
+     * @param pageable
+     * @return
+     */
+    List<Device> findByIdGreaterThanOrderByIdAsc(String startId, Pageable pageable);
+
 
 }

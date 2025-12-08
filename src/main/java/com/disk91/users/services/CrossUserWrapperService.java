@@ -87,7 +87,8 @@ public class CrossUserWrapperService {
         // default Community Edition behavior : no captcha
         if ( commonConfig.isCommonNceEnable() ) {
             log.warn("[Users] Captcha verification failed to call NCE code with NCE enabled, refusing captcha");
-            return false;
+            log.warn("[Users] With CE version, please deactivate Captcha feature (not supported)");
+            return true;
         }
         return true;
     }

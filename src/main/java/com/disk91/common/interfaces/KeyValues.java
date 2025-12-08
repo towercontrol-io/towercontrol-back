@@ -24,6 +24,19 @@ public class KeyValues implements CloneableObject<KeyValues> {
             requiredMode = Schema.RequiredMode.REQUIRED
     ) protected ArrayList<String> values;
 
+    // === HELPER ===
+
+    public void setOnKeyValue(String key, String value) {
+        this.key = key;
+        this.values = new ArrayList<>();
+        this.values.add(value);
+    }
+
+    public void addOneValue(String value) {
+        if ( this.values == null ) this.values = new ArrayList<>();
+        this.values.add(value);
+    }
+
     // === CLONE ===
 
     public KeyValues clone() {

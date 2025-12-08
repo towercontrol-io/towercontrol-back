@@ -26,6 +26,16 @@ public class DevAttribute implements CloneableObject<DevAttribute> {
             requiredMode = Schema.RequiredMode.REQUIRED
     ) protected List<KeyValues> params;
 
+    // === HELPER ===
+
+    public void addOneSimpleParam(String type, String key, String value) {
+        this.setType(type);
+        if ( this.params == null ) this.params = new ArrayList<>();
+        KeyValues kv = new KeyValues();
+        kv.setOnKeyValue( key, value );
+        this.params.add(kv);
+    }
+
     // === CLONE ===
 
     public DevAttribute clone() {

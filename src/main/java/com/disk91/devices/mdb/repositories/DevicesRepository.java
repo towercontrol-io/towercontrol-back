@@ -56,6 +56,7 @@ public interface DevicesRepository extends MongoRepository<Device,String> {
      * @param pageable
      * @return
      */
+    @Query(value = "{ '_id': { $gt: ObjectId(?0) } }")
     List<Device> findByIdGreaterThanOrderByIdAsc(String startId, Pageable pageable);
 
 

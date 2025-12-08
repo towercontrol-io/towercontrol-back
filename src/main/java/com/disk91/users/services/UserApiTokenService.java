@@ -153,7 +153,7 @@ public class UserApiTokenService {
                             if (Tools.isStringInList(r, usersConfig.getUserApiKeyAuthorizedRoles())) {
                                 // we can add the role
                                 allowedRoles.add(r);
-                            } throw new ITRightException("user-profile-unauthorize-role");
+                            } else throw new ITRightException("user-profile-unauthorize-role");
                         }
                     } catch ( ITNotFoundException x) {
                         // role does not exist. skip it

@@ -286,9 +286,11 @@ public class UserApiTokenService {
             }
 
             ArrayList<UserApiTokenResponse> ret = new ArrayList<>();
-            for (UserApiKeys k : _user.getApiKeys()) {
-                UserApiTokenResponse _r = UserApiTokenResponse.getInstance(k);
-                ret.add(_r);
+            if ( _user.getApiKeys() != null ) {
+                for (UserApiKeys k : _user.getApiKeys()) {
+                    UserApiTokenResponse _r = UserApiTokenResponse.getInstance(k);
+                    ret.add(_r);
+                }
             }
             return ret;
 

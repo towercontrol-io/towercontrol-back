@@ -22,10 +22,13 @@ package com.disk91.capture.interfaces;
 import com.disk91.capture.interfaces.sub.CaptureError;
 import com.disk91.capture.interfaces.sub.CaptureMetaData;
 import com.disk91.capture.interfaces.sub.CaptureNwkStation;
+import com.disk91.capture.interfaces.sub.CaptureRadioMetadata;
 import com.disk91.common.tools.CloneableObject;
 import com.disk91.common.tools.CustomField;
+import com.disk91.common.tools.Now;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.data.annotation.Transient;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,6 +49,9 @@ import java.util.UUID;
 @Tag(name = "Capture data pivot format", description = "Common format to represent captured data from various protocols")
 public class CaptureDataPivot implements CloneableObject<CaptureDataPivot>  {
 
+    @Transient
+    private final static int CURRENT_VERSION = 1;
+
     // ----------------------------------------------
     // Information enriched from the capture process
 
@@ -55,6 +61,14 @@ public class CaptureDataPivot implements CloneableObject<CaptureDataPivot>  {
             requiredMode = Schema.RequiredMode.REQUIRED
     )
     protected UUID rxUuid;
+
+
+    @Schema(
+            description = "Format version of the pivot for later evolution",
+            example = "1",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    protected int version = CURRENT_VERSION;
 
 
     @Schema(
@@ -170,10 +184,28 @@ public class CaptureDataPivot implements CloneableObject<CaptureDataPivot>  {
     protected String processingChainClass;
 
     // -------------------------------------------
+    public static CaptureDataPivot initPivot() {
+        CaptureDataPivot pivot = new CaptureDataPivot();
+        pivot.rxUuid = null;
+        pivot.version = CURRENT_VERSION;
+        pivot.rxTimestampMs = Now.NowUtcMs();
+        pivot.nwkStatus = NetworkStatus.NWK_STATUS_SUCCESS;
+        pivot.status = CaptureStatus.CAP_STATUS_SUCCESS;
+        pivot.headers = new ArrayList<>();
+        pivot.nwkErrors = new ArrayList<>();
+        pivot.errors = new ArrayList<>();
+        pivot.nwkStations = new ArrayList<>();
+        pivot.metadata = CaptureMetaData.init();
+        return pivot;
+    }
+
+
+    // -------------------------------------------
 
     public CaptureDataPivot clone() {
         CaptureDataPivot copy = new CaptureDataPivot();
         copy.rxUuid = this.rxUuid;
+        copy.version = this.version;
         copy.rxTimestampMs = this.rxTimestampMs;
         copy.rxCaptureRef = this.rxCaptureRef;
         copy.payload = this.payload;

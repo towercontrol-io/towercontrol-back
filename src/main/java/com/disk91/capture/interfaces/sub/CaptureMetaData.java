@@ -22,6 +22,8 @@ package com.disk91.capture.interfaces.sub;
 import com.disk91.common.tools.CloneableObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.util.ArrayList;
+
 public class CaptureMetaData implements CloneableObject<CaptureMetaData> {
 
     @Schema(
@@ -127,6 +129,15 @@ public class CaptureMetaData implements CloneableObject<CaptureMetaData> {
             requiredMode = Schema.RequiredMode.NOT_REQUIRED
     )
     protected CaptureCalcLocation calculatedLocation;
+
+    // ======================================
+    public static CaptureMetaData init() {
+        CaptureMetaData cmd = new CaptureMetaData();
+        cmd.radioMetadata = new CaptureRadioMetadata();
+        cmd.radioMetadata.customParams = new ArrayList<>();
+        cmd.calculatedLocation = new CaptureCalcLocation();
+        return cmd;
+    }
 
     // ======================================
     @Override

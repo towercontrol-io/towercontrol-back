@@ -8,6 +8,7 @@ but only metadata, while aiming to be generic with respect to possible integrati
 ```json
 {
   "rxUuid": "string",                        // Unique identifier of received data
+  "version": "int",                          // Version of the pivot object structure
   "rxTimestampMs": "long",                   // Reception Timestamp of the data reception in milliseconds since epoch
   "rxCaptureId": "string",                   // Source identifier (e.g., capture endpoint ID)
   "payload": "String",                       // Raw data payload as a string (base64) (encrypted when enabled)

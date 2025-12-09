@@ -28,3 +28,12 @@ Planned for the future
 
 ### Natively supported integrations
 - `Helium / Chirpstack` via HTTP(s) with JSON formatting, authentication via header (api_key or JWT token)
+
+#### How to setup Helium / Chirpstack integration (case of single tenant)
+1) Create an API key with the roles `ROLE_GLOBAL_CAPTURE` and `ROLE_BACKEND_CAPTURE` and `ROLE_DEVICE_WRITE`
+2) Generate the JWT token for this API key (valid for 10 years for example)
+3) Create an endpoint with corresponding protocol, this endpoint is owned by the same user as the JWT owner.
+4) On Chirpstack, create an HTTP integration with the following parameters:
+   - Endpoint URL: `https://<your_domain>/capture/1.0/ingest/<your_endpoint_id>/`
+   - Headers: `Authorization` and value `Bearer <your_jwt_token>`
+   - Uplink Data Template: default (you can customize it later if needed)

@@ -25,6 +25,15 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public class CaptureCalcLocation implements CloneableObject<CaptureCalcLocation>  {
 
     @Schema(
+            description = "true when the location is encrypted. In this case hexagonId is used and encrypted, " +
+                          "lat/long are not available, altitude and accuracy are set.",
+            example = "false",
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED
+    )
+    protected boolean encrypted = false;
+
+
+    @Schema(
             description = "Latitude in decimal degrees",
             example = "48.8566",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED
@@ -63,6 +72,7 @@ public class CaptureCalcLocation implements CloneableObject<CaptureCalcLocation>
     @Override
     public CaptureCalcLocation clone() {
         CaptureCalcLocation o = new CaptureCalcLocation();
+        o.encrypted = this.encrypted;
         o.latitude = this.latitude;
         o.longitude = this.longitude;
         o.altitude = this.altitude;
@@ -112,5 +122,13 @@ public class CaptureCalcLocation implements CloneableObject<CaptureCalcLocation>
 
     public void setHexagonId(String hexagonId) {
         this.hexagonId = hexagonId;
+    }
+
+    public boolean isEncrypted() {
+        return encrypted;
+    }
+
+    public void setEncrypted(boolean encrypted) {
+        this.encrypted = encrypted;
     }
 }

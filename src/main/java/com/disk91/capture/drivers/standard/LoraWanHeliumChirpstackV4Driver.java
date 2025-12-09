@@ -115,13 +115,9 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
             ITRightException,                   // No trace
             ITHackerException                   // Will generated a trace in audit (with caching to not overload)
     {
-        CaptureDataPivot p = new CaptureDataPivot();
-        p.setRxTimestampMs(Now.NowUtcMs());
-        p.setNwkErrors(new ArrayList<>());
-        p.setErrors(new ArrayList<>());
+        CaptureDataPivot p = CaptureDataPivot.initPivot();
         p.setRxUuid(this.getRxUUID());
         p.setRxCaptureRef(endpoint.getRef());
-        p.setNwkStations(new ArrayList<>());
 
         // convert to Chirpstack Payload
         ChirpstackV4HeliumPayload payload;
@@ -188,16 +184,17 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
             throw new ITRightException("capture-driver-helium-chirpstackv4-unknown-device");
         }
         // Once on this point, the authorization is OK
+        final boolean encryptionRequired = endpoint.isEncrypted() || d.isDataEncrypted();
 
         // Manage Payload, it will be Base64 encoded and encrypted is required
         String toStoreData = payload.getData();
-        if (endpoint.isEncrypted() || d.isDataEncrypted()) {
+        if (encryptionRequired) {
             toStoreData = "$" + EncryptionHelper.encrypt(payload.getData(), IV, commonConfig.getEncryptionKey());
         }
         p.setPayload(toStoreData);
 
         if (payload.getObject() != null && !payload.getObject().isEmpty()) {
-            if (endpoint.isEncrypted() || d.isDataEncrypted()) {
+            if (encryptionRequired) {
                 p.setDecodedPayload("$" + EncryptionHelper.encrypt(payload.getObject(), IV, commonConfig.getEncryptionKey()));
             } else {
                 p.setDecodedPayload(Base64.getEncoder().encodeToString(payload.getObject().getBytes()));
@@ -214,13 +211,12 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
         p.setFromIp(_ip);
         p.setProcessingChainClass(endpoint.getProcessingClassName());
 
-        // Copy the headers except Authorization
-        p.setHeaders(new ArrayList<>());
+        // Copy the headers except Authorization and some others
         Enumeration<String> headerNames = request.getHeaderNames();
         if ( headerNames != null ) {
             while (headerNames.hasMoreElements()) {
                 String headerName = headerNames.nextElement();
-                if ( headerName.compareToIgnoreCase("Authorization") != 0 ) {
+                if ( this.keepHeader(headerName) ) {
                     String headerValue = request.getHeader(headerName);
                     CustomField cf = new CustomField();
                     cf.setName(headerName);
@@ -230,7 +226,7 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
             }
         }
 
-        CaptureMetaData meta = new CaptureMetaData();
+        CaptureMetaData meta = p.getMetadata();
         meta.setNwkUuid(payload.getDeduplicationId());
         try {
             meta.setNwkTimestamp(DateConverters.StringDateToMs(payload.getTime()));
@@ -255,12 +251,10 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
         meta.setDownlinkReq(payload.isConfirmed());
         meta.setDownlinkResp(false);
 
-        CaptureRadioMetadata crmeta = new CaptureRadioMetadata();
+        CaptureRadioMetadata crmeta = meta.getRadioMetadata();
         crmeta.setAddress(payload.getDevAddr());
         crmeta.setFrequency(0);
-        crmeta.setCustomParams(new ArrayList<>());
         crmeta.setDataRate(""+payload.getDr());
-        meta.setRadioMetadata(crmeta);
         if ( payload.getTxInfo() != null ) {
             crmeta.setFrequency(payload.getTxInfo().getFrequency());
         }
@@ -271,7 +265,6 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
             payload.getRxInfo().forEach(ri -> {
                 CaptureNwkStation ns = new CaptureNwkStation();
                 ns.setCustomParams(new ArrayList<>());
-
                 try {
                     if ( ri.getNsTime() != null && !ri.getNsTime().isEmpty() ) {
                         ns.setNkwTimestamp(DateConverters.StringNsDateToMs(ri.getNsTime()));
@@ -303,6 +296,7 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
                     CaptureCalcLocation loc = new CaptureCalcLocation();
                     loc.setLatitude(0.0);
                     loc.setLongitude(0.0);
+                    loc.setEncrypted(false);
                     try {
                         if ( ri.getMetadata().getGateway_lat() != null && ri.getMetadata().getGateway_long() != null ) {
                             loc.setLatitude(Double.parseDouble(ri.getMetadata().getGateway_lat()));
@@ -311,13 +305,21 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
                     } catch (NumberFormatException ignored) {}
                     loc.setAccuracy(300);
                     loc.setAltitude(0);
-                    loc.setHexagonId(ri.getMetadata().getGateway_h3index());
-                    ns.setStationLocation(loc);
-                    ns.getCustomParams().add(new CustomField("gateway-name", ri.getMetadata().getGateway_name()));
-                    ns.getCustomParams().add(new CustomField("gateway-region", ri.getMetadata().getRegion_common_name()));
                     if ( GeolocationTools.isAValidCoordinate(loc.getLatitude(),loc.getLongitude())) {
+                        // add until encryption
                         locs.add( new Location(loc.getLatitude(), loc.getLongitude(), 300, ri.getRssi()) );
                     }
+                    if (encryptionRequired && h3 != null) {
+                        loc.setHexagonId(EncryptionHelper.encrypt(h3.latLngToCellAddress(loc.getLatitude(), loc.getLongitude(), 15), IV, commonConfig.getEncryptionKey()));
+                        loc.setLatitude(0.0);
+                        loc.setLongitude(0.0);
+                        loc.setEncrypted(true);
+                    } else {
+                        loc.setHexagonId(ri.getMetadata().getGateway_h3index());
+                    }
+                    ns.setStationLocation(loc);
+                    ns.getCustomParams().add(new CustomField("gateway-name", ri.getMetadata().getGateway_name()));
+                    ns.getCustomParams().add(new CustomField("gateway-region", ri.getMetadata().getRegi()));
                 }
                 ns.setRssi(ri.getRssi());
                 ns.setSnr(ri.getSnr());
@@ -338,8 +340,12 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
                     ccmeta.setLongitude(l.lng);
                     ccmeta.setAccuracy(l.radius);
                     ccmeta.setAltitude(0);
-                    if ( h3 != null ) {
-                        // get the hex corresponding in a resolution of 14 - 3m2
+                    if (encryptionRequired && h3 != null) {
+                        ccmeta.setHexagonId(EncryptionHelper.encrypt(h3.latLngToCellAddress(ccmeta.getLatitude(), ccmeta.getLongitude(), 15), IV, commonConfig.getEncryptionKey()));
+                        ccmeta.setLatitude(0.0);
+                        ccmeta.setLongitude(0.0);
+                        ccmeta.setEncrypted(true);
+                    } else if ( h3 != null ){
                         ccmeta.setHexagonId(h3.latLngToCellAddress(ccmeta.getLatitude(), ccmeta.getLongitude(),14));
                     } else ccmeta.setHexagonId("");
                 } catch (ITNotFoundException x) {
@@ -352,8 +358,6 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
             }
             meta.setCalculatedLocation(ccmeta);
         }
-
-        p.setMetadata(meta);
         p.setStatus(CAP_STATUS_SUCCESS);
 
         return new CaptureIngestResponse(

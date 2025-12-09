@@ -57,15 +57,13 @@ public class ChirpstackV4HeliumPayload {
                 // @TODO - This is specific to Helium ... to be reviewed later
                 //
                 "metadata":{
-                    "region_common_name":"EU868",
-                    "region_config_id":"eu868",
-                    "gateway_h3index" : "61105...",
-                    "gateway_lat" : "45.80...",
-                    "gateway_long" : "3.09...",
-                    "gateway_name" : "mythical-xxx..."
-                    "gateway_id":"11o8R9inbpc...3XA",
-                    "lat": 0.0,
-                    "lon": 0.0,
+                    network": "helium_iot",
+                    "gateway_long": "3.0",
+                    "regi": "EU868",
+                    "gateway_name": "myt...ch",
+                    "gateway_id": "11o8....f13XA",
+                    "gateway_lat": "45.8",
+                    "gateway_h3index": "8c1..."
                 },
                 "crcStatus":"CRC_OK",
             },

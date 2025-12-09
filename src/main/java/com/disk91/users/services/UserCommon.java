@@ -176,7 +176,6 @@ public class UserCommon {
                 UserApiKeys k = _u.getApiKey(login);
                 if ( ! _u.isActive() || _u.isLocked() ) throw new ITRightException("user-rights-inactive-locked");
                 if ( ! _u.isInRole(UsersRolesCache.StandardRoles.ROLE_REGISTERED_USER)) throw new ITRightException("user-rights-not-registered-user");
-                if ( ! _u.isInRole(UsersRolesCache.StandardRoles.ROLE_LOGIN_API)) throw new ITRightException("user-rights-not-signed-user");
 
                 if ( groupShort != null ) {
                     // We need to get the group for checking rights

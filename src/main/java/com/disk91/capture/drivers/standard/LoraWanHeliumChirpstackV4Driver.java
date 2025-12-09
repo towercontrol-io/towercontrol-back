@@ -123,19 +123,14 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
         ChirpstackV4HeliumPayload payload;
         try {
             String json = new String(rawData);
-            log.info(json); // @TODO remove after debug
+            log.debug(json);
             payload = mapper.readValue(json, ChirpstackV4HeliumPayload.class);
         } catch (JsonProcessingException x) {
             // @TODO process the ERROR message as an exception
-
             // failed to parse
             log.info("[HeliumChirpstackV4Protocol] Conversion failed {}", x.getMessage()); // @TODO change for debug
             throw new ITParseException("capture-driver-helium-chirpstackv4-failed-to-parse-json");
         }
-
-        // @TODO remove after debug
-        log.info("[HeliumChirpstackV4Protocol] Received ChirpstackV4Helium payload: {}", payload.getDeduplicationId());
-        log.info("[HeliumChirpstackV4Protocol] toPivot called - rawData size: {}", rawData != null ? rawData.length : 0);
 
         // Get the associated device if exists
         Device d = null;

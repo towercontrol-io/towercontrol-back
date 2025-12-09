@@ -173,6 +173,9 @@ public class CaptureAsyncProcessService {
      * @param pivot - pivot object to process
      */
     private void processPivot(CaptureDataPivot pivot) {
+        // Store the raw data (sync or async)
+        storeRawPivot(pivot);
+
         // Minimal action : log
         long start = Now.NowUtcMs();
         try {

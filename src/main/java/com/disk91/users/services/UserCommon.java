@@ -297,7 +297,6 @@ public class UserCommon {
             User _u = userCache.getUserByApiKey(login);
             if ( ! _u.isActive() || _u.isLocked() ) throw new ITNotFoundException("user-rights-inactive-locked");
             if ( ! _u.isInRole(UsersRolesCache.StandardRoles.ROLE_REGISTERED_USER)) throw new ITNotFoundException("user-rights-not-registered-user");
-            if ( ! _u.isInRole(UsersRolesCache.StandardRoles.ROLE_LOGIN_API)) throw new ITNotFoundException("user-rights-not-signed-user");
             return _u;
         } else {
             // Regular user

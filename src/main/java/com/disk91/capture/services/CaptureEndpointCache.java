@@ -73,7 +73,7 @@ public class CaptureEndpointCache {
         log.info("[capture] initCaptureEndpointCache");
         if ( config.getCaptureEndpointCacheMaxSize() > 0 ) {
             this.cache = new ObjectCache<String, CaptureEndpoint>(
-                    "CaptureEndpointROCache",
+                    "CaptureEndpointRWCache",
                     config.getCaptureEndpointCacheMaxSize(),
                     config.getCaptureEndpointCacheExpiration()*1000L
             ) {
@@ -165,17 +165,18 @@ public class CaptureEndpointCache {
         }
     }
 
+    // @TODO save the stats on regular basis ... and on shutdown
 
     // Temp debug ..
     // @TODO remove
 
     @Scheduled(fixedRate = 30000, initialDelay = 5000)
-    private void printStats() {
+    protected void printStats() {
         if ( ! this.serviceEnable || config.getCaptureEndpointCacheMaxSize() == 0 ) return;
         for ( String key : Collections.list(this.cache.list()) ) {
             CaptureEndpoint ep = this.cache.get(key);
             if ( ep != null ) {
-                log.debug("[capture][endpoint-cache] Endpoint {} - RX {} - PV {} - PR {} - BO {} - BP {} - BR {}",
+                log.info("[capture][endpoint-cache] Endpoint {} - RX {} - PV {} - PR {} - BO {} - BP {} - BR {}",
                         ep.getRef(),
                         ep.getTotalFramesReceived(),
                         ep.getTotalFramesAcceptedToPivot(),

@@ -88,6 +88,8 @@ public class CaptureEndpoint implements CloneableObject<CaptureEndpoint> {
     protected long totalBadDeviceRight = 0L;
     // Total frames in Driver
     protected long totalInDriver = 0L;
+    // Total frames queued to be processed
+    protected long totalQueuedToProcess = 0L;
 
     // --------------------------------
 
@@ -99,6 +101,7 @@ public class CaptureEndpoint implements CloneableObject<CaptureEndpoint> {
         this.totalBadPayloadFormat = 0L;
         this.totalBadOwnerRefused = 0L;
         this.totalInDriver = 0L;
+        this.totalQueuedToProcess = 0L;
     }
 
     public synchronized void incTotalFramesReceived() {
@@ -127,6 +130,10 @@ public class CaptureEndpoint implements CloneableObject<CaptureEndpoint> {
 
     public synchronized void incTotalInDriver() {
         this.totalInDriver++;
+    }
+
+    public synchronized void incTotalQueuedToProcess() {
+        this.totalQueuedToProcess++;
     }
 
     // --------------------------------
@@ -158,6 +165,7 @@ public class CaptureEndpoint implements CloneableObject<CaptureEndpoint> {
         p.setTotalBadDeviceRight(this.totalBadDeviceRight);
         p.setTotalBadPayloadFormat(this.totalBadPayloadFormat);
         p.setTotalInDriver(this.totalInDriver);
+        p.setTotalQueuedToProcess(this.totalQueuedToProcess);
         return p;
     }
 
@@ -306,5 +314,13 @@ public class CaptureEndpoint implements CloneableObject<CaptureEndpoint> {
 
     public void setTotalInDriver(long totalInDriver) {
         this.totalInDriver = totalInDriver;
+    }
+
+    public long getTotalQueuedToProcess() {
+        return totalQueuedToProcess;
+    }
+
+    public void setTotalQueuedToProcess(long totalQueuedToProcess) {
+        this.totalQueuedToProcess = totalQueuedToProcess;
     }
 }

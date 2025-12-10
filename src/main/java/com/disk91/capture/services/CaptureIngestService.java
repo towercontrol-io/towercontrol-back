@@ -155,6 +155,7 @@ public class CaptureIngestService {
                                 e.incTotalFramesAcceptedToProcess();
                                 captureAsyncProcessService.enqueueRawData(pivot.getPivot());
                                 incrementIngestSuccess();
+                                e.incTotalQueuedToProcess();
                             } catch (ITOverQuotaException x) {
                                 try {
                                     // the system is shutting down or overloaded, this frame is rejected

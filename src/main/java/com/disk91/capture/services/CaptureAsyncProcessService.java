@@ -311,7 +311,11 @@ public class CaptureAsyncProcessService {
             // Synchronous storage
             long start = Now.NowUtcMs();
             try {
-                capturePivotRawRepository.save((CapturePivotRaw)pivot);
+                CapturePivotRaw r = new CapturePivotRaw();
+                org.springframework.beans.BeanUtils.copyProperties(pivot,r);
+                capturePivotRawRepository.save(r);
+            } catch (Exception e) {
+                log.error("[capture] Error during synchronous raw store: {}", e.getMessage());
             } finally {
                 this.addStorageTime(Now.NowUtcMs() - start);
                 this.incrementStorageCount();

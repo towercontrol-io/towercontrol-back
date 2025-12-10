@@ -176,10 +176,11 @@ public class CaptureEndpointCache {
         for ( String key : Collections.list(this.cache.list()) ) {
             CaptureEndpoint ep = this.cache.get(key);
             if ( ep != null ) {
-                log.info("[capture][endpoint-cache] Endpoint {} - RX {} - PV {} - PR {} - BO {} - BP {} - BR {}",
+                log.info("[capture][endpoint-cache] Endpoint {} - RX {} - PV {} - DR {} - PR {} - BO {} - BP {} - BR {}",
                         ep.getRef(),
                         ep.getTotalFramesReceived(),
                         ep.getTotalFramesAcceptedToPivot(),
+                        ep.getTotalInDriver(),
                         ep.getTotalFramesAcceptedToProcess(),
                         ep.getTotalBadOwnerRefused(),
                         ep.getTotalBadPayloadFormat(),

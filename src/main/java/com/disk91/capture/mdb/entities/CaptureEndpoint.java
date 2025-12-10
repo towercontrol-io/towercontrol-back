@@ -84,8 +84,10 @@ public class CaptureEndpoint implements CloneableObject<CaptureEndpoint> {
     protected long totalFramesAcceptedToProcess = 0L;
     // Total frames rejected due to payload format
     protected long totalBadPayloadFormat = 0L;
-    // Tital frames rejected due to device right exception
+    // Total frames rejected due to device right exception
     protected long totalBadDeviceRight = 0L;
+    // Total frames in Driver
+    protected long totalInDriver = 0L;
 
     // --------------------------------
 
@@ -96,6 +98,7 @@ public class CaptureEndpoint implements CloneableObject<CaptureEndpoint> {
         this.totalBadDeviceRight = 0L;
         this.totalBadPayloadFormat = 0L;
         this.totalBadOwnerRefused = 0L;
+        this.totalInDriver = 0L;
     }
 
     public synchronized void incTotalFramesReceived() {
@@ -120,6 +123,10 @@ public class CaptureEndpoint implements CloneableObject<CaptureEndpoint> {
 
     public synchronized void incTotalBadDeviceRight() {
         this.totalBadDeviceRight++;
+    }
+
+    public synchronized void incTotalInDriver() {
+        this.totalInDriver++;
     }
 
     // --------------------------------
@@ -148,6 +155,9 @@ public class CaptureEndpoint implements CloneableObject<CaptureEndpoint> {
         p.setTotalFramesAcceptedToPivot(this.totalFramesAcceptedToPivot);
         p.setTotalFramesAcceptedToProcess(this.totalFramesAcceptedToProcess);
         p.setTotalBadOwnerRefused(this.totalBadOwnerRefused);
+        p.setTotalBadDeviceRight(this.totalBadDeviceRight);
+        p.setTotalBadPayloadFormat(this.totalBadPayloadFormat);
+        p.setTotalInDriver(this.totalInDriver);
         return p;
     }
 
@@ -288,5 +298,13 @@ public class CaptureEndpoint implements CloneableObject<CaptureEndpoint> {
 
     public void setTotalBadDeviceRight(long totalBadDeviceRight) {
         this.totalBadDeviceRight = totalBadDeviceRight;
+    }
+
+    public long getTotalInDriver() {
+        return totalInDriver;
+    }
+
+    public void setTotalInDriver(long totalInDriver) {
+        this.totalInDriver = totalInDriver;
     }
 }

@@ -115,6 +115,8 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
             ITRightException,                   // No trace
             ITHackerException                   // Will generated a trace in audit (with caching to not overload)
     {
+        endpoint.incTotalInDriver();
+
         CaptureDataPivot p = CaptureDataPivot.initPivot();
         p.setRxUuid(this.getRxUUID());
         p.setRxCaptureRef(endpoint.getRef());
@@ -177,6 +179,7 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
 
         } catch (ITNotFoundException x) {
             // This device is not known
+            endpoint.incTotalBadDeviceRight();
             throw new ITRightException("capture-driver-helium-chirpstackv4-unknown-device");
         }
         // Once on this point, the authorization is OK

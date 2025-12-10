@@ -165,13 +165,13 @@ public class CaptureEndpointCache {
         }
     }
 
-    // @TODO save the stats on regular basis ... and on shutdown
-
-    // Temp debug ..
-    // @TODO remove
-
-    @Scheduled(fixedRate = 30000, initialDelay = 5000)
-    protected void printStats() {
+    /**
+     * On regular basis (5 minutes), save the stats of all cached endpoints
+     * Print the stats on logs at least until the front-end have the feature to display them
+     * later pass it to debug level
+     */
+    @Scheduled(fixedRate = 300000, initialDelay = 5000)
+    protected void printStatsAndSave() {
         if ( ! this.serviceEnable || config.getCaptureEndpointCacheMaxSize() == 0 ) return;
         for ( String key : Collections.list(this.cache.list()) ) {
             CaptureEndpoint ep = this.cache.get(key);
@@ -187,6 +187,7 @@ public class CaptureEndpointCache {
                         ep.getTotalBadPayloadFormat(),
                         ep.getTotalBadDeviceRight()
                 );
+                repository.save(ep);
             }
         }
     }

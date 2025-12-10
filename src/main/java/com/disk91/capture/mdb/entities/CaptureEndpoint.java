@@ -72,6 +72,55 @@ public class CaptureEndpoint implements CloneableObject<CaptureEndpoint> {
     // to process the pivot object after protocol processing.
     protected String processingClassName;
 
+    // ----- STATS -------
+
+    // Total frames received on the endpoint
+    protected long totalFramesReceived = 0L;
+    // Total frames refused because JWT owner is invalid
+    protected long totalBadOwnerRefused = 0L;
+    // Total frames accepted and passed to pivot transformation
+    protected long totalFramesAcceptedToPivot = 0L;
+    // Total frames pivoted and passed to processing
+    protected long totalFramesAcceptedToProcess = 0L;
+    // Total frames rejected due to payload format
+    protected long totalBadPayloadFormat = 0L;
+    // Tital frames rejected due to device right exception
+    protected long totalBadDeviceRight = 0L;
+
+    // --------------------------------
+
+    public synchronized void resetstats() {
+        this.totalFramesReceived = 0L;
+        this.totalFramesAcceptedToPivot = 0L;
+        this.totalFramesAcceptedToProcess = 0L;
+        this.totalBadDeviceRight = 0L;
+        this.totalBadPayloadFormat = 0L;
+        this.totalBadOwnerRefused = 0L;
+    }
+
+    public synchronized void incTotalFramesReceived() {
+        this.totalFramesReceived++;
+    }
+
+    public synchronized void incTotalBadOwnerRefused() {
+        this.totalBadOwnerRefused++;
+    }
+
+    public synchronized void incTotalFramesAcceptedToPivot() {
+        this.totalFramesAcceptedToPivot++;
+    }
+
+    public synchronized void incTotalFramesAcceptedToProcess() {
+        this.totalFramesAcceptedToProcess++;
+    }
+
+    public synchronized void incTotalBadPayloadFormat() {
+        this.totalBadPayloadFormat++;
+    }
+
+    public synchronized void incTotalBadDeviceRight() {
+        this.totalBadDeviceRight++;
+    }
 
     // --------------------------------
 
@@ -94,6 +143,11 @@ public class CaptureEndpoint implements CloneableObject<CaptureEndpoint> {
                 p.getCustomConfig().add( cf.clone() );
             }
         }
+
+        p.setTotalFramesReceived(this.totalFramesReceived);
+        p.setTotalFramesAcceptedToPivot(this.totalFramesAcceptedToPivot);
+        p.setTotalFramesAcceptedToProcess(this.totalFramesAcceptedToProcess);
+        p.setTotalBadOwnerRefused(this.totalBadOwnerRefused);
         return p;
     }
 
@@ -186,5 +240,53 @@ public class CaptureEndpoint implements CloneableObject<CaptureEndpoint> {
 
     public void setProcessingClassName(String processingClassName) {
         this.processingClassName = processingClassName;
+    }
+
+    public long getTotalFramesReceived() {
+        return totalFramesReceived;
+    }
+
+    synchronized public void setTotalFramesReceived(long totalFramesReceived) {
+        this.totalFramesReceived = totalFramesReceived;
+    }
+
+    public long getTotalBadOwnerRefused() {
+        return totalBadOwnerRefused;
+    }
+
+    public void setTotalBadOwnerRefused(long totalBadOwnerRefused) {
+        this.totalBadOwnerRefused = totalBadOwnerRefused;
+    }
+
+    public long getTotalFramesAcceptedToPivot() {
+        return totalFramesAcceptedToPivot;
+    }
+
+    public void setTotalFramesAcceptedToPivot(long totalFramesAcceptedToPivot) {
+        this.totalFramesAcceptedToPivot = totalFramesAcceptedToPivot;
+    }
+
+    public long getTotalFramesAcceptedToProcess() {
+        return totalFramesAcceptedToProcess;
+    }
+
+    public void setTotalFramesAcceptedToProcess(long totalFramesAcceptedToProcess) {
+        this.totalFramesAcceptedToProcess = totalFramesAcceptedToProcess;
+    }
+
+    public long getTotalBadPayloadFormat() {
+        return totalBadPayloadFormat;
+    }
+
+    public void setTotalBadPayloadFormat(long totalBadPayloadFormat) {
+        this.totalBadPayloadFormat = totalBadPayloadFormat;
+    }
+
+    public long getTotalBadDeviceRight() {
+        return totalBadDeviceRight;
+    }
+
+    public void setTotalBadDeviceRight(long totalBadDeviceRight) {
+        this.totalBadDeviceRight = totalBadDeviceRight;
     }
 }

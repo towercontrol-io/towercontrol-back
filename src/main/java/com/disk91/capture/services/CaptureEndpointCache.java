@@ -36,6 +36,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -77,11 +79,15 @@ public class CaptureEndpointCache {
             ) {
                 @Override
                 synchronized public void onCacheRemoval(String key, CaptureEndpoint obj, boolean batch, boolean last) {
-                    // read only cache, do nothing
+                    // Save the stats update
+                    if ( obj != null ) {
+                        repository.save(obj);
+                    }
                 }
                 @Override
                 public void bulkCacheUpdate(List<CaptureEndpoint> objects) {
-                    // read only cache, do nothing
+                    // save the stats update in bulk
+                    repository.saveAll(objects);
                 }
             };
         }
@@ -125,6 +131,7 @@ public class CaptureEndpointCache {
 
     /**
      * Get the capture endpoint from the cache or from the database if not in cache
+     * No Object clone as we want to manage counters globally
      * @param id - id to be retrieved
      * @return the object
      * @throws ITNotFoundException if not found
@@ -134,7 +141,7 @@ public class CaptureEndpointCache {
             // direct access from database
             CaptureEndpoint o = repository.findOneByRef(id);
             if (o == null) throw new ITNotFoundException("capture-endpoint-not-found");
-            return o.clone();
+            return o;
         } else {
             CaptureEndpoint o = this.cache.get(id);
             if (o == null) {
@@ -143,7 +150,7 @@ public class CaptureEndpointCache {
                 if (o == null) throw new ITNotFoundException("capture-endpoint-not-found");
                 this.cache.put(o, o.getRef());
             }
-            return o.clone();
+            return o;
         }
     }
 
@@ -155,6 +162,29 @@ public class CaptureEndpointCache {
     public void flushCaptureEndpoint(String id) {
         if ( this.serviceEnable && config.getCaptureEndpointCacheMaxSize() > 0 ) {
             this.cache.remove(id,false);
+        }
+    }
+
+
+    // Temp debug ..
+    // @TODO remove
+
+    @Scheduled(fixedRate = 30000, initialDelay = 5000)
+    private void printStats() {
+        if ( ! this.serviceEnable || config.getCaptureEndpointCacheMaxSize() == 0 ) return;
+        for ( String key : Collections.list(this.cache.list()) ) {
+            CaptureEndpoint ep = this.cache.get(key);
+            if ( ep != null ) {
+                log.debug("[capture][endpoint-cache] Endpoint {} - RX {} - PV {} - PR {} - BO {} - BP {} - BR {}",
+                        ep.getRef(),
+                        ep.getTotalFramesReceived(),
+                        ep.getTotalFramesAcceptedToPivot(),
+                        ep.getTotalFramesAcceptedToProcess(),
+                        ep.getTotalBadOwnerRefused(),
+                        ep.getTotalBadPayloadFormat(),
+                        ep.getTotalBadDeviceRight()
+                );
+            }
         }
     }
 

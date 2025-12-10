@@ -101,10 +101,12 @@ public class CaptureIngestService {
         try {
             // Get the endpoint information
             CaptureEndpoint e = captureEndpointCache.getCaptureEndpoint(captureId);
+            e.incTotalFramesReceived();
             // Check the ownership - get the real User behind the request
             User u = userCommon.getUser(req.getUserPrincipal().getName());
             if ( !e.isWideOpen() && e.getOwner().compareTo(u.getLogin()) != 0) {
                 log.debug("[capture] Ingest data failed, right error for captureId {} and user {}", captureId, u.getLogin());
+                e.incTotalBadOwnerRefused();
                 throw new ITRightException("capture-ingest-right-error");
             }
 
@@ -130,7 +132,7 @@ public class CaptureIngestService {
                         }
                     }
                 }
-
+                e.incTotalFramesAcceptedToPivot();
                 try {
                     Object result = ap.getClass()
                             .getMethod("toPivot",
@@ -150,6 +152,7 @@ public class CaptureIngestService {
                         case CAP_STATUS_SUCCESS:
                             // Enqueue for processing
                             try {
+                                e.incTotalFramesAcceptedToProcess();
                                 captureAsyncProcessService.enqueueRawData(pivot.getPivot());
                                 incrementIngestSuccess();
                             } catch (ITOverQuotaException x) {

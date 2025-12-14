@@ -13,18 +13,23 @@ In the case of a replay, it is crucial to ensure the correct state is identified
 ### Device states
 - **Identified**: The device IDs have been created into the platform.
 - **Associated**: The device is associated to a physical device, the physical device exists
+- **Stored**: The device is stored in a warehouse deactivated
 - **Commissioned**: The device has been declared on the telco networks, telco IDs are associated.
 - **Affectable**: The device can be affected to a user or a group
 - **Affected**: The device is affected to a user or a group, it can be related to an order
 - **Activated**: The device is activated on the communication networks and able to send data
 - **Open**: The device data can flow into the platform
 
-- The following states are cumulative, so we use state **action pending** and state **action done** and the aplication
+- The following states are cumulative, so we use state **action pending** and state **action done** and the application
 will manage the different situations.
   - **Upgradable**: The device can be upgraded to a new version
   - **Upgraded**: The device has been upgraded to a new version - this is an acknowledgeable state
   - **Configurable**: The device have a new configuration pending
   - **Configured**: The device configuration has been applied - this is an acknowledgeable state
+
+- The state **Out of subscription** is decomposed into 2 states to better manage the data flow:
+  - **Out of network Subscription** : The device won't receive data from network until subscription is renewed
+  - **Out of User Subscription** : The device won't send data to platform until subscription is renewed
 
 - **Defective**: The device is defective and need to be replaced.
 - **Lost**: The device is lost.
@@ -34,7 +39,7 @@ will manage the different situations.
 - **Recycled**: The device is recycled (destroyed not reused).
 
 ### Device transitions
-We can match theses cumulative states with a standard device lifecycle but the purpose is to have it more open. Here eis an
+We can match theses cumulative states with a standard device lifecycle but the purpose is to have it more open. Here is an
 example of device lide-cycle story:
 - The solution provider wants to produce 1000 devices to the factory/manufacturer. 1000 devices are created and are in the 
 state `Identified:true`. IDs are generated and the manufacturer can produce them.

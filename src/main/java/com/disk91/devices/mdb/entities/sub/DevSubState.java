@@ -23,50 +23,46 @@ import com.disk91.common.tools.CloneableObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+@Tag(name = "Device Sub State (when multiple state can be cumulative)", description = "Device sub State")
+public class DevSubState implements CloneableObject<DevSubState> {
 
-@Tag(name = "Device Hardware Id", description = "Device Hardware Identifier Definition")
-public class DevHardwareId implements CloneableObject<DevHardwareId> {
+    public static final int DEV_SUBSTATE_NONE               = 0x00000000;
+    public static final int DEV_SUBSTATE_UPGRADABLE         = 0x00000001;
+    public static final int DEV_SUBSTATE_UPGRADED           = 0x00000002;
+    public static final int DEV_SUBSTATE_CONFIGURABLE       = 0x00000004;
+    public static final int DEV_SUBSTATE_CONFIGURED         = 0x00000008;
+    public static final int DEV_SUBSTATE_NWK_SUBSCRIPTION   = 0x00000010;
+    public static final int DEV_SUBSTATE_USR_SUBSCRIPTION   = 0x00000020;
 
-    // Type of hardware Id
+
+    // Date of the location update
     @Schema(
-            description = "Type of hardware Id",
-            example = "MAC",
+            description = "Sub state bitfield",
+            example = "0x11",
             requiredMode = Schema.RequiredMode.REQUIRED
     )
-    protected String type;
+    protected int subState;
 
-    // Associated Id
-    @Schema(
-            description = "Associated Id",
-            example = "10:10:10:10:10:10",
-            requiredMode = Schema.RequiredMode.REQUIRED
-    ) protected String id;
 
     // === CLONE ===
 
-    public DevHardwareId clone() {
-        DevHardwareId u = new DevHardwareId();
-        u.setType(type);
-        u.setId(id);
+    public DevSubState clone() {
+        DevSubState u = new DevSubState();
+        u.setSubState(subState);
         return u;
     }
+
+    // ==== SPECIAL METHODS ====
+
 
     // === GETTER / SETTER ===
 
 
-    public String getType() {
-        return type;
+    public int getSubState() {
+        return subState;
     }
 
-    public void setType(String type) {
-        this.type = type;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
+    public void setSubState(int subState) {
+        this.subState = subState;
     }
 }

@@ -30,10 +30,7 @@ import com.disk91.common.tools.CloneableObject;
 import com.disk91.common.tools.Now;
 import com.disk91.devices.interfaces.DeviceBatType;
 import com.disk91.devices.interfaces.DeviceState;
-import com.disk91.devices.mdb.entities.sub.DevAttribute;
-import com.disk91.devices.mdb.entities.sub.DevGroupAssociated;
-import com.disk91.devices.mdb.entities.sub.DevHardwareId;
-import com.disk91.devices.mdb.entities.sub.DevLocation;
+import com.disk91.devices.mdb.entities.sub.*;
 import com.uber.h3core.H3Core;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +42,6 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 
 import static com.disk91.devices.interfaces.DeviceBatType.UNKNOWN_BATTERY_TYPE;
 import static com.disk91.devices.interfaces.DeviceState.IDENTIFIED;
@@ -119,6 +115,8 @@ public class Device implements CloneableObject<Device> {
 
     // Current device state, see the device life cycle management section for more information
     protected DeviceState devState;
+    // Current device sub state, these one can be cumulated in a bit field.
+    protected DevSubState subState;
     // Current device state date in MS since epoch, this is the date of the last state change
     protected long devStateDateMs;
 
@@ -243,6 +241,7 @@ public class Device implements CloneableObject<Device> {
         u.setName(name);
         u.setDescription(description);
         u.setDevState(devState);
+        u.setSubState(subState.clone());
         u.setDevStateDateMs(devStateDateMs);
         u.setLastSeenDateMs(lastSeenDateMs);
         u.setLastRestartDateMs(lastRestartDateMs);
@@ -579,5 +578,13 @@ public class Device implements CloneableObject<Device> {
 
     public void setAssociatedGroups(ArrayList<DevGroupAssociated> associatedGroups) {
         this.associatedGroups = associatedGroups;
+    }
+
+    public DevSubState getSubState() {
+        return subState;
+    }
+
+    public void setSubState(DevSubState subState) {
+        this.subState = subState;
     }
 }

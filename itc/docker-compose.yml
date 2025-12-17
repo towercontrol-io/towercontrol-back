@@ -14,6 +14,7 @@ services:
       - ./configuration:/configuration
       - ./data:/data
     environment:
+      - COMMON_INSTANCE_ID=aZgtj01LkPqzXvWm
       - COMMON_SERVICE_NAME=IotTowerControl
       - COMMON_SERVICE_BACK_DOMAIN=itc-back.foo.bar
       - COMMON_SERVICE_BACK_BASEURL=https://itc-back.foo.bar

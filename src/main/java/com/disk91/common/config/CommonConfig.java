@@ -35,6 +35,12 @@ public class CommonConfig {
     // ----------------------------------------------
     // Common setup
     // ----------------------------------------------
+    @Value("{common.instance.id:aZgtj01LkPqzXvWm}")
+    protected String instanceId;
+    public String getInstanceId() {
+        return instanceId;
+    }
+
     @Value("${common.encryption.key:d5b504d560363cfe33890c4f5343f387}")
     protected String encryptionKey;
     public String getEncryptionKey() {

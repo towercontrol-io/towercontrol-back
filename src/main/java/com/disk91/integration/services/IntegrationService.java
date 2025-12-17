@@ -19,21 +19,32 @@
  */
 package com.disk91.integration.services;
 
+import com.disk91.common.api.interfaces.ActionResult;
+import com.disk91.common.config.CommonConfig;
 import com.disk91.common.config.ModuleCatalog;
 import com.disk91.common.tools.Now;
-import com.disk91.common.tools.exceptions.ITNotFoundException;
+import com.disk91.common.tools.exceptions.ITOverQuotaException;
 import com.disk91.common.tools.exceptions.ITParseException;
-import com.disk91.integration.api.interfaces.InterfaceQuery;
+import com.disk91.common.tools.exceptions.ITTooManyException;
+import com.disk91.integration.api.interfaces.IntegrationCallback;
+import com.disk91.integration.api.interfaces.IntegrationQuery;
+import com.disk91.integration.config.IntegrationConfig;
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.*;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 public class IntegrationService {
@@ -41,29 +52,103 @@ public class IntegrationService {
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
     /*
-     * For every service, we have a ConcurrentLinkedQueue to store all the pending
-     * Queries, so a service que request all the pending messages addressed to it
-     * one by one. This is used for the in-memory integration. In memory integration
-     * works only for a single instance with all the services running in the same.
+     * There are several integration solutions between modules depending on the architecture; it can be
+     * done via in-memory structures or a database. In the latter case we use an event store with an expiration
+     * so messages are not kept for too long.
+     * Each consumer will have a progress indicator for reading this structure. Each processed message
+     * will have a processing counter allowing, for most messages, to determine whether they can be removed,
+     * and a garbage-collector process will perform the cleanup.
+     * The structure is a concurrent linked list handling concurrency or a table in a database.
+     * In the case of using an MQTT/AMQP broker, the message will be published on an appropriate topic and the
+     * broker will handle distribution.
      */
-    private ConcurrentHashMap<String, ConcurrentLinkedQueue<InterfaceQuery>>  _queries = new ConcurrentHashMap<>();
+    private ConcurrentSkipListMap<Long, IntegrationQuery> eventStore;
+    private AtomicLong eventId;
+    private AtomicLong eventsInQueue;
+    protected final AtomicBoolean running = new AtomicBoolean(false);
+
+    private static final Object lock = new Object();
+
+    // Autowired
+    protected IntegrationConfig integrationConfig;
+    protected CommonConfig commonConfig;
+
+    @Autowired
+    public IntegrationService(
+        IntegrationConfig _integrationConfig,
+        CommonConfig _commonConfig
+    ) {
+        log.info("[integration] Init");
+        this.integrationConfig = _integrationConfig;
+        this.commonConfig = _commonConfig;
+        this.eventStore = new ConcurrentSkipListMap<>();
+        // @TODO : load the previous data from database
+        this.eventId = new AtomicLong(0);
+        this.eventsInQueue = new AtomicLong(0);
+    }
 
     @PostConstruct
-    public void initIntegration() {
-        log.debug("[integration] Init");
+    public void startRunners() {
+        if ( this.integrationConfig.isIntegrationRouteMemoryEnabled() ) {
+            log.info("[integration] Start inMemory Runners");
+            this.startInMemoryWorkers(Math.max(1, this.integrationConfig.getIntegrationWorkersMaxCount()));
+        }
     }
+
+
+    /**
+     * Stop workers and drain resources
+     * Inputs: none
+     * Outputs: none
+     */
+    @PreDestroy
+    public void shutdown() {
+        if ( this.integrationConfig.isIntegrationRouteMemoryEnabled() ) {
+            // @TODO : persist the event store to database for later processing
+            stopInMemoryWorkers();
+        }
+        log.info("[integration] Integration workers stopped");
+    }
+
+
 
 
     /**
      * Process the query depending on the mode and the route, not sure about the right
      * way to make it currently.... let see later, fire& forget is easy, it is just async
-     * without any later consideration
+     * without any later consideration.
+     * The routing depends on the available routing and the module preferences
+     *
+     * This function must run in an async context
      * @param query
+     * @throws ITOverQuotaException - when the service is closed or the queue is full
      * @return
      */
-    public InterfaceQuery processQuery(InterfaceQuery query) {
+    public IntegrationQuery processQuery(IntegrationQuery query) throws ITOverQuotaException {
         log.debug("[integration] Process query {}", query.getQueryId());
 
+        if ( !this.running.get() ) query.setForLaterProcessing(true);
+        // Check the getRoute requested vs available routes
+        if (
+                ( query.getRoute() == IntegrationQuery.QueryRoute.ROUTE_MEMORY && !this.integrationConfig.isIntegrationRouteMemoryEnabled() ) ||
+                ( query.getRoute() == IntegrationQuery.QueryRoute.ROUTE_MQTT && !this.integrationConfig.isIntegrationRouteMqttEnabled() ) ||
+                ( query.getRoute() == IntegrationQuery.QueryRoute.ROUTE_DB && !this.integrationConfig.isIntegrationRouteDbEnabled() )
+        ) {
+            // the requested route is not available, find a different one, use as favorite the one working in spread architecture
+            if ( this.integrationConfig.isIntegrationRouteMqttEnabled() ) {
+                query.setRoute(IntegrationQuery.QueryRoute.ROUTE_MQTT);
+            } else if ( this.integrationConfig.isIntegrationRouteDbEnabled() ) {
+                query.setRoute(IntegrationQuery.QueryRoute.ROUTE_DB);
+            } else if ( this.integrationConfig.isIntegrationRouteMemoryEnabled() ) {
+                query.setRoute(IntegrationQuery.QueryRoute.ROUTE_MEMORY);
+            } else {
+                // No solution
+                log.error("[integration] No route available (all closed) for query {}", query.getQueryId());
+                return query;
+            }
+        }
+
+        // process depending on type
         switch ( query.getType() ) {
             case TYPE_FIRE_AND_FORGET -> {
                 // process depends on route
@@ -71,89 +156,202 @@ public class IntegrationService {
                     case ROUTE_MEMORY -> {
                         // in memory integration
                         // add the query to the queue of the service
-                        if (this._queries.get(ModuleCatalog.getServiceName(query.getServiceNameDest())) == null) {
-                            this._queries.put(ModuleCatalog.getServiceName(query.getServiceNameDest()), new ConcurrentLinkedQueue<>());
+                        synchronized (lock) {
+                            this.eventStore.put(this.eventId.incrementAndGet(), query);
+                            this.eventsInQueue.incrementAndGet();
                         }
-                        this._queries.get(ModuleCatalog.getServiceName(query.getServiceNameDest())).add(query);
                     }
-                    case ROUTE_DB, ROUTE_MQTT -> log.error("[integration] Unknown route {} not yet implemented", query.getRoute());
+                    case ROUTE_DB, ROUTE_MQTT -> log.error("[integration] Unknown route {} : not yet implemented", query.getRoute());
                 }
             }
+            case TYPE_BROADCAST, TYPE_ASYNC, TYPE_SYNC -> log.error("[integration] Query Type not yet implemented");
         }
         return query;
     }
 
+    // ===============================================================================
+    //  CALL BACK REGISTRATIONS
+    // ===============================================================================
 
-    public InterfaceQuery getQuery(ModuleCatalog.Modules service, InterfaceQuery.QueryRoute route)
-    throws ITNotFoundException, ITParseException {
-        switch ( route ) {
-            case ROUTE_MEMORY -> {
-                // get on pending query from the given service
-                ConcurrentLinkedQueue<InterfaceQuery> q = this._queries.get(ModuleCatalog.getServiceName(service));
-                if (q == null || q.isEmpty()) throw new ITNotFoundException("No pending query");
 
-                // get the first query
-                return q.poll();
+    protected static class IntegrationSetup {
+        public ModuleCatalog.Modules module;
+        public IntegrationCallback callback;
+        public long index;
+    }
+
+    protected HashMap<ModuleCatalog.Modules, IntegrationSetup> _callbacks = new HashMap<>();
+
+
+    /**
+     * Register a callback function to be called when a new query is available for the given service
+     * @param service
+     */
+    public void registerCallback(ModuleCatalog.Modules service, IntegrationCallback callback) throws ITParseException, ITTooManyException {
+        if ( callback == null ) throw new ITParseException("integration-callback-is-null");
+        if ( this._callbacks.get(service) != null ) throw new ITTooManyException("integration-callback-already-registered");
+        IntegrationSetup c = new IntegrationSetup();
+        c.module = service;
+        c.callback = callback;
+        c.index = 0;
+        this._callbacks.put(service, c);
+    }
+
+    // ================================================================================================
+    // IN-MEMORY PENDING QUERIES MANAGEMENT
+    // ================================================================================================
+    protected final AtomicReference<ExecutorService> executorRef = new AtomicReference<>();
+
+    /**
+     * Start a fixed number of worker threads pulling from the queue
+     * @param count - Number of workers
+     */
+    protected void startInMemoryWorkers(int count) {
+        running.set(true);
+
+        ExecutorService exec = Executors.newFixedThreadPool(
+                count,
+                r -> {
+                    Thread t = new Thread(r);
+                    t.setName("integration-worker-" + t.threadId());
+                    t.setDaemon(true);
+                    return t;
+                }
+        );
+        executorRef.set(exec);
+
+        for (int i = 0; i < count; i++) {
+            exec.submit(this::inMemoryWorkerLoop);
+        }
+    }
+
+
+    /**
+     * Stop worker threads and shutdown executor
+     */
+    protected void stopInMemoryWorkers() {
+        running.set(false);
+
+        ExecutorService exec = executorRef.getAndSet(null);
+        if (exec == null) return;
+
+        // Interrupt workers blocked on queue.take()
+        exec.shutdownNow();
+        try {
+            // Best-effort graceful stop
+            exec.awaitTermination(30, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    // ================================================================================================
+    // WORKER LOOP FOR IN-MEMORY QUEUE
+    // ================================================================================================
+
+    private AtomicLong currentEventId = new AtomicLong(0);
+
+    private synchronized IntegrationQuery getNextEvent() {
+        if ( currentEventId.get() == 0 ) {
+            try {
+                currentEventId.set(eventStore.firstKey());
+            } catch (NoSuchElementException x) {
+                // empty store
+                return null;
             }
         }
-        throw new ITParseException("Unsupported route type");
-    }
-
-
-    /*
-
-    public InterfaceQuery requestSync(InterfaceQuery query) {
-        log.debug("[integration] Query");
-        // route the query and send the query (call the response function of send to the right service)
-        // mqtt or http
-        // response is the service function corresponding to,  here we have a big matrix ...
-        // mais en gros on doit envoyer ca dans un processeur de requetes par service pour que ce soit plus logique
-        // qui va envoyer sa reponse sur response...
-
-        this._queries.put(query.getQueryId(), query);
-
-        // wait for the response to be updated
-        while ( query.getState() == InterfaceQuery.QueryState.STATE_PENDING ) {
-            Now.sleep(1);
-
+        IntegrationQuery evt = eventStore.get(currentEventId.get()+1);
+        if ( evt != null ) {
+            currentEventId.getAndIncrement();
         }
-        return query;
+        return evt;
     }
 
-    public void response(InterfaceQuery query) {
-        query.setResponse_ts(Now.NanoTime());
-        query.setStateDone();
-        log.debug("[integration] Response {} us", (query.getResponse_ts() - query.getQuery_ts())/1000);
-        if ( this._queries.get(query.getQueryId()) == null ) {
-            log.warn("[integration] Response not found (late) {} ms", Now.NowUtcMs() - query.getQuery_ms());
+    /**
+     * Worker loop: takes events and dispatches them to all callbacks
+     */
+    protected void inMemoryWorkerLoop() {
+        long lastEventId = 0;
+        while (running.get() && !Thread.currentThread().isInterrupted()) {
+            try {
+                boolean pending = false;
+                if ( integrationConfig.isIntegrationRouteMemoryEnabled() ) {
+                    IntegrationQuery query = getNextEvent();
+                    if ( query != null ) {
+                        boolean get = false;
+                        synchronized (lock) {
+                            // let see if we can take it
+                            if (query.getProcessAttempts() == 0 && !query.isForLaterProcessing() ) {
+                                // In memory mode (local) broadcast is just 1 instance
+                                query.setProcessAttempts(query.getProcessAttempts() + 1);
+                                get = true;
+                            }
+                        }
+                        if ( get ) {
+                            // not yet took by another worker, process it.
+                            if (    query.getServiceNameSource() == query.getServiceNameDest()
+                                 && query.getSourceInstanceId().compareTo(commonConfig.getInstanceId()) ==0 ) {
+                                // skip processing for self messages from local instance
+                                query.setStateDone();
+                            } else {
+                                try {
+                                    this._callbacks.get(query.getServiceNameDest()).callback.onIntegrationEvent(query);
+                                    query.setStateDone();
+                                } catch (Exception x) {
+                                    query.setStateError();
+                                    query.setResponse(ActionResult.UNKNOWN(x.getMessage()));
+                                }
+                            }
+                            pending = true; // not sure but probably more to process
+                        }
+                    }
+                }
+                // Now process the DB pending events
+
+                // @TODO : DB Integration processing
+
+                // Calm down when not busy
+                if ( !pending ) Now.sleep(20);
+
+            } catch (Exception e) {
+                log.error("[integration] Worker loop failure", e);
+            }
         }
-        this._queries.remove(query.getQueryId());
     }
-    */
+
 
 
     /**
      * Clean the outdated pending queries every second
      */
-    @Scheduled(fixedRate = 1000)
-    void garbage() {
-        // remove all the queries that are too old
-        long now = Now.NowUtcMs();
-        this._queries.forEach((k,v) -> {
-            // scan the linked list
-            ArrayList<String> toRemove = new ArrayList<>();
-            for (InterfaceQuery q : v) {
-                if ( now - (q.getQuery_ms()+q.getTimeout_ms()) > 0 ) {
-                    log.debug("[integration] Query {} timeout", q.getQueryId());
-                    q.setStateError();
-                    toRemove.add(k);
+    @Scheduled(fixedRate = 30_000, initialDelay = 30_000)
+    void inMemoryGarbage() {
+        if ( eventStore == null ) return;
+        try {
+            // remove all the queries that are too old and done with ID lower than the worker indexes
+            long now = Now.NowUtcMs();
+            long eventId = eventStore.firstKey();
+            long _currentEventId = this.currentEventId.get();
+            while (eventId < _currentEventId) {
+                IntegrationQuery evt = eventStore.get(eventId);
+                if (evt != null) {
+                    if ((evt.getState() == IntegrationQuery.QueryState.STATE_DONE || evt.getState() == IntegrationQuery.QueryState.STATE_ERROR)
+                            && !evt.isForLaterProcessing()  // don't clear these one we want to store in database on exit
+                    ) {
+                        // remove it
+                        eventStore.remove(eventId);
+                        this.eventsInQueue.decrementAndGet();
+                    }
                 }
+                eventId++;
             }
-            // remove the queries that are too old
-            toRemove.forEach(v::remove);
-        });
+        } catch (NoSuchElementException x) {
+            // empty store, nothing to do.
+        } catch (Exception e) {
+            log.error("[integration] In-memory garbage collector failure ({})", e.getMessage());
+        }
+        // @TODO : not sure what to do with the timeout...  so let see later,
     }
-
 
 
 }

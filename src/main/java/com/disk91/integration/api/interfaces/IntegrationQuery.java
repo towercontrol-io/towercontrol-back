@@ -1,10 +1,32 @@
+/*
+ * Copyright (c) - Paul Pinault (aka disk91) - 2025.
+ *
+ *    Permission is hereby granted, free of charge, to any person obtaining a copy of this software
+ *    and associated documentation files (the "Software"), to deal in the Software without restriction,
+ *    including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ *    sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ *    furnished to do so, subject to the following conditions:
+ *
+ *    The above copyright notice and this permission notice shall be included in all copies or
+ *    substantial portions of the Software.
+ *
+ *    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+ *    FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS
+ *    OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ *    WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
+ *    IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 package com.disk91.integration.api.interfaces;
 
 import com.disk91.common.api.interfaces.ActionResult;
 import com.disk91.common.config.ModuleCatalog;
 import com.disk91.common.tools.Now;
+import org.springframework.context.annotation.Bean;
 
-public class InterfaceQuery {
+import java.util.UUID;
+
+public class IntegrationQuery {
 
 
     public enum QueryState {
@@ -32,13 +54,14 @@ public class InterfaceQuery {
 
     // ----------------------------------------------
     //  Common elements for all queries
-    protected String queryId;                       // Uid of the message to link with response
+    protected UUID queryId;                       // Uid of the message to link with response
     protected ModuleCatalog.Modules serviceNameSource;       // Service name for the source related to package (users)
+    protected String sourceInstanceId;            // ID of the source module to detect local processing
     protected ModuleCatalog.Modules serviceNameDest;         // Service name for the destination (users)
     protected QueryRoute route;                     // Route used for the message, mqtt, db, memory
     protected QueryType type;                       // Query type, fire & forget, broadcast, async, sync...
     protected int action;                           // Query action, value depends on services
-    protected Object query;                         // Query parameters as an Object depending on oction
+    protected Object query;                         // Query parameters as an Object depending on action
     protected ActionResult response;                // Result of the Query, success or error like Exception
     protected Object result;                        // Query response as an Object depending on action
     protected QueryState state;                     // Query state, STATE_PENDING, STATE_DONE, STATE_ERROR
@@ -47,16 +70,20 @@ public class InterfaceQuery {
     protected long response_ts;                     // Response time ref, in ns
     protected long query_ms;                        // Query timestamp in ms for timeout
     protected long timeout_ms;                      // Query timeout in ms, default 10s (this is a duration)
-
+    protected int processAttempts;                  // Number of process attempt for this query (max 1 for F&F, SYNC, ASYNC, more for Broadcast)
+    protected boolean forLaterProcessing;           // Flag used by integration to queue but not process the message when sent after the app shutdown process start
 
     // ----------------------------------------------
     //  Message initialization
-    public InterfaceQuery(ModuleCatalog.Modules serviceNameSource) {
+    public IntegrationQuery(ModuleCatalog.Modules serviceNameSource, String _sourceInstanceId) {
         this.query_ts = Now.NanoTime();
         this.query_ms = Now.NowUtcMs();
-        this.queryId = java.util.UUID.randomUUID().toString();
+        this.queryId = java.util.UUID.randomUUID();
         this.serviceNameSource = serviceNameSource;
+        this.sourceInstanceId = _sourceInstanceId;
         this.state = QueryState.STATE_PENDING;
+        this.processAttempts = 0;
+        this.forLaterProcessing = false;
     }
 
 
@@ -73,12 +100,14 @@ public class InterfaceQuery {
     public void setStateDone() {
         synchronized (lock) {
             state = QueryState.STATE_DONE;
+            setResponse_ts(Now.NanoTime());
         }
     }
 
     public void setStateError() {
         synchronized (lock) {
             state = QueryState.STATE_ERROR;
+            setResponse_ts(Now.NanoTime());
         }
     }
 
@@ -86,9 +115,6 @@ public class InterfaceQuery {
     // Manage rest of the structure
 
 
-    public String getQueryId() {
-        return queryId;
-    }
 
     public ModuleCatalog.Modules getServiceNameSource() {
         return serviceNameSource;
@@ -182,15 +208,43 @@ public class InterfaceQuery {
         this.timeout_ms = timeout_ms;
     }
 
-    public void setQueryId(String queryId) {
-        this.queryId = queryId;
-    }
-
     public QueryRoute getRoute() {
         return route;
     }
 
     public void setRoute(QueryRoute route) {
         this.route = route;
+    }
+
+    public UUID getQueryId() {
+        return queryId;
+    }
+
+    public void setQueryId(UUID queryId) {
+        this.queryId = queryId;
+    }
+
+    public int getProcessAttempts() {
+        return processAttempts;
+    }
+
+    public void setProcessAttempts(int processAttempts) {
+        this.processAttempts = processAttempts;
+    }
+
+    public boolean isForLaterProcessing() {
+        return forLaterProcessing;
+    }
+
+    public void setForLaterProcessing(boolean forLaterProcessing) {
+        this.forLaterProcessing = forLaterProcessing;
+    }
+
+    public String getSourceInstanceId() {
+        return sourceInstanceId;
+    }
+
+    public void setSourceInstanceId(String sourceInstanceId) {
+        this.sourceInstanceId = sourceInstanceId;
     }
 }

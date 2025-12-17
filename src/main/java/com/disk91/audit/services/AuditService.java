@@ -25,16 +25,18 @@ import com.disk91.common.api.interfaces.ActionResult;
 import com.disk91.common.config.ModuleCatalog;
 import com.disk91.common.tools.Now;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
+import com.disk91.common.tools.exceptions.ITOverQuotaException;
 import com.disk91.common.tools.exceptions.ITParseException;
-import com.disk91.integration.api.interfaces.InterfaceQuery;
+import com.disk91.common.tools.exceptions.ITTooManyException;
+import com.disk91.integration.api.interfaces.IntegrationCallback;
+import com.disk91.integration.api.interfaces.IntegrationQuery;
 import com.disk91.integration.services.IntegrationService;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
 
 @Service
 public class AuditService {
@@ -57,37 +59,39 @@ public class AuditService {
     @Autowired
     protected AuditIntegration auditIntegration;
 
-    @Scheduled(fixedRate = 1000)
-    void processAudits() {
+    @PostConstruct
+    public void init() {
+        log.info("[audit] Service initialized, target: {}", auditConfig.getAuditStoreTarget().name());
         try {
-            InterfaceQuery q = null;
-            do {
-                q = integrationService.getQuery(ModuleCatalog.Modules.AUDIT, InterfaceQuery.QueryRoute.ROUTE_MEMORY);
+            integrationService.registerCallback(
+                    ModuleCatalog.Modules.AUDIT,
+                    new IntegrationCallback() {
+                        @Override
+                        public void onIntegrationEvent(IntegrationQuery q) {
+                            AuditMessage auditMessage = (AuditMessage) q.getQuery();
+                            switch (auditConfig.getAuditStoreTarget()) {
+                                case AUDIT_TARGET_LOGS:
+                                    log.info("[audit] {}", auditIntegration.toString(auditMessage));
+                                    break;
+                                case AUDIT_TARGET_FILES:
+                                    break;
+                                case AUDIT_TARGET_MONGO:
+                                    break;
+                                case AUDIT_TARGET_PSQL:
+                                    break;
+                            }
 
-                AuditMessage auditMessage = (AuditMessage) q.getQuery();
-                switch ( auditConfig.getAuditStoreTarget() ) {
-                    case AUDIT_TARGET_LOGS:
-                        log.info("[audit] "+auditIntegration.toString(auditMessage));
-                        break;
-                    case AUDIT_TARGET_FILES:
-                        break;
-                    case AUDIT_TARGET_MONGO:
-                        break;
-                    case AUDIT_TARGET_PSQL:
-                        break;
-                }
+                            // terminate the action
+                            q.setResponse(ActionResult.OK("Audit logged")); // fire & forget, success on every actions
+                            q.setResult(null);
+                            q.setState(IntegrationQuery.QueryState.STATE_DONE);
+                            q.setResponse_ts(Now.NanoTime());
 
-                // terminate the action
-                q.setResponse(ActionResult.OK("Audit logged")); // fire & forget, success on every actions
-                q.setResult(null);
-                q.setState(InterfaceQuery.QueryState.STATE_DONE);
-                q.setResponse_ts(Now.NanoTime());
-
-            } while ( q !=null); // forever - exits with exception
-        } catch (ITNotFoundException unused) {
-            // no query pending, normal
-        } catch (ITParseException e) {
-            log.error("[audit] Failed to get queries {}", e.getMessage());
+                        }
+                    }
+            );
+        } catch (ITParseException | ITTooManyException x) {
+            log.error("[audit] Failed to register audit integration callback: {}", x.getMessage());
         }
     }
 

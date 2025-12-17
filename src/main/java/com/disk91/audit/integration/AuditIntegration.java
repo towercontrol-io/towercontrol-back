@@ -24,7 +24,8 @@ import com.disk91.common.config.CommonConfig;
 import com.disk91.common.config.ModuleCatalog;
 import com.disk91.common.tools.EncryptionHelper;
 import com.disk91.common.tools.Now;
-import com.disk91.integration.api.interfaces.InterfaceQuery;
+import com.disk91.common.tools.exceptions.ITOverQuotaException;
+import com.disk91.integration.api.interfaces.IntegrationQuery;
 import com.disk91.integration.services.IntegrationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -123,18 +124,22 @@ public class AuditIntegration {
     public void auditLog(AuditMessage message, ModuleCatalog.Modules service) {
         log.debug("[audit] Audit log: {}", this.toString(message));
 
-        InterfaceQuery query = new InterfaceQuery(service);
+        IntegrationQuery query = new IntegrationQuery(service, commonConfig.getInstanceId());
         query.setServiceNameDest(ModuleCatalog.Modules.AUDIT);
-        query.setType(InterfaceQuery.QueryType.TYPE_FIRE_AND_FORGET);
+        query.setType(IntegrationQuery.QueryType.TYPE_FIRE_AND_FORGET);
         query.setAction(AuditActions.AUDIT_ACTION_POST_LOG.ordinal());
         query.setQuery(message);
-        query.setRoute(InterfaceQuery.getRoutefromRouteString(auditConfig.getAuditIntegrationMedium()));
+        query.setRoute(IntegrationQuery.getRoutefromRouteString(auditConfig.getAuditIntegrationMedium()));
         this.auditLogIntegration(query);
     }
 
-    public void auditLogIntegration(InterfaceQuery query) {
+    public void auditLogIntegration(IntegrationQuery query) {
         log.debug("Audit log integration: {}", query.getQueryId());
-        integrationService.processQuery(query);
+        try {
+            integrationService.processQuery(query);
+        } catch (ITOverQuotaException e) {
+            // Skip audit log, we are closing the service
+        }
     }
 
 }

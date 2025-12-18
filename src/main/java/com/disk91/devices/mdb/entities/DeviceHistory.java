@@ -27,10 +27,7 @@ package com.disk91.devices.mdb.entities;
 
 
 import com.disk91.common.tools.Now;
-import com.disk91.devices.mdb.entities.sub.DevAttribute;
-import com.disk91.devices.mdb.entities.sub.DevGroupAssociated;
-import com.disk91.devices.mdb.entities.sub.DevHardwareId;
-import com.disk91.devices.mdb.entities.sub.DeviceHistoryReason;
+import com.disk91.devices.mdb.entities.sub.*;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -73,6 +70,12 @@ public class DeviceHistory extends Device {
         u.setName(d.getName());
         u.setDescription(d.getDescription());
         u.setDevState(d.getDevState());
+        if ( u.getSubState() != null ) {
+            u.setSubState(d.getSubState().clone());
+        } else {
+            u.setSubState(DevSubState.initNone());
+        }
+        u.setSubState(d.getSubState().clone());
         u.setDevStateDateMs(d.getDevStateDateMs());
         u.setLastSeenDateMs(d.getLastSeenDateMs());
         u.setLastRestartDateMs(d.getLastRestartDateMs());

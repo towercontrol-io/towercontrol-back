@@ -43,6 +43,12 @@ public class DevSubState implements CloneableObject<DevSubState> {
     )
     protected int subState;
 
+    // === init ===
+    public static DevSubState initNone() {
+        DevSubState ds = new DevSubState();
+        ds.setSubState(DEV_SUBSTATE_NONE);
+        return ds;
+    }
 
     // === CLONE ===
 

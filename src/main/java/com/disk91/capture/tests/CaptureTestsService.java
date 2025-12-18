@@ -18,6 +18,7 @@ import com.disk91.common.tools.exceptions.ITTooManyException;
 import com.disk91.devices.interfaces.DeviceState;
 import com.disk91.devices.mdb.entities.Device;
 import com.disk91.devices.mdb.entities.sub.DevAttribute;
+import com.disk91.devices.mdb.entities.sub.DevSubState;
 import com.disk91.devices.mdb.entities.sub.DeviceHistoryReason;
 import com.disk91.devices.services.DeviceCache;
 import com.disk91.users.tests.UsersTestsService;
@@ -489,6 +490,7 @@ public class CaptureTestsService {
         dev.setDataStreamId("stream-test-device-capture-001");
         dev.setName("Test Device for Capture Module");
         dev.setDevState(DeviceState.OPEN);
+        dev.setSubState(DevSubState.initNone());
         dev.setCreationOnMs(Now.NowUtcMs());
         dev.setDataEncrypted(false);
         dev.setCommunicationIds(new ArrayList<>());

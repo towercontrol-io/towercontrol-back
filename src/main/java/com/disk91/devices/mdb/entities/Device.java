@@ -45,6 +45,7 @@ import java.util.ArrayList;
 
 import static com.disk91.devices.interfaces.DeviceBatType.UNKNOWN_BATTERY_TYPE;
 import static com.disk91.devices.interfaces.DeviceState.IDENTIFIED;
+import static com.disk91.devices.mdb.entities.sub.DevSubState.DEV_SUBSTATE_NONE;
 
 @Document(collection = "devices")
 @CompoundIndexes({
@@ -191,6 +192,7 @@ public class Device implements CloneableObject<Device> {
         device.setName("");
         device.setDescription("");
         device.setDevState(IDENTIFIED);
+        device.setSubState(DevSubState.initNone());
         device.setDevStateDateMs(Now.NowUtcMs());
         device.setLastSeenDateMs(0);
         device.setLastRestartDateMs(0);
@@ -241,7 +243,11 @@ public class Device implements CloneableObject<Device> {
         u.setName(name);
         u.setDescription(description);
         u.setDevState(devState);
-        u.setSubState(subState.clone());
+        if ( subState != null ) {
+            u.setSubState(subState.clone());
+        } else {
+            u.setSubState(DevSubState.initNone());
+        }
         u.setDevStateDateMs(devStateDateMs);
         u.setLastSeenDateMs(lastSeenDateMs);
         u.setLastRestartDateMs(lastRestartDateMs);

@@ -43,11 +43,10 @@ public class DevicesConfig {
         return (commonServiceId.isEmpty())?"83DZqvwbXzmtllVq":commonServiceId;
     }
 
-    // Select the medium to be used for the intracom service communication
-    @Value("${devices.intracom.medium:db}")
-    protected String devicesIntracomMedium;
-    public String getDevicesIntracomMedium() {
-        return devicesIntracomMedium;
+    @Value("${devices.integration.medium:memory}")
+    protected String devicesIntegrationMedium;
+    public String getDevicesIntegrationMedium() {
+        return devicesIntegrationMedium;
     }
 
 

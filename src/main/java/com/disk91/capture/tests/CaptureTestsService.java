@@ -63,6 +63,10 @@ public class CaptureTestsService {
     @Autowired
     protected DeviceCache deviceCache;
 
+    public static String captureDeviceId = "";
+    private CaptureEndpoint ce = null;
+
+
     /**
      * This function is creating tests for the Users module
      * It will create some user like if coming from the API and try to bypass the security potentially
@@ -431,7 +435,7 @@ public class CaptureTestsService {
             }
         };
 
-        CaptureEndpoint ce = captureEndpointRepository.findFirstByName(TEST_ENDPOINT_NAME);
+        ce = captureEndpointRepository.findFirstByName(TEST_ENDPOINT_NAME);
         if ( ce != null ) {
             commonTestsService.info("[capture] Removing the test endpoint previously created");
             // delete it
@@ -507,6 +511,7 @@ public class CaptureTestsService {
                 commonTestsService.error("[capture] Test device not found after creation");
                 throw new ITParseException("[capture] Test device not found after creation");
             } else {
+                captureDeviceId = devices.getFirst().getId();
                 commonTestsService.success("[capture] Test device found successfully after creation");
             }
         } catch (ITNotFoundException x) {
@@ -528,6 +533,9 @@ public class CaptureTestsService {
             throw new ITParseException("[capture] Error sending test payload to created endpoint: " + e.getMessage());
         }
 
+    }
+
+    public void cleanTests() {
         // Delete test device
         try {
             List<Device> devices =  deviceCache.getDevicesByDataStream("stream-test-device-capture-001");
@@ -542,7 +550,6 @@ public class CaptureTestsService {
         // Delete endpoint
         if ( ce != null ) captureEndpointRepository.delete(ce);
     }
-
 
 
 

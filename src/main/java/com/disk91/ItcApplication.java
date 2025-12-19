@@ -86,6 +86,7 @@ public class ItcApplication implements CommandLineRunner, ExitCodeGenerator {
                 integrationTestsService.runTests();
 
 
+                captureTestsService.cleanTests();
                 System.out.println(ANSI_GREEN+"================ TESTS SUCCESS ========================"+ANSI_RESET);
             } catch (ITParseException e) {
                 System.out.println(ANSI_RED+"[ERROR] "+e.getMessage()+ANSI_RESET);

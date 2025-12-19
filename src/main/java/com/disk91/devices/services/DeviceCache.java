@@ -19,15 +19,20 @@
  */
 package com.disk91.devices.services;
 
+import com.disk91.common.config.CommonConfig;
+import com.disk91.common.config.ModuleCatalog;
 import com.disk91.common.tools.Now;
 import com.disk91.common.tools.ObjectCache;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
+import com.disk91.common.tools.exceptions.ITOverQuotaException;
 import com.disk91.devices.config.DevicesConfig;
 import com.disk91.devices.mdb.entities.Device;
 import com.disk91.devices.mdb.entities.DeviceHistory;
 import com.disk91.devices.mdb.entities.sub.DeviceHistoryReason;
 import com.disk91.devices.mdb.repositories.DevicesHistoryRepository;
 import com.disk91.devices.mdb.repositories.DevicesRepository;
+import com.disk91.integration.api.interfaces.IntegrationQuery;
+import com.disk91.integration.services.IntegrationService;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PostConstruct;
@@ -41,6 +46,8 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
+
+import static com.disk91.devices.integration.DeviceActions.DEVICES_ACTION_FLUSH_CACHE_DEVICE;
 
 @Service
 public class DeviceCache {
@@ -189,6 +196,11 @@ public class DeviceCache {
         return devices;
     }
 
+    @Autowired
+    protected IntegrationService integrationService;
+    @Autowired
+    protected CommonConfig commonConfig;
+
     /**
      * Remove a device from the local cache if exists (this is when the user has been updated somewhere else
      * @param d - deviceId to be removed
@@ -198,6 +210,16 @@ public class DeviceCache {
         if ( this.serviceEnable && deviceConfig.getDevicesCacheMaxSize() > 0 ) {
             this.devicesCache.remove(d,false);
         }
+        // Broadcast other instances to flush their cache for this device
+        IntegrationQuery iq = new IntegrationQuery(ModuleCatalog.Modules.DEVICES, commonConfig.getInstanceId());
+        iq.setServiceNameDest(ModuleCatalog.Modules.DEVICES);
+        iq.setType(IntegrationQuery.QueryType.TYPE_BROADCAST);
+        iq.setAction(DEVICES_ACTION_FLUSH_CACHE_DEVICE.ordinal());
+        iq.setQuery(d);
+        iq.setRoute(IntegrationQuery.getRoutefromRouteString(deviceConfig.getDevicesIntegrationMedium()));
+        try {
+            integrationService.processQuery(iq);
+        } catch (ITOverQuotaException ignored) {}
     }
 
     /**
@@ -230,7 +252,5 @@ public class DeviceCache {
         devicesRepository.delete(u);
         this.flushDevice(u.getId());
     }
-
-    // @TODO - manage the broadcast request for user flush and scan for flush trigger on each of the instances
 
 }

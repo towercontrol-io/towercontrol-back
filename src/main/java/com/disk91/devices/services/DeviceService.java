@@ -20,11 +20,21 @@
 package com.disk91.devices.services;
 
 
+import com.disk91.audit.integration.AuditMessage;
+import com.disk91.common.api.interfaces.ActionResult;
+import com.disk91.common.config.ModuleCatalog;
+import com.disk91.common.tools.Now;
+import com.disk91.common.tools.exceptions.ITParseException;
+import com.disk91.common.tools.exceptions.ITTooManyException;
 import com.disk91.devices.config.DevicesConfig;
 import com.disk91.devices.mdb.entities.Device;
 import com.disk91.devices.mdb.repositories.DevicesHistoryRepository;
 import com.disk91.devices.mdb.repositories.DevicesRepository;
+import com.disk91.integration.api.interfaces.IntegrationCallback;
+import com.disk91.integration.api.interfaces.IntegrationQuery;
+import com.disk91.integration.services.IntegrationService;
 import com.disk91.users.mdb.entities.User;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +42,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.disk91.devices.integration.DeviceActions.DEVICES_ACTION_FLUSH_CACHE_DEVICE;
 
 @Service
 public class DeviceService {
@@ -55,6 +67,41 @@ public class DeviceService {
     @Autowired
     protected DeviceCache deviceCache;
 
+    @Autowired
+    protected IntegrationService integrationService;
+
+    @PostConstruct
+    public void initService() {
+        log.info("[devices] Device Service initialization");
+        try {
+            integrationService.registerCallback(
+                    ModuleCatalog.Modules.DEVICES,
+                    new IntegrationCallback() {
+                        @Override
+                        public void onIntegrationEvent(IntegrationQuery q) {
+                            if ( q.getAction() == DEVICES_ACTION_FLUSH_CACHE_DEVICE.ordinal() ) {
+                                String devEUI = (String) q.getQuery();
+                                deviceCache.flushDevice(devEUI);
+                                // terminate the action
+                                q.setResponse(ActionResult.OK("Device cache flushed")); // fire & forget, success on every actions
+                                q.setResult(null);
+                                q.setState(IntegrationQuery.QueryState.STATE_DONE);
+                                q.setResponse_ts(Now.NanoTime());
+                            } else {
+                                log.error("[devices] Receiving a unknown message from integration");
+                                // terminate the action
+                                q.setResponse(ActionResult.BADREQUEST("devices-integration-unknown-action"));
+                                q.setResult(null);
+                                q.setState(IntegrationQuery.QueryState.STATE_ERROR);
+                                q.setResponse_ts(Now.NanoTime());
+                            }
+                        }
+                    }
+            );
+        } catch (ITParseException | ITTooManyException x) {
+            log.error("[devices] Failed to register devices integration callback: {}", x.getMessage());
+        }
+    }
 
     /**
      * Get all the devices for a given user whatever the device state is. The system will look at the group the

@@ -29,6 +29,8 @@ import com.disk91.common.tools.exceptions.ITTooManyException;
 import com.disk91.integration.api.interfaces.IntegrationCallback;
 import com.disk91.integration.api.interfaces.IntegrationQuery;
 import com.disk91.integration.config.IntegrationConfig;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
@@ -45,6 +47,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 @Service
 public class IntegrationService {
@@ -160,11 +163,21 @@ public class IntegrationService {
                             this.eventStore.put(this.eventId.incrementAndGet(), query);
                             this.eventsInQueue.incrementAndGet();
                         }
+                        this.incrementInQueueRequests();
+                        this.incrementIntegrationRequests();
                     }
-                    case ROUTE_DB, ROUTE_MQTT -> log.error("[integration] Unknown route {} : not yet implemented", query.getRoute());
+                    case ROUTE_DB, ROUTE_MQTT -> {
+                        log.error("[integration] Unknown route {} : not yet implemented", query.getRoute());
+                        this.incrementIntegrationRequests();
+                        this.incrementFailedRequests();
+                    }
                 }
             }
-            case TYPE_BROADCAST, TYPE_ASYNC, TYPE_SYNC -> log.error("[integration] Query Type not yet implemented");
+            case TYPE_BROADCAST, TYPE_ASYNC, TYPE_SYNC -> {
+                log.error("[integration] Query Type not yet implemented");
+                this.incrementIntegrationRequests();
+                this.incrementFailedRequests();
+            }
         }
         return query;
     }
@@ -293,11 +306,17 @@ public class IntegrationService {
                                  && query.getSourceInstanceId().compareTo(commonConfig.getInstanceId()) ==0 ) {
                                 // skip processing for self messages from local instance
                                 query.setStateDone();
+                                this.incrementProcessingCount();
+                                this.incrementSkipRequests();
                             } else {
                                 try {
                                     this._callbacks.get(query.getServiceNameDest()).callback.onIntegrationEvent(query);
                                     query.setStateDone();
+                                    this.addProcessingTime(Now.NowUtcMs()-query.getQuery_ms());
+                                    this.incrementProcessingCount();
+                                    this.incrementSuccessRequests();
                                 } catch (Exception x) {
+                                    this.incrementFailedRequests();
                                     query.setStateError();
                                     query.setResponse(ActionResult.UNKNOWN(x.getMessage()));
                                 }
@@ -341,6 +360,7 @@ public class IntegrationService {
                         // remove it
                         eventStore.remove(eventId);
                         this.eventsInQueue.decrementAndGet();
+                        this.decrementInQueueRequests();
                     }
                 }
                 eventId++;
@@ -351,6 +371,109 @@ public class IntegrationService {
             log.error("[integration] In-memory garbage collector failure ({})", e.getMessage());
         }
         // @TODO : not sure what to do with the timeout...  so let see later,
+    }
+
+
+    // ================================================================================================
+    // Metrics
+    //
+    // - Total integration requests
+    // - Total in queue requests
+    // - Total success request
+    // - Total skipped request ( local loop )
+    // - Total failed request
+    // - Total processing time
+    // - Total processing count
+
+    @Autowired
+    protected MeterRegistry meterRegistry;
+
+
+    @PostConstruct
+    private void initIntegrationMetrics() {
+        log.info("[integration] IntegrationService Metrics initialization");
+        Gauge.builder("capture_integration_service_total_requests", this.getIntegrationRequest())
+                .description("[capture] Number of integration requests from start")
+                .register(meterRegistry);
+        Gauge.builder("capture_integration_service_in_queue_requests", this.getInQueueRequests())
+                .description("[capture] Number of requests currently waiting in queue")
+                .register(meterRegistry);
+        Gauge.builder("capture_integration_service_success_requests", this.getSuccessRequests())
+                .description("[capture] Number of successfully processed requests")
+                .register(meterRegistry);
+        Gauge.builder("capture_integration_service_skip_requests", this.getSkipRequests())
+                .description("[capture] Number of skipped requests (local loop)")
+                .register(meterRegistry);
+        Gauge.builder("capture_integration_service_failed_requests", this.getFailedRequests())
+                .description("[capture] Number of failed requests")
+                .register(meterRegistry);
+        Gauge.builder("capture_integration_service_total_processing_time_ms", this.getTotalProcessingTimeMs())
+                .description("[capture] Total processing time in milliseconds")
+                .register(meterRegistry);
+        Gauge.builder("capture_integration_service_processing_count", this.getProcessingCount())
+                .description("[capture] Total number of processed requests")
+                .register(meterRegistry);
+    }
+
+
+    protected AtomicLong integrationRequests = new AtomicLong(0);
+    public Supplier<Number> getIntegrationRequest() {
+        return ()->integrationRequests.get();
+    }
+    public void incrementIntegrationRequests() {
+        integrationRequests.incrementAndGet();
+    }
+
+    protected AtomicLong inQueueRequests = new AtomicLong(0);
+    public Supplier<Number> getInQueueRequests() {
+        return () -> inQueueRequests.get();
+    }
+    public void incrementInQueueRequests() {
+        inQueueRequests.incrementAndGet();
+    }
+    public void decrementInQueueRequests() {
+        inQueueRequests.decrementAndGet();
+    }
+
+    protected AtomicLong successRequests = new AtomicLong(0);
+    public Supplier<Number> getSuccessRequests() {
+        return () -> successRequests.get();
+    }
+    public void incrementSuccessRequests() {
+        successRequests.incrementAndGet();
+    }
+
+    protected AtomicLong skipRequests = new AtomicLong(0);
+    public Supplier<Number> getSkipRequests() {
+        return () -> skipRequests.get();
+    }
+    public void incrementSkipRequests() {
+        skipRequests.incrementAndGet();
+    }
+
+
+    protected AtomicLong failedRequests = new AtomicLong(0);
+    public Supplier<Number> getFailedRequests() {
+        return () -> failedRequests.get();
+    }
+    public void incrementFailedRequests() {
+        failedRequests.incrementAndGet();
+    }
+
+    protected AtomicLong totalProcessingTimeMs = new AtomicLong(0);
+    public Supplier<Number> getTotalProcessingTimeMs() {
+        return () -> totalProcessingTimeMs.get();
+    }
+    public void addProcessingTime(long durationMs) {
+        totalProcessingTimeMs.addAndGet(durationMs);
+    }
+
+    protected AtomicLong processingCount = new AtomicLong(0);
+    public Supplier<Number> getProcessingCount() {
+        return () -> processingCount.get();
+    }
+    public void incrementProcessingCount() {
+        processingCount.incrementAndGet();
     }
 
 

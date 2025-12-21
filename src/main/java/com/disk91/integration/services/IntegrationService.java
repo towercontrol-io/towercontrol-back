@@ -151,14 +151,11 @@ public class IntegrationService {
             }
         }
 
-        // process depending on type
-        switch ( query.getType() ) {
-            case TYPE_FIRE_AND_FORGET -> {
-                // process depends on route
-                switch (query.getRoute()) {
-                    case ROUTE_MEMORY -> {
-                        // in memory integration
-                        // add the query to the queue of the service
+        // process depending route
+        switch (query.getRoute()) {
+            case ROUTE_MEMORY -> {
+                switch (query.getType()) {
+                    case TYPE_FIRE_AND_FORGET, TYPE_BROADCAST -> {
                         synchronized (lock) {
                             this.eventStore.put(this.eventId.incrementAndGet(), query);
                             this.eventsInQueue.incrementAndGet();
@@ -166,17 +163,18 @@ public class IntegrationService {
                         this.incrementInQueueRequests();
                         this.incrementIntegrationRequests();
                     }
-                    case ROUTE_DB, ROUTE_MQTT -> {
-                        log.error("[integration] Unknown route {} : not yet implemented", query.getRoute());
+                    case TYPE_ASYNC, TYPE_SYNC -> {
+                        log.error("[integration] Query Type not yet implemented");
                         this.incrementIntegrationRequests();
                         this.incrementFailedRequests();
                     }
+
                 }
             }
-            case TYPE_BROADCAST, TYPE_ASYNC, TYPE_SYNC -> {
-                log.error("[integration] Query Type not yet implemented");
-                this.incrementIntegrationRequests();
-                this.incrementFailedRequests();
+            case ROUTE_DB, ROUTE_MQTT -> {
+                        log.error("[integration] Unknown route {} : not yet implemented", query.getRoute());
+                        this.incrementIntegrationRequests();
+                        this.incrementFailedRequests();
             }
         }
         return query;
@@ -273,7 +271,7 @@ public class IntegrationService {
                 return null;
             }
         }
-        IntegrationQuery evt = eventStore.get(currentEventId.get()+1);
+        IntegrationQuery evt = eventStore.get(currentEventId.get());
         if ( evt != null ) {
             currentEventId.getAndIncrement();
         }

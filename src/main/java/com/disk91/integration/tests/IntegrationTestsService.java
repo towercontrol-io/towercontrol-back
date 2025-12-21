@@ -69,6 +69,7 @@ public class IntegrationTestsService {
         Now.sleep(1000); // make sure previous messages are processed
         long initialMessages =  integrationService.getIntegrationRequest().get().longValue();
         long initialSuccess =  integrationService.getSuccessRequests().get().longValue();
+        long initialSkip =  integrationService.getSkipRequests().get().longValue();
 
         for ( int i = 0 ; i < 10 ; i++ ) {
             auditIntegration.auditLog(
@@ -119,8 +120,8 @@ public class IntegrationTestsService {
             integrationService.traceQueue();
             throw new ITParseException("[integration] Missing integration messages");
         }
-        if ( integrationService.getSkipRequests().get().longValue() != 10 ) {
-            commonTestsService.error("[integration] only {} message skipped / 10",integrationService.getSkipRequests().get().longValue());
+        if ( integrationService.getSkipRequests().get().longValue() != initialSkip + 10 ) {
+            commonTestsService.error("[integration] only {} message skipped / {}",integrationService.getSkipRequests().get().longValue(),initialSkip+10);
             integrationService.traceQueue();
             throw new ITParseException("[integration] Missing integration skipped");
         }

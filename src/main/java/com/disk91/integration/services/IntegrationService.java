@@ -339,6 +339,25 @@ public class IntegrationService {
     }
 
 
+    /**
+     * For debugging purpose, we get the ability to trace the queue content...
+     */
+    public void traceQueue() {
+        if ( eventStore == null ) return;
+        eventStore.forEach((key,element) -> {
+            log.info("[integration] Elt ({}) from {} to {} with type {} and action {} having state {}",
+                    key,
+                    element.getServiceNameSource().name(),
+                    element.getServiceNameDest().name(),
+                    element.getType(),
+                    element.getAction(),
+                    element.getState()
+            );
+        });
+
+
+    }
+
 
     /**
      * Clean the outdated pending queries every second

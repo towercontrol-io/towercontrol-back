@@ -88,14 +88,17 @@ public class IntegrationTestsService {
         // Check the metrics
         if ( integrationService.getIntegrationRequest().get().longValue() != initialMessages+10 ) {
             commonTestsService.error("[integration] only {} message received / {}",integrationService.getIntegrationRequest().get().longValue(), initialMessages+10);
+            integrationService.traceQueue();
             throw new ITParseException("[integration] Missing integration messages");
         }
         if ( integrationService.getSuccessRequests().get().intValue() != initialSuccess+10 ) {
             commonTestsService.error("[integration] only {} message in success / {}",integrationService.getSuccessRequests().get().longValue(), initialMessages+10);
+            integrationService.traceQueue();
             throw new ITParseException("[integration] Missing integration success");
         }
         if ( integrationService.getInQueueRequests().get().intValue() != 0 ) {
             commonTestsService.error("[integration] queue is not empty {}",integrationService.getInQueueRequests().get().longValue());
+            integrationService.traceQueue();
             throw new ITParseException("[integration] Queue not empty");
         }
         commonTestsService.success("[integration] The processing metics are correct");
@@ -113,18 +116,22 @@ public class IntegrationTestsService {
         // Check the metrics
         if ( integrationService.getIntegrationRequest().get().longValue() != initialMessages + 20 ) {
             commonTestsService.error("[integration] only {} message received / {}",integrationService.getIntegrationRequest().get().longValue(), initialMessages+20);
+            integrationService.traceQueue();
             throw new ITParseException("[integration] Missing integration messages");
         }
         if ( integrationService.getSkipRequests().get().longValue() != 10 ) {
             commonTestsService.error("[integration] only {} message skipped / 10",integrationService.getSkipRequests().get().longValue());
+            integrationService.traceQueue();
             throw new ITParseException("[integration] Missing integration skipped");
         }
         if ( integrationService.getSuccessRequests().get().longValue() != initialSuccess+10 ) {
             commonTestsService.error("[integration] only {} message in success / {}",integrationService.getSuccessRequests().get().longValue(),initialMessages+10);
+            integrationService.traceQueue();
             throw new ITParseException("[integration] Missing integration success");
         }
         if ( integrationService.getInQueueRequests().get().longValue() != 0 ) {
             commonTestsService.error("[integration] queue is not empty {}",integrationService.getInQueueRequests().get().longValue());
+            integrationService.traceQueue();
             throw new ITParseException("[integration] Queue not empty");
         }
         commonTestsService.success("[integration] The processing metics are correct");

@@ -81,8 +81,9 @@ public class IntegrationTestsService {
             );
         }
         commonTestsService.info("[integration] Wait until the end");
-        for ( int i = 0 ; i < 10 ; i++ ) {
-            Now.sleep(3_000);
+        integrationService.forceInMemoryGarbage();
+        for ( int i = 0 ; i < 2 ; i++ ) {
+            Now.sleep(1_000);
             commonTestsService.info("...");
         }
         Now.sleep(1_000);
@@ -109,8 +110,9 @@ public class IntegrationTestsService {
         for ( int i = 0 ; i < 10 ; i++ ) {
             deviceCache.flushDevice(CaptureTestsService.captureDeviceId);
         }
-        for ( int i = 0 ; i < 10 ; i++ ) {
-            Now.sleep(3_000);
+        integrationService.forceInMemoryGarbage();
+        for ( int i = 0 ; i < 2 ; i++ ) {
+            Now.sleep(1_000);
             commonTestsService.info("...");
         }
         Now.sleep(1_000);

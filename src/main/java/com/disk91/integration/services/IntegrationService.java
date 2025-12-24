@@ -356,13 +356,29 @@ public class IntegrationService {
 
     }
 
+    // ================================================================================================
+    // Garbage collector for in-memory pending queries
+    //
+
+    private long lastInMemoryGarbage = Now.NowUtcMs();
+    private boolean forceInMemoryGarbageNext = false;
+
+    /**
+     * Ability to force garbage to run faster (mostly for tests)
+     */
+    public void forceInMemoryGarbage() {
+        forceInMemoryGarbageNext = true;
+    }
 
     /**
      * Clean the outdated pending queries every second
      */
-    @Scheduled(fixedRate = 30_000, initialDelay = 30_000)
+    @Scheduled(fixedDelay = 1_000, initialDelay = 2_000)
     void inMemoryGarbage() {
         if ( eventStore == null ) return;
+        if ( (Now.NowUtcMs() - lastInMemoryGarbage < 30_000) && !forceInMemoryGarbageNext ) return;
+        lastInMemoryGarbage = Now.NowUtcMs();
+        forceInMemoryGarbageNext = false;
         try {
             // remove all the queries that are too old and done with ID lower than the worker indexes
             long now = Now.NowUtcMs();

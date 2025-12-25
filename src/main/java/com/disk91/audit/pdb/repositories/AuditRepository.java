@@ -17,15 +17,13 @@
  *    WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  *    IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package com.disk91.common.mdb.repositories;
+package com.disk91.audit.pdb.repositories;
 
-import com.disk91.common.mdb.entities.WiFiMacLocation;
-import org.springframework.data.mongodb.repository.MongoRepository;
+import com.disk91.audit.pdb.entities.Audit;
+import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface WiFiMacLocationRepository extends MongoRepository<WiFiMacLocation, String> {
-
-    WiFiMacLocation findByMacAddress(String macAddress);
+public interface AuditRepository extends CrudRepository<Audit, String> {
 
 }

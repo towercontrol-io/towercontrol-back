@@ -19,12 +19,14 @@
  */
 package com.disk91.audit.integration;
 
+import org.springframework.data.annotation.Transient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.List;
 
 public class AuditMessage {
 
+    @Transient
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
     // Service name, based on the module name ex : Users

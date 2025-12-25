@@ -40,21 +40,6 @@ public class AuditConfig {
         return auditStoreMedium;
     }
 
-    public AuditService.AuditTarget getAuditStoreTarget() {
-        switch (auditStoreMedium) {
-            default:
-            case "logs":
-                return AuditService.AuditTarget.AUDIT_TARGET_LOGS;
-            case "files":
-                return AuditService.AuditTarget.AUDIT_TARGET_FILES;
-            case "mongodb":
-                return AuditService.AuditTarget.AUDIT_TARGET_MONGO;
-            case "psql":
-                return AuditService.AuditTarget.AUDIT_TARGET_PSQL;
-        }
-    }
-
-
     @Value("${audit.logs.decryption.enabled:false}")
     protected boolean auditLogsDecryptionEnabled;
     public boolean isAuditLogsDecryptionEnabled() {

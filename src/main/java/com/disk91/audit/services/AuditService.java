@@ -21,11 +21,14 @@ package com.disk91.audit.services;
 import com.disk91.audit.config.AuditConfig;
 import com.disk91.audit.integration.AuditIntegration;
 import com.disk91.audit.integration.AuditMessage;
+import com.disk91.audit.mdb.entities.AuditMdb;
+import com.disk91.audit.mdb.repositories.AuditRepositoryMdb;
+import com.disk91.audit.pdb.entities.Audit;
+import com.disk91.audit.pdb.repositories.AuditRepository;
 import com.disk91.common.api.interfaces.ActionResult;
 import com.disk91.common.config.ModuleCatalog;
 import com.disk91.common.tools.Now;
-import com.disk91.common.tools.exceptions.ITNotFoundException;
-import com.disk91.common.tools.exceptions.ITOverQuotaException;
+import com.disk91.common.tools.Tools;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITTooManyException;
 import com.disk91.integration.api.interfaces.IntegrationCallback;
@@ -35,8 +38,9 @@ import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
 
 @Service
 public class AuditService {
@@ -47,7 +51,23 @@ public class AuditService {
         AUDIT_TARGET_LOGS,
         AUDIT_TARGET_FILES,
         AUDIT_TARGET_MONGO,
-        AUDIT_TARGET_PSQL
+        AUDIT_TARGET_PSQL,
+        AUDIT_TARGET_NONE
+    }
+
+    protected AuditTarget fromString(String targetStr) {
+        switch (targetStr.toLowerCase()) {
+            case "logs":
+                return AuditTarget.AUDIT_TARGET_LOGS;
+            case "files":
+                return AuditTarget.AUDIT_TARGET_FILES;
+            case "mongo":
+                return AuditTarget.AUDIT_TARGET_MONGO;
+            case "postgresql":
+                return AuditTarget.AUDIT_TARGET_PSQL;
+            default:
+                return AuditTarget.AUDIT_TARGET_NONE;
+        }
     }
 
     @Autowired
@@ -59,26 +79,54 @@ public class AuditService {
     @Autowired
     protected AuditIntegration auditIntegration;
 
+    @Autowired
+    protected AuditRepository auditRepository;
+
+    @Autowired
+    protected AuditRepositoryMdb auditRepositoryMongo;
+
     @PostConstruct
     public void init() {
-        log.info("[audit] Service initialized, target: {}", auditConfig.getAuditStoreTarget().name());
+        log.info("[audit] Service initialization");
+        ArrayList<String> targets = Tools.getStringListFromParam(auditConfig.getAuditStoreMedium());
+        for (String t : targets) {
+            log.info("[audit] Service initialized for target: {}", t);
+        }
         try {
             integrationService.registerCallback(
                     ModuleCatalog.Modules.AUDIT,
                     new IntegrationCallback() {
                         @Override
-                        public void onIntegrationEvent(IntegrationQuery q) {
+                        public synchronized void onIntegrationEvent(IntegrationQuery q) {
                             AuditMessage auditMessage = (AuditMessage) q.getQuery();
-                            switch (auditConfig.getAuditStoreTarget()) {
-                                case AUDIT_TARGET_LOGS:
-                                    log.info("[audit] {}", auditIntegration.toString(auditMessage));
-                                    break;
-                                case AUDIT_TARGET_FILES:
-                                    break;
-                                case AUDIT_TARGET_MONGO:
-                                    break;
-                                case AUDIT_TARGET_PSQL:
-                                    break;
+                            ArrayList<String> targets = Tools.getStringListFromParam(auditConfig.getAuditStoreMedium());
+                            for (String t : targets) {
+                                switch (fromString(t)) {
+                                    case AUDIT_TARGET_LOGS:
+                                        log.info("[audit] {}", auditIntegration.toString(auditMessage));
+                                        break;
+                                    case AUDIT_TARGET_FILES:
+                                        break;
+                                    case AUDIT_TARGET_MONGO:
+                                        try {
+                                            AuditMdb am = AuditMdb.fromAuditMessage(auditMessage, null, null);
+                                            auditRepositoryMongo.save(am);
+                                        } catch (Exception e) {
+                                            log.error("[audit] Failed to save audit in MONGO: {}", e.getMessage());
+                                        }
+                                        break;
+                                    case AUDIT_TARGET_PSQL:
+                                        try {
+                                            Audit ap = Audit.fromAuditMessage(auditMessage, null, null);
+                                            auditRepository.save(ap);
+                                        } catch (Exception e) {
+                                            log.error("[audit] Failed to save audit in PSQL: {}", e.getMessage());
+                                        }
+                                        break;
+                                    case AUDIT_TARGET_NONE:
+                                    default:
+                                        break;
+                                }
                             }
 
                             // terminate the action

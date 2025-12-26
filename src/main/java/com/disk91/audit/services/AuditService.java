@@ -85,6 +85,11 @@ public class AuditService {
     @Autowired
     protected AuditRepositoryMdb auditRepositoryMongo;
 
+
+    protected static java.io.BufferedWriter auditWriter = null;
+    protected static String auditCurrentYyMmDd = null;
+    protected static java.nio.file.Path auditCurrentPath = null;
+
     @PostConstruct
     public void init() {
         log.info("[audit] Service initialization");
@@ -103,9 +108,52 @@ public class AuditService {
                             for (String t : targets) {
                                 switch (fromString(t)) {
                                     case AUDIT_TARGET_LOGS:
-                                        log.info("[audit] {}", auditIntegration.toString(auditMessage));
+                                        log.info(Tools.ANSI_YELLOW+"[audit] {}"+Tools.ANSI_RESET, auditIntegration.toString(auditMessage));
                                         break;
                                     case AUDIT_TARGET_FILES:
+                                        String day = Now.formatToYYYYMMDDUtc(Now.NowUtcMs());
+                                        if ( auditWriter == null || auditCurrentYyMmDd == null || !auditCurrentYyMmDd.equals(day) ) {
+                                            try {
+                                                // Close current writer if any
+                                                if ( auditWriter != null ) {
+                                                    try { auditWriter.flush(); } catch (Exception ignore) { }
+                                                    try { auditWriter.close(); } catch (Exception ignore) { }
+                                                    auditWriter = null;
+                                                }
+
+                                                // Ensure directory exists
+                                                java.nio.file.Path dir = java.nio.file.Paths.get(auditConfig.getAuditStoreFilePath()).normalize();
+                                                java.nio.file.Files.createDirectories(dir);
+
+                                                // Build file name: audit-YYMMDD.log
+                                                String fileName = "audit-" + day + ".log";
+                                                java.nio.file.Path filePath = dir.resolve(fileName).normalize();
+
+                                                // Open writer in append mode, keep it open between calls
+                                                auditWriter = java.nio.file.Files.newBufferedWriter(
+                                                        filePath,
+                                                        java.nio.charset.StandardCharsets.UTF_8,
+                                                        java.nio.file.StandardOpenOption.CREATE,
+                                                        java.nio.file.StandardOpenOption.WRITE,
+                                                        java.nio.file.StandardOpenOption.APPEND
+                                                );
+
+                                                auditCurrentYyMmDd = day;
+                                                auditCurrentPath = filePath;
+                                                log.info("[audit] New Audit log file created: {}", auditCurrentPath);
+
+                                            } catch (Exception x) {
+                                                log.error("[audit] Failed to rotate/open audit log file", x);
+                                            }
+                                        }
+                                        try {
+                                            // Write line with newline and flush immediately
+                                            auditWriter.write(auditIntegration.toString(auditMessage));
+                                            auditWriter.newLine();
+                                            auditWriter.flush();
+                                        } catch (Exception x) {
+                                            log.error("[audit] Failed to write audit log line", x);
+                                        }
                                         break;
                                     case AUDIT_TARGET_MONGO:
                                         try {

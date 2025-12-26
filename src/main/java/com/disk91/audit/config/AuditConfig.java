@@ -40,6 +40,12 @@ public class AuditConfig {
         return auditStoreMedium;
     }
 
+    @Value("${audit.store.file.path:/audit/}")
+    protected String auditStoreFilePath;
+    public String getAuditStoreFilePath() {
+        return auditStoreFilePath;
+    }
+
     @Value("${audit.logs.decryption.enabled:false}")
     protected boolean auditLogsDecryptionEnabled;
     public boolean isAuditLogsDecryptionEnabled() {

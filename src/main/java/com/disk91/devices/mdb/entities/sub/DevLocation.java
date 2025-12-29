@@ -31,6 +31,16 @@ import java.io.IOException;
 @Tag(name = "Device Location", description = "Device location")
 public class DevLocation implements CloneableObject<DevLocation> {
 
+    // referential of the location (null or empty is a global location) otherwise it is a reference ID
+    // to a location in a custom map / image ...
+    @Schema(
+            description = "referential ID for the location context, null or empty means global location (lat,lon)",
+            example = "",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    protected String referential;
+
+
     // Date of the location update
     @Schema(
             description = "date of this location in ms since epoch",
@@ -88,6 +98,7 @@ public class DevLocation implements CloneableObject<DevLocation> {
 
     public DevLocation clone() {
         DevLocation u = new DevLocation();
+        u.setReferential(referential);
         u.setLocationMs(locationMs);
         u.setLatitude(latitude);
         u.setLongitude(longitude);
@@ -170,5 +181,13 @@ public class DevLocation implements CloneableObject<DevLocation> {
 
     public void setHexLocation(String hexLocation) {
         this.hexLocation = hexLocation;
+    }
+
+    public String getReferential() {
+        return referential;
+    }
+
+    public void setReferential(String referential) {
+        this.referential = referential;
     }
 }

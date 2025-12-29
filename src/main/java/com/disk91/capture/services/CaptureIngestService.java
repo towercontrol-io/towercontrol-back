@@ -20,12 +20,15 @@
 package com.disk91.capture.services;
 
 import com.disk91.audit.integration.AuditIntegration;
+import com.disk91.billing.integration.BillingActions;
+import com.disk91.billing.integration.BillingIntegration;
 import com.disk91.capture.api.interfaces.CaptureResponseItf;
 import com.disk91.capture.interfaces.AbstractProtocol;
 import com.disk91.capture.interfaces.CaptureIngestResponse;
 import com.disk91.capture.mdb.entities.CaptureEndpoint;
 import com.disk91.capture.mdb.entities.Protocols;
 import com.disk91.common.config.ModuleCatalog;
+import com.disk91.common.tools.CustomField;
 import com.disk91.common.tools.Now;
 import com.disk91.common.tools.Tools;
 import com.disk91.common.tools.exceptions.*;
@@ -44,6 +47,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -70,6 +74,9 @@ public class CaptureIngestService {
 
     @Autowired(required = false)
     private AutowireCapableBeanFactory beanFactory;
+
+    @Autowired
+    private BillingIntegration billingIntegration;
 
     // Cache the protocols class to avoid recreation each time
     protected final HashMap<String, AbstractProtocol> protocolCache = new HashMap<>();
@@ -156,6 +163,19 @@ public class CaptureIngestService {
                                 captureAsyncProcessService.enqueueRawData(pivot.getPivot());
                                 incrementIngestSuccess();
                                 e.incTotalQueuedToProcess();
+
+                                // record for billing
+                                ArrayList<CustomField> params = new ArrayList<>();
+                                params.add( new CustomField("size", ""+pivot.getPivot().getPayloadSize()) );
+                                params.add( new CustomField("duplicates", ""+pivot.getPivot().getNwkStations().size()) );
+                                params.add( new CustomField("protocol", p.getId()) );
+                                params.add( new CustomField("dateMs", ""+pivot.getPivot().getRxTimestampMs()) );
+                                billingIntegration.billingLog(
+                                        ModuleCatalog.Modules.CAPTURE,
+                                        BillingActions.BILLING_FRAME_RX,
+                                        params
+                                );
+
                             } catch (ITOverQuotaException x) {
                                 try {
                                     // the system is shutting down or overloaded, this frame is rejected

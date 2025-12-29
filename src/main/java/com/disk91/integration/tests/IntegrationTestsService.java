@@ -138,7 +138,7 @@ public class IntegrationTestsService {
             throw new ITParseException("[integration] Queue not empty");
         }
         commonTestsService.success("[integration] The processing metics are correct");
-
+        integrationService.traceQueue();
 
     }
 }

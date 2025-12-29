@@ -12,6 +12,7 @@ but only metadata, while aiming to be generic with respect to possible integrati
   "rxTimestampMs": "long",                   // Reception Timestamp of the data reception in milliseconds since epoch
   "rxCaptureId": "string",                   // Source identifier (e.g., capture endpoint ID)
   "payload": "String",                       // Raw data payload as a string (base64) (encrypted when enabled)
+  "payloadSize": "int",                      // Size of the raw data (w/o encoding) payload in bytes
   "decodedPayload": "String",                // Decoded data payload as a string (base64) (encrypted when enabled)
   "nwkStatus" : "enum",                      // Status of the frame seen by network (e.g., "RECEIVED", "PROCESSED", "ERROR")
   "status" : "enum",                         // status of the frame in the platform (e.g., "NEW", "PENDING", "PROCESSED", "ERROR")

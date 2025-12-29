@@ -191,6 +191,20 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
             toStoreData = "$" + EncryptionHelper.encrypt(payload.getData(), IV, commonConfig.getEncryptionKey());
         }
         p.setPayload(toStoreData);
+        if ( payload.getData() != null && !payload.getData().isEmpty()) {
+            try {
+                byte[] decodedPayload = Base64.getDecoder().decode(payload.getData());
+                p.setPayloadSize(decodedPayload.length);
+            } catch (IllegalArgumentException x) {
+                CaptureError e = new CaptureError();
+                e.setCode("004");
+                e.setLevel(CAP_ERROR_WARNING);
+                e.setMessage("capture-driver-helium-chirpstackv4-invalid-base64-payload");
+                p.getErrors().add(e);
+                p.setPayloadSize(-1);
+            }
+        } else p.setPayloadSize(0);
+
 
         if (payload.getObject() != null && !payload.getObject().isEmpty()) {
             if (encryptionRequired) {

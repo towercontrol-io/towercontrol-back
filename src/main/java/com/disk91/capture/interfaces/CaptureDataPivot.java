@@ -93,6 +93,13 @@ public class CaptureDataPivot implements CloneableObject<CaptureDataPivot>  {
     protected String payload;
 
     @Schema(
+            description = "Raw payload data size, in byte of useful data, -1 when unknown",
+            example = "10",
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED
+    )
+    protected int payloadSize = -1;
+
+    @Schema(
             description = "The decoded payload from the network, stored as base64 encoded string, encrypted when required, encrypted string starts with $, empty when not existing",
             example = "....",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED
@@ -187,6 +194,7 @@ public class CaptureDataPivot implements CloneableObject<CaptureDataPivot>  {
     public static CaptureDataPivot initPivot() {
         CaptureDataPivot pivot = new CaptureDataPivot();
         pivot.rxUuid = null;
+        pivot.payloadSize = 0;
         pivot.version = CURRENT_VERSION;
         pivot.rxTimestampMs = Now.NowUtcMs();
         pivot.nwkStatus = NetworkStatus.NWK_STATUS_SUCCESS;
@@ -209,6 +217,7 @@ public class CaptureDataPivot implements CloneableObject<CaptureDataPivot>  {
         copy.rxTimestampMs = this.rxTimestampMs;
         copy.rxCaptureRef = this.rxCaptureRef;
         copy.payload = this.payload;
+        copy.payloadSize = this.payloadSize;
         copy.decodedPayload = this.decodedPayload;
         copy.nwkStatus = this.nwkStatus;
         copy.status = this.status;
@@ -385,5 +394,17 @@ public class CaptureDataPivot implements CloneableObject<CaptureDataPivot>  {
 
     public void setDecodedPayload(String decodedPayload) {
         this.decodedPayload = decodedPayload;
+    }
+
+    public int getPayloadSize() {
+        return payloadSize;
+    }
+
+    public void setPayloadSize(int payloadSize) {
+        this.payloadSize = payloadSize;
+    }
+
+    public int getVersion() {
+        return version;
     }
 }

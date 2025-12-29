@@ -36,7 +36,8 @@ The device data structure is defined as follows:
 
   "name": "string",               // device name, this is the name of the device, given by device owner or manager
   "description": "string",        // device description, this is a free text description of the device, given by device owner or manager
-                                  
+  "icon" : "string",              // device icon, is a icon name to be used in front-end to display the device.
+  
   "deviceState" : "devState",     // Current device state, see the device life cycle management section for more information
   "deviceStateMs": "number",      // Current device state date in MS since epoch, this is the date of the last state change
   
@@ -64,6 +65,7 @@ The device data structure is defined as follows:
   "dynamicLocation": "boolean",   // dynamic location flag, this is the flag used to identify if the device is a dynamic location device
                                     // when true, the device position can be updated based on network information dynamically.
   "location": {                   // Position of the device
+    "referential" : "string",       // location referential, this is the referential used to define the location (global when null or empty or custom map...)
     "locationMs" : "number",       // location date in MS since epoch, this is the date of the last location change
     "latitude" :  "number",         // device known latitude
     "longitude" : "number",         // device known longitude

@@ -65,7 +65,8 @@ public class BillingIntegration {
         try {
             integrationService.processQuery(query);
         } catch (ITOverQuotaException e) {
-            // Skip audit log, we are closing the service
+            // Skip billing log, we are closing the service
+            // @TODO something we should not lose ?
         }
     }
 

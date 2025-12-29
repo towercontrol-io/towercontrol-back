@@ -114,6 +114,9 @@ public class Device implements CloneableObject<Device> {
     // device description, this is a free text description of the device, given by device owner or manager
     protected String description;
 
+    // device associated icon for representation in fron-end applications
+    protected String icon;
+
     // Current device state, see the device life cycle management section for more information
     protected DeviceState devState;
     // Current device sub state, these one can be cumulated in a bit field.
@@ -191,6 +194,7 @@ public class Device implements CloneableObject<Device> {
         device.setFamilyId("");
         device.setName("");
         device.setDescription("");
+        device.setIcon("");
         device.setDevState(IDENTIFIED);
         device.setSubState(DevSubState.initNone());
         device.setDevStateDateMs(Now.NowUtcMs());
@@ -217,6 +221,7 @@ public class Device implements CloneableObject<Device> {
         loc.setAltitude(0);
         loc.setAccuracy(0);
         loc.setFloor("");
+        loc.setReferential("");
         device.setLocation(loc);
         device.setDataEncrypted(false);
         device.setCommunicationIds(new ArrayList<>());
@@ -242,6 +247,7 @@ public class Device implements CloneableObject<Device> {
         u.setFamilyId(familyId);
         u.setName(name);
         u.setDescription(description);
+        u.setIcon(icon);
         u.setDevState(devState);
         if ( subState != null ) {
             u.setSubState(subState.clone());
@@ -592,5 +598,13 @@ public class Device implements CloneableObject<Device> {
 
     public void setSubState(DevSubState subState) {
         this.subState = subState;
+    }
+
+    public String getIcon() {
+        return icon;
+    }
+
+    public void setIcon(String icon) {
+        this.icon = icon;
     }
 }

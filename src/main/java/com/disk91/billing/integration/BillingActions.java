@@ -20,10 +20,9 @@
 package com.disk91.billing.integration;
 
 public enum BillingActions {
-    BILLING_FRAME_RX,       // Frame reception, as param we need
-                            // - "size" the size of the frame in bytes
-                            // - "duplicates" the number of duplicates
-                            // - "protocol" the protocol used
-                            // - "dateMs" the reception date in ms
-
+    BILLING_FRAME_RX,           // Frame reception, as param we need
+                                // - "size" the size of the frame in bytes
+                                // - "duplicates" the number of duplicates
+                                // - "protocol" the protocol used
+                                // - "dateMs" the reception date in ms
 }

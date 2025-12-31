@@ -134,6 +134,13 @@ public class Device implements CloneableObject<Device> {
     // hardware version, this is the version of the hardware running on the device
     protected String hardwareVersion;
 
+    // List of associated tags. Tags are used for device common actions, like firmware update.
+    // Allowing to have different behavior / version per tag, like having a Beta group ...
+    protected ArrayList<String> tags;
+
+    // Driver Id for the FUOTA, this will decide the device rules for operating the firmware updates
+    protected String fuotaProtocolId;
+
     // type of battery used in the device, this allows some autonomy calculation
     protected DeviceBatType batteryType;
     // capacity of the battery used in the device, this allows some autonomy calculation, in mAh
@@ -202,6 +209,8 @@ public class Device implements CloneableObject<Device> {
         device.setLastRestartDateMs(0);
         device.setFirmwareVersion("");
         device.setHardwareVersion("");
+        device.setFuotaProtocolId("");
+        device.setTags(new ArrayList<>());
         device.setBatteryType(UNKNOWN_BATTERY_TYPE);
         device.setBatteryCapacity(0);
         device.setBatteryLowLevel(0);
@@ -259,6 +268,13 @@ public class Device implements CloneableObject<Device> {
         u.setLastRestartDateMs(lastRestartDateMs);
         u.setFirmwareVersion(firmwareVersion);
         u.setHardwareVersion(hardwareVersion);
+        u.setFuotaProtocolId(fuotaProtocolId);
+        u.setTags(new ArrayList<>());
+        if ( tags != null ) {
+            for ( String t : tags ) {
+                u.getTags().add(t);
+            }
+        }
         u.setBatteryType(batteryType);
         u.setBatteryCapacity(batteryCapacity);
         u.setBatteryLowLevel(batteryLowLevel);
@@ -606,5 +622,21 @@ public class Device implements CloneableObject<Device> {
 
     public void setIcon(String icon) {
         this.icon = icon;
+    }
+
+    public ArrayList<String> getTags() {
+        return tags;
+    }
+
+    public void setTags(ArrayList<String> tags) {
+        this.tags = tags;
+    }
+
+    public String getFuotaProtocolId() {
+        return fuotaProtocolId;
+    }
+
+    public void setFuotaProtocolId(String fuotaProtocolId) {
+        this.fuotaProtocolId = fuotaProtocolId;
     }
 }

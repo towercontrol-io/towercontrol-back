@@ -70,17 +70,23 @@ public class DeviceHistory extends Device {
         u.setName(d.getName());
         u.setDescription(d.getDescription());
         u.setDevState(d.getDevState());
-        if ( u.getSubState() != null ) {
+        if ( d.getSubState() != null ) {
             u.setSubState(d.getSubState().clone());
         } else {
             u.setSubState(DevSubState.initNone());
         }
-        u.setSubState(d.getSubState().clone());
         u.setDevStateDateMs(d.getDevStateDateMs());
         u.setLastSeenDateMs(d.getLastSeenDateMs());
         u.setLastRestartDateMs(d.getLastRestartDateMs());
         u.setFirmwareVersion(d.getFirmwareVersion());
         u.setHardwareVersion(d.getHardwareVersion());
+        u.setFuotaProtocolId(d.getFuotaProtocolId());
+        u.setTags(new ArrayList<>());
+        if ( d.getTags() != null ) {
+            for ( String t : d.getTags() ) {
+                u.getTags().add(t);
+            }
+        }
         u.setBatteryType(d.getBatteryType());
         u.setBatteryCapacity(d.getBatteryCapacity());
         u.setBatteryLowLevel(d.getBatteryLowLevel());
@@ -96,20 +102,25 @@ public class DeviceHistory extends Device {
         u.setLocation(d.getLocation().clone());
         u.setDataEncrypted(d.isDataEncrypted());
         u.setCommunicationIds(new ArrayList<>());
-        for (DevAttribute communicationId : d.getCommunicationIds()) {
-            u.getCommunicationIds().add(communicationId.clone());
+        if ( d.getCommunicationIds() != null ) {
+            for (DevAttribute communicationId : d.getCommunicationIds()) {
+                u.getCommunicationIds().add(communicationId.clone());
+            }
         }
         u.setAttributes(new ArrayList<>());
-        for (DevAttribute attribute : d.getAttributes()) {
-            u.getAttributes().add(attribute.clone());
+        if ( d.getAttributes() != null ) {
+            for (DevAttribute attribute : d.getAttributes()) {
+                u.getAttributes().add(attribute.clone());
+            }
         }
         u.setAssociatedGroups(new ArrayList<>());
-        for (DevGroupAssociated group : d.getAssociatedGroups()) {
-            u.getAssociatedGroups().add(group.clone());
+        if ( d.getAssociatedGroups() != null ) {
+            for (DevGroupAssociated group : d.getAssociatedGroups()) {
+                u.getAssociatedGroups().add(group.clone());
+            }
         }
         return u;
     }
-
 
 
     // ====== Getters & Setters ========

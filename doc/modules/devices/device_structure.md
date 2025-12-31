@@ -47,6 +47,10 @@ The device data structure is defined as follows:
   "firmwareVersion": "string",    // firmware version, this is the version of the firmware running on the device
   "hardwareVersion": "string",    // hardware version, this is the version of the hardware running on the device
 
+  "tags" : ["string"],            // List of associated tags. Tags are used for device common actions, like firmware update. 
+                                  // Allowing to have different behavior / version per tag, like having a Beta group ... 
+  "fuotaProtocolId" : "string",   // Driver Id for the FUOTA, this will decide the device rules for operating the firmware updates
+  
   "batteryType" : "batType",      // type of battery used in the device, this allows some autonomy calculation
   "batteryCapacity" : "number",   // capacity of the battery used in the device, this allows some autonomy calculation, in mAh
   "batteryLowLevel" : "number",   // low level of the battery used in the device, when 0, a default base on type applies, in mV

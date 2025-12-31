@@ -59,3 +59,11 @@ This role is used on platforms dedicated to a single type of object with a singl
 case, it is not necessary to control access rights to objects individually, and assigning this role to the ingestion 
 user will grant write access to all objects, simplifying processing and avoiding the need for a general group that 
 owns all objects. **Never affect that role to a standard user as it will give access to all devices in write mode.**
+
+### `ROLE_TICKET_MANAGER`
+This role grants access to tickets and contact requests received on the platform; it allows responding to them and 
+enriching the associated knowledge base. Contact requests are public. NCE editing only.
+
+### `ROLE_TICKET_USER`
+This role grants access to ticket creation APIs. It should generally be a default role, unless you prefer not to expose 
+this functionality to users. NCE editing only.

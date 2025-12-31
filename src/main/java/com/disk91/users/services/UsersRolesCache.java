@@ -74,6 +74,8 @@ public class UsersRolesCache {
         "{'version':2, 'platform':true, 'name':'ROLE_LOGIN_COMPLETE','description':'role-login-complete-desc', 'enDescription':'login completed', 'creationBy':'system','creationMs':0, 'assignable':false}",
         "{'version':2, 'platform':true, 'name':'ROLE_LOGIN_API','description':'role-login-api-desc', 'enDescription':'login from API', 'creationBy':'system','creationMs':0, 'assignable':false}",
         "{'version':2, 'platform':true, 'name':'ROLE_USER_APIKEY','description':'role-user-apikey-desc', 'enDescription':'Apikey self creation', 'creationBy':'system','creationMs':0, 'assignable':true}",
+        "{'version':2, 'platform':true, 'name':'ROLE_SUPPORT_MANAGER','description':'role-support-manager-desc', 'enDescription':'Ticket manager', 'creationBy':'system','creationMs':0, 'assignable':true}",
+        "{'version':2, 'platform':true, 'name':'ROLE_SUPPORT_USER','description':'role-support-user-desc', 'enDescription':'Ticket creation', 'creationBy':'system','creationMs':0, 'assignable':true}",
     };
 
     // Standard roles strings
@@ -95,7 +97,9 @@ public class UsersRolesCache {
         ROLE_LOGIN_2FA("ROLE_LOGIN_2FA"),
         ROLE_LOGIN_COMPLETE("ROLE_LOGIN_COMPLETE"),
         ROLE_LOGIN_API("ROLE_LOGIN_API"),
-        ROLE_USER_APIKEY("ROLE_USER_APIKEY");
+        ROLE_USER_APIKEY("ROLE_USER_APIKEY"),
+        ROLE_SUPPORT_MANAGER("ROLE_SUPPORT_MANAGER"),
+        ROLE_SUPPORT_USER("ROLE_SUPPORT_USER");
 
         private String roleName;
         StandardRoles(String roleName) {

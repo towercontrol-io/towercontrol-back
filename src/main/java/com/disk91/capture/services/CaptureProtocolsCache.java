@@ -19,12 +19,18 @@
  */
 package com.disk91.capture.services;
 
+import com.disk91.capture.config.CaptureConfig;
 import com.disk91.capture.mdb.entities.Protocols;
 import com.disk91.capture.mdb.repositories.ProtocolsRepository;
+import com.disk91.common.config.CommonConfig;
+import com.disk91.common.config.ModuleCatalog;
 import com.disk91.common.tools.Now;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
+import com.disk91.common.tools.exceptions.ITOverQuotaException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITTooManyException;
+import com.disk91.integration.api.interfaces.IntegrationQuery;
+import com.disk91.integration.services.IntegrationService;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -39,6 +45,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static com.disk91.capture.integration.CaptureActions.CAPTURE_ACTION_RELOAD_CACHE_PROTOCOL;
+
 @Service
 public class CaptureProtocolsCache {
 
@@ -52,6 +60,16 @@ public class CaptureProtocolsCache {
 
     @Autowired
     protected ProtocolsRepository protocolsRepository;
+
+    @Autowired
+    protected CommonConfig commonConfig;
+
+    @Autowired
+    protected IntegrationService integrationService;
+
+    @Autowired
+    protected CaptureConfig captureConfig;
+
 
     // Platform protocols definitions, the database only stores custom protocols
     private final String [] pfProtocols = {
@@ -156,7 +174,18 @@ public class CaptureProtocolsCache {
         if ( protocol.getId() != null ) protocol.setId(null);
         Protocols p = protocolsRepository.save(protocol);
         protocolsCache.put(p.getId(), p);
-        // @TODO - send message to other instances to reload roles.
+
+        // Broadcast other instances to flush their cache for this device
+        IntegrationQuery iq = new IntegrationQuery(ModuleCatalog.Modules.CAPTURE, commonConfig.getInstanceId());
+        iq.setServiceNameDest(ModuleCatalog.Modules.CAPTURE);
+        iq.setType(IntegrationQuery.QueryType.TYPE_BROADCAST);
+        iq.setAction(CAPTURE_ACTION_RELOAD_CACHE_PROTOCOL.ordinal());
+        iq.setQuery(null);
+        iq.setRoute(IntegrationQuery.getRoutefromRouteString(captureConfig.getCaptureIntracomMedium()));
+        try {
+            integrationService.processQuery(iq);
+        } catch (ITOverQuotaException ignored) {}
+
     }
 
 

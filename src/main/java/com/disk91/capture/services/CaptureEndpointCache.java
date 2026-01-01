@@ -22,9 +22,14 @@ package com.disk91.capture.services;
 import com.disk91.capture.config.CaptureConfig;
 import com.disk91.capture.mdb.entities.CaptureEndpoint;
 import com.disk91.capture.mdb.repositories.CaptureEndpointRepository;
+import com.disk91.common.config.CommonConfig;
+import com.disk91.common.config.ModuleCatalog;
 import com.disk91.common.tools.Now;
 import com.disk91.common.tools.ObjectCache;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
+import com.disk91.common.tools.exceptions.ITOverQuotaException;
+import com.disk91.integration.api.interfaces.IntegrationQuery;
+import com.disk91.integration.services.IntegrationService;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PostConstruct;
@@ -39,6 +44,9 @@ import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+
+import static com.disk91.capture.integration.CaptureActions.CAPTURE_ACTION_FLUSH_CACHE_ENDPOINT;
+import static com.disk91.users.integration.UsersActions.USERS_ACTION_FLUSH_CACHE_USERS;
 
 @Service
 public class CaptureEndpointCache {
@@ -59,6 +67,11 @@ public class CaptureEndpointCache {
     @Autowired
     protected MeterRegistry meterRegistry;
 
+    @Autowired
+    protected CommonConfig commonConfig;
+
+    @Autowired
+    protected IntegrationService integrationService;
 
     // ================================================================================================================
     // CACHE SERVICE
@@ -163,6 +176,18 @@ public class CaptureEndpointCache {
         if ( this.serviceEnable && config.getCaptureEndpointCacheMaxSize() > 0 ) {
             this.cache.remove(id,false);
         }
+
+        // Broadcast other instances to flush their cache for this device
+        IntegrationQuery iq = new IntegrationQuery(ModuleCatalog.Modules.CAPTURE, commonConfig.getInstanceId());
+        iq.setServiceNameDest(ModuleCatalog.Modules.CAPTURE);
+        iq.setType(IntegrationQuery.QueryType.TYPE_BROADCAST);
+        iq.setAction(CAPTURE_ACTION_FLUSH_CACHE_ENDPOINT.ordinal());
+        iq.setQuery(id);
+        iq.setRoute(IntegrationQuery.getRoutefromRouteString(config.getCaptureIntracomMedium()));
+        try {
+            integrationService.processQuery(iq);
+        } catch (ITOverQuotaException ignored) {}
+
     }
 
     /**

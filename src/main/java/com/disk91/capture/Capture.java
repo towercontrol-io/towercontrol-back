@@ -19,9 +19,19 @@
  */
 package com.disk91.capture;
 
+import com.disk91.capture.services.CaptureEndpointCache;
+import com.disk91.capture.services.CaptureProtocolsCache;
+import com.disk91.common.api.interfaces.ActionResult;
 import com.disk91.common.config.CommonConfig;
+import com.disk91.common.config.ModuleCatalog;
 import com.disk91.common.pdb.entities.Param;
 import com.disk91.common.pdb.repositories.ParamRepository;
+import com.disk91.common.tools.Now;
+import com.disk91.common.tools.exceptions.ITParseException;
+import com.disk91.common.tools.exceptions.ITTooManyException;
+import com.disk91.integration.api.interfaces.IntegrationCallback;
+import com.disk91.integration.api.interfaces.IntegrationQuery;
+import com.disk91.integration.services.IntegrationService;
 import com.mongodb.client.MongoDatabase;
 import jakarta.annotation.PostConstruct;
 import org.bson.Document;
@@ -30,6 +40,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Component;
+
+import static com.disk91.capture.integration.CaptureActions.CAPTURE_ACTION_FLUSH_CACHE_ENDPOINT;
+import static com.disk91.capture.integration.CaptureActions.CAPTURE_ACTION_RELOAD_CACHE_PROTOCOL;
 
 @Component
 public class Capture {
@@ -49,6 +62,15 @@ public class Capture {
 
     @Autowired
     private MongoTemplate mongoTemplate;
+
+    @Autowired
+    protected IntegrationService integrationService;
+
+    @Autowired
+    protected CaptureProtocolsCache captureProtocolsCache;
+
+    @Autowired
+    protected CaptureEndpointCache captureEndpointCache;
 
     @PostConstruct
     void initCaptureModule() {
@@ -77,6 +99,44 @@ public class Capture {
                 log.error("[capture] Error while initializing shard for Common Module {}", e.getMessage());
             }
         }
+
+        // Init the integration actions
+        try {
+            integrationService.registerCallback(
+                    ModuleCatalog.Modules.CAPTURE,
+                    new IntegrationCallback() {
+                        @Override
+                        public void onIntegrationEvent(IntegrationQuery q) {
+                            if ( q.getAction() == CAPTURE_ACTION_RELOAD_CACHE_PROTOCOL.ordinal() ) {
+                                captureProtocolsCache.initProtocolCache();
+                                // terminate the action
+                                q.setResponse(ActionResult.OK("Protocol cache reloaded")); // fire & forget, success on every actions
+                                q.setResult(null);
+                                q.setState(IntegrationQuery.QueryState.STATE_DONE);
+                                q.setResponse_ts(Now.NanoTime());
+                            } else if ( q.getAction() == CAPTURE_ACTION_FLUSH_CACHE_ENDPOINT.ordinal() ) {
+                                String id = (String) q.getQuery();
+                                captureEndpointCache.flushCaptureEndpoint(id);
+                                // terminate the action
+                                q.setResponse(ActionResult.OK("Endpoint cache flushed")); // fire & forget, success on every actions
+                                q.setResult(null);
+                                q.setState(IntegrationQuery.QueryState.STATE_DONE);
+                                q.setResponse_ts(Now.NanoTime());
+                            } else {
+                                log.error("[capture] Receiving a unknown message from integration");
+                                // terminate the action
+                                q.setResponse(ActionResult.BADREQUEST("capture-integration-unknown-action"));
+                                q.setResult(null);
+                                q.setState(IntegrationQuery.QueryState.STATE_ERROR);
+                                q.setResponse_ts(Now.NanoTime());
+                            }
+                        }
+                    }
+            );
+        } catch (ITParseException | ITTooManyException x) {
+            log.error("[capture] Failed to register capture integration callback: {}", x.getMessage());
+        }
+
     }
 
 

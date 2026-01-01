@@ -19,18 +19,25 @@
  */
 package com.disk91.groups.services;
 
+import com.disk91.common.api.interfaces.ActionResult;
+import com.disk91.common.config.ModuleCatalog;
 import com.disk91.common.tools.EncryptionHelper;
 import com.disk91.common.tools.Now;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
+import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITTooManyException;
 import com.disk91.groups.tools.GroupsHierarchySimplified;
 import com.disk91.groups.config.GroupsConfig;
 import com.disk91.groups.mdb.entities.Group;
 import com.disk91.groups.mdb.repositories.GroupRepository;
 import com.disk91.groups.tools.GroupsList;
+import com.disk91.integration.api.interfaces.IntegrationCallback;
+import com.disk91.integration.api.interfaces.IntegrationQuery;
+import com.disk91.integration.services.IntegrationService;
 import com.disk91.users.mdb.entities.User;
 import com.disk91.users.mdb.entities.sub.UserAcl;
 import com.disk91.users.services.UsersRolesCache;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +45,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.disk91.groups.integration.GroupActions.GROUPS_ACTION_FLUSH_CACHE_GROUP;
+import static com.disk91.groups.integration.GroupActions.GROUPS_ACTION_FLUSH_CACHE_SHORTID;
 
 @Service
 public class GroupsServices {
@@ -60,6 +70,58 @@ public class GroupsServices {
 
     @Autowired
     protected GroupRepository groupRepository;
+
+    @Autowired
+    protected IntegrationService integrationService;
+
+    // =====================================================================================================
+    // SERVICE INIT
+    // =====================================================================================================
+
+    @PostConstruct
+    public void init() {
+        log.info("[groups] Init service");
+
+        // Init the integration actions
+        try {
+            integrationService.registerCallback(
+                    ModuleCatalog.Modules.GROUPS,
+                    new IntegrationCallback() {
+                        @Override
+                        public void onIntegrationEvent(IntegrationQuery q) {
+                            if ( q.getAction() == GROUPS_ACTION_FLUSH_CACHE_GROUP.ordinal() ) {
+                                String shortid = (String) q.getQuery();
+                                groupsCache.flushGroup(shortid);
+                                // terminate the action
+                                q.setResponse(ActionResult.OK("Group cache flushed")); // fire & forget, success on every actions
+                                q.setResult(null);
+                                q.setState(IntegrationQuery.QueryState.STATE_DONE);
+                                q.setResponse_ts(Now.NanoTime());
+                            } else if ( q.getAction() == GROUPS_ACTION_FLUSH_CACHE_SHORTID.ordinal() ) {
+                                Group g = (Group) q.getQuery();
+                                groupsShortIdCache.flushGroup(g);
+                                // terminate the action
+                                q.setResponse(ActionResult.OK("Group hierarchy cache flushed")); // fire & forget, success on every actions
+                                q.setResult(null);
+                                q.setState(IntegrationQuery.QueryState.STATE_DONE);
+                                q.setResponse_ts(Now.NanoTime());
+                            } else {
+                                log.error("[groups] Receiving a unknown message from integration");
+                                // terminate the action
+                                q.setResponse(ActionResult.BADREQUEST("groups-integration-unknown-action"));
+                                q.setResult(null);
+                                q.setState(IntegrationQuery.QueryState.STATE_ERROR);
+                                q.setResponse_ts(Now.NanoTime());
+                            }
+                        }
+                    }
+            );
+        } catch (ITParseException | ITTooManyException x) {
+            log.error("[users] Failed to register groups integration callback: {}", x.getMessage());
+        }
+
+    }
+
 
     // =====================================================================================================
     // CACHES INTERACTIONS

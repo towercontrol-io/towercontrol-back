@@ -19,10 +19,15 @@
  */
 package com.disk91.users.services;
 
+import com.disk91.common.config.CommonConfig;
+import com.disk91.common.config.ModuleCatalog;
 import com.disk91.common.tools.ClonableString;
 import com.disk91.common.tools.Now;
 import com.disk91.common.tools.ObjectCache;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
+import com.disk91.common.tools.exceptions.ITOverQuotaException;
+import com.disk91.integration.api.interfaces.IntegrationQuery;
+import com.disk91.integration.services.IntegrationService;
 import com.disk91.users.config.UsersConfig;
 import com.disk91.users.mdb.entities.User;
 import com.disk91.users.mdb.repositories.UserRepository;
@@ -38,6 +43,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.util.List;
+
+import static com.disk91.users.integration.UsersActions.USERS_ACTION_FLUSH_CACHE_APIKEY;
+import static com.disk91.users.integration.UsersActions.USERS_ACTION_FLUSH_CACHE_USERS;
 
 @Service
 public class UserCache {
@@ -58,6 +66,11 @@ public class UserCache {
     @Autowired
     protected MeterRegistry meterRegistry;
 
+    @Autowired
+    protected CommonConfig commonConfig;
+
+    @Autowired
+    protected IntegrationService integrationService;
 
     // ================================================================================================================
     // USER CACHE SERVICE
@@ -153,6 +166,18 @@ public class UserCache {
         if ( this.serviceEnable && usersConfig.getUsersCacheMaxSize() > 0 ) {
             this.userCache.remove(userLogin,false);
         }
+
+        // Broadcast other instances to flush their cache for this device
+        IntegrationQuery iq = new IntegrationQuery(ModuleCatalog.Modules.USERS, commonConfig.getInstanceId());
+        iq.setServiceNameDest(ModuleCatalog.Modules.USERS);
+        iq.setType(IntegrationQuery.QueryType.TYPE_BROADCAST);
+        iq.setAction(USERS_ACTION_FLUSH_CACHE_USERS.ordinal());
+        iq.setQuery(userLogin);
+        iq.setRoute(IntegrationQuery.getRoutefromRouteString(usersConfig.getUsersIntracomMedium()));
+        try {
+            integrationService.processQuery(iq);
+        } catch (ITOverQuotaException ignored) {}
+
     }
 
     /**
@@ -165,7 +190,6 @@ public class UserCache {
          this.flushUser(u.getLogin());
     }
 
-    // @TODO - manage the broadcast request for user flush and scan for flush trigger on each of the instances
 
 
     // ================================================================================================================
@@ -265,6 +289,16 @@ public class UserCache {
         if ( this.serviceApiEnable && usersConfig.getUsersCacheApiKeyMaxSize() > 0 ) {
             this.userApiCache.remove(apiKey,false);
         }
+        // Broadcast other instances to flush their cache for this device
+        IntegrationQuery iq = new IntegrationQuery(ModuleCatalog.Modules.USERS, commonConfig.getInstanceId());
+        iq.setServiceNameDest(ModuleCatalog.Modules.USERS);
+        iq.setType(IntegrationQuery.QueryType.TYPE_BROADCAST);
+        iq.setAction(USERS_ACTION_FLUSH_CACHE_APIKEY.ordinal());
+        iq.setQuery(apiKey);
+        iq.setRoute(IntegrationQuery.getRoutefromRouteString(usersConfig.getUsersIntracomMedium()));
+        try {
+            integrationService.processQuery(iq);
+        } catch (ITOverQuotaException ignored) {}
     }
 
 

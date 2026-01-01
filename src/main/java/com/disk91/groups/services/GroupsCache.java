@@ -19,12 +19,17 @@
  */
 package com.disk91.groups.services;
 
+import com.disk91.common.config.CommonConfig;
+import com.disk91.common.config.ModuleCatalog;
 import com.disk91.common.tools.Now;
 import com.disk91.common.tools.ObjectCache;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
+import com.disk91.common.tools.exceptions.ITOverQuotaException;
 import com.disk91.groups.config.GroupsConfig;
 import com.disk91.groups.mdb.entities.Group;
 import com.disk91.groups.mdb.repositories.GroupRepository;
+import com.disk91.integration.api.interfaces.IntegrationQuery;
+import com.disk91.integration.services.IntegrationService;
 import com.disk91.users.mdb.entities.User;
 import com.disk91.users.services.UserCache;
 import io.micrometer.core.instrument.Gauge;
@@ -40,6 +45,8 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.disk91.groups.integration.GroupActions.GROUPS_ACTION_FLUSH_CACHE_GROUP;
 
 @Service
 public class GroupsCache {
@@ -62,7 +69,12 @@ public class GroupsCache {
 
     @Autowired
     protected UserCache userCache;
-    
+
+    @Autowired
+    protected CommonConfig commonConfig;
+
+    @Autowired
+    protected IntegrationService integrationService;
 
     // ================================================================================================================
     // CACHE SERVICE
@@ -198,6 +210,18 @@ public class GroupsCache {
         if ( this.serviceEnable && groupsConfig.getGroupsCacheMaxSize() > 0 ) {
             this.groupCache.remove(shortId,false);
         }
+
+        // Broadcast other instances to flush their cache for this device
+        IntegrationQuery iq = new IntegrationQuery(ModuleCatalog.Modules.GROUPS, commonConfig.getInstanceId());
+        iq.setServiceNameDest(ModuleCatalog.Modules.GROUPS);
+        iq.setType(IntegrationQuery.QueryType.TYPE_BROADCAST);
+        iq.setAction(GROUPS_ACTION_FLUSH_CACHE_GROUP.ordinal());
+        iq.setQuery(shortId);
+        iq.setRoute(IntegrationQuery.getRoutefromRouteString(groupsConfig.getGroupsIntracomMedium()));
+        try {
+            integrationService.processQuery(iq);
+        } catch (ITOverQuotaException ignored) {}
+
     }
 
 }

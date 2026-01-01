@@ -19,11 +19,18 @@
  */
 package com.disk91.users.services;
 
+import com.disk91.common.api.interfaces.ActionResult;
 import com.disk91.common.config.CommonConfig;
+import com.disk91.common.config.ModuleCatalog;
 import com.disk91.common.pdb.entities.Param;
 import com.disk91.common.pdb.repositories.ParamRepository;
 import com.disk91.common.tools.HexCodingTools;
+import com.disk91.common.tools.Now;
 import com.disk91.common.tools.exceptions.ITParseException;
+import com.disk91.common.tools.exceptions.ITTooManyException;
+import com.disk91.integration.api.interfaces.IntegrationCallback;
+import com.disk91.integration.api.interfaces.IntegrationQuery;
+import com.disk91.integration.services.IntegrationService;
 import com.disk91.users.config.UsersConfig;
 import com.disk91.users.mdb.entities.User;
 import jakarta.annotation.PostConstruct;
@@ -37,6 +44,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.function.Predicate;
+
+import static com.disk91.users.integration.UsersActions.USERS_ACTION_FLUSH_CACHE_APIKEY;
+import static com.disk91.users.integration.UsersActions.USERS_ACTION_FLUSH_CACHE_USERS;
 
 @Service
 public class UsersInit {
@@ -54,9 +64,15 @@ public class UsersInit {
     @Autowired
     protected ParamRepository paramRepository;
 
+    @Autowired
+    protected IntegrationService integrationService;
+
+    @Autowired
+    protected UserCache userCache;
+
     @PostConstruct
     public void init() {
-        log.debug("[users] Init");
+        log.info("[users] Init Service");
 
         // Ensure the encryption keys are correctly set
         byte[] serverKey = HexCodingTools.getByteArrayFromHexString(commonConfig.getEncryptionKey());
@@ -136,6 +152,44 @@ public class UsersInit {
                     log.error("[users] [migration] [Mongo] Database schema version is unknown, something is wrong !");
                     break;
             }
+        }
+
+        // Init the integration actions
+        try {
+            integrationService.registerCallback(
+                    ModuleCatalog.Modules.USERS,
+                    new IntegrationCallback() {
+                        @Override
+                        public void onIntegrationEvent(IntegrationQuery q) {
+                            if ( q.getAction() == USERS_ACTION_FLUSH_CACHE_USERS.ordinal() ) {
+                                String userId = (String) q.getQuery();
+                                userCache.flushUser(userId);
+                                // terminate the action
+                                q.setResponse(ActionResult.OK("User cache flushed")); // fire & forget, success on every actions
+                                q.setResult(null);
+                                q.setState(IntegrationQuery.QueryState.STATE_DONE);
+                                q.setResponse_ts(Now.NanoTime());
+                            } else if ( q.getAction() == USERS_ACTION_FLUSH_CACHE_APIKEY.ordinal() ) {
+                                String apikeyId = (String) q.getQuery();
+                                userCache.flushApiKey(apikeyId);
+                                // terminate the action
+                                q.setResponse(ActionResult.OK("Apikey cache flushed")); // fire & forget, success on every actions
+                                q.setResult(null);
+                                q.setState(IntegrationQuery.QueryState.STATE_DONE);
+                                q.setResponse_ts(Now.NanoTime());
+                            } else {
+                                log.error("[users] Receiving a unknown message from integration");
+                                // terminate the action
+                                q.setResponse(ActionResult.BADREQUEST("users-integration-unknown-action"));
+                                q.setResult(null);
+                                q.setState(IntegrationQuery.QueryState.STATE_ERROR);
+                                q.setResponse_ts(Now.NanoTime());
+                            }
+                        }
+                    }
+            );
+        } catch (ITParseException | ITTooManyException x) {
+            log.error("[users] Failed to register users integration callback: {}", x.getMessage());
         }
 
     }

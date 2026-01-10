@@ -1101,7 +1101,7 @@ public class UserProfileService {
 
             // Proceed to change
             for ( String r : rolesToAdd ) {
-                _user.getRoles().add(r);
+                _user.addRole(r);
             }
             for ( String r : rolesToRemove ) {
                 _user.getRoles().remove(r);
@@ -1367,7 +1367,7 @@ public class UserProfileService {
                                 || _requestor.isInRole(UsersRolesCache.StandardRoles.ROLE_GOD_ADMIN)                            // or is GOD_ADMIN
                         ) {
                             if (_requestor.isInRole(add) || _requestor.isInRole(UsersRolesCache.StandardRoles.ROLE_GOD_ADMIN)) {
-                                userAcl.getRoles().add(add);
+                                userAcl.addRole(add);
                                 changeMade = true;
                                 auditIntegration.auditLog(
                                         ModuleCatalog.Modules.USERS,

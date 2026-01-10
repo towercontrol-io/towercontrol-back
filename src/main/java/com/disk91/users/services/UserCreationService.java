@@ -217,11 +217,11 @@ public class UserCreationService {
         u.setEncTwoFASecret("");
         u.setCustomFields(new ArrayList<>());
 
-        u.getRoles().add(UsersRolesCache.StandardRoles.ROLE_PENDING_USER.getRoleName());
+        u.addRole(UsersRolesCache.StandardRoles.ROLE_PENDING_USER);
 
         // will depend on config / condition validation
         if ( usersConfig.isUsersPendingAutoValidation() ) {
-            u.getRoles().add(UsersRolesCache.StandardRoles.ROLE_REGISTERED_USER.getRoleName());
+            u.addRole(UsersRolesCache.StandardRoles.ROLE_REGISTERED_USER);
             u.setActive(true);
         }
 
@@ -238,7 +238,7 @@ public class UserCreationService {
 
         List<Role> roles = userGroupRolesService.getInvitationCodeRoles(registrationCode);
         for ( Role r : roles ) {
-            u.getRoles().add(r.getName());
+            u.addRole(r.getName());
         }
 
         // User is ready

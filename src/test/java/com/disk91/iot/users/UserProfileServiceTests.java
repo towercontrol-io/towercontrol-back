@@ -101,7 +101,7 @@ public class UserProfileServiceTests {
             johnDoe.setEncProfileFirstName("john");
             johnDoe.setEncProfileLastName("doe");
             johnDoe.setLanguage("en");
-            johnDoe.getRoles().add(UsersRolesCache.StandardRoles.ROLE_REGISTERED_USER.getRoleName());
+            johnDoe.addRole(UsersRolesCache.StandardRoles.ROLE_REGISTERED_USER);
 
             admin = new User();
             admin.setKeys(testKey, testKey);
@@ -112,8 +112,8 @@ public class UserProfileServiceTests {
             admin.setActive(true);
             admin.setApiAccount(false);
             admin.setConditionValidation(true);
-            admin.getRoles().add(UsersRolesCache.StandardRoles.ROLE_REGISTERED_USER.getRoleName());
-            admin.getRoles().add(UsersRolesCache.StandardRoles.ROLE_GOD_ADMIN.getRoleName());
+            admin.addRole(UsersRolesCache.StandardRoles.ROLE_REGISTERED_USER);
+            admin.addRole(UsersRolesCache.StandardRoles.ROLE_GOD_ADMIN);
 
             aliceBob = new User();
             aliceBob.setKeys(testKey, testKey);
@@ -124,7 +124,7 @@ public class UserProfileServiceTests {
             aliceBob.setActive(true);
             aliceBob.setApiAccount(false);
             aliceBob.setConditionValidation(true);
-            aliceBob.getRoles().add(UsersRolesCache.StandardRoles.ROLE_REGISTERED_USER.getRoleName());
+            aliceBob.addRole(UsersRolesCache.StandardRoles.ROLE_REGISTERED_USER);
 
         });
     }

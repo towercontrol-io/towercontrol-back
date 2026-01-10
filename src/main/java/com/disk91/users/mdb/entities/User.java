@@ -1077,6 +1077,12 @@ public class User implements CloneableObject<User> {
         if ( ! this.isInRole(role) ) this.roles.add(role.getRoleName());
     }
 
+    /** Same with String interface */
+    public void addRole(String roleName) {
+        if ( this.roles == null ) this.roles = new ArrayList<>();
+        if ( ! this.isInRole(roleName) ) this.roles.add(roleName);
+    }
+
 
     // ========== CLONEABLE INTERFACE ==========
 

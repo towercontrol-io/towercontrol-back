@@ -52,6 +52,11 @@ public class UserAcl implements CloneableObject<UserAcl> {
         return isInRole(role.getRoleName());
     }
 
+    public void addRole(String role) {
+        if ( this.roles == null ) this.roles = new ArrayList<>();
+        if ( !isInRole(role) ) this.roles.add(role);
+    }
+
     // === CLONE ===
 
     public UserAcl clone() {

@@ -183,7 +183,7 @@ public class UserApiTokenService {
                                if ( ! _user.isInRole(r) ) {
                                    throw new ITRightException("user-profile-unauthorize-role");
                                }
-                               newAcl.getRoles().add(r);
+                               newAcl.addRole(r);
                            }
                            allowedAcls.add(newAcl);
                        } else {
@@ -211,7 +211,7 @@ public class UserApiTokenService {
                                    for ( String ar : requestorAcl.getRoles() ) {
                                        if ( ar.compareTo(r) == 0 ) {
                                            // role found, we can add it
-                                           newAcl.getRoles().add(r);
+                                           newAcl.addRole(r);
                                            break;
                                        }
                                    } // else skip it

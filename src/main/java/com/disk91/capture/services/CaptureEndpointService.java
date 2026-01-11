@@ -21,6 +21,8 @@ package com.disk91.capture.services;
 
 import com.disk91.audit.integration.AuditIntegration;
 import com.disk91.capture.api.interfaces.CaptureEndpointCreationBody;
+import com.disk91.capture.api.interfaces.CaptureEndpointResponseItf;
+import com.disk91.capture.api.interfaces.CaptureProtocolResponseItf;
 import com.disk91.capture.config.ActionCatalog;
 import com.disk91.capture.config.CaptureConfig;
 import com.disk91.capture.mdb.entities.CaptureEndpoint;
@@ -37,6 +39,7 @@ import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITRightException;
 import com.disk91.users.mdb.entities.User;
 import com.disk91.users.services.UserCommon;
+import com.disk91.users.services.UsersRolesCache;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +47,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class CaptureEndpointService {
@@ -64,6 +68,52 @@ public class CaptureEndpointService {
 
     @Autowired
     protected CaptureConfig captureConfig;
+
+    // =====================================================================================================
+    // FRONT-END API / Protocol List
+    // =====================================================================================================
+
+    public List<CaptureProtocolResponseItf> listProtocols() {
+
+        ArrayList<CaptureProtocolResponseItf> ret = new ArrayList<>();
+        for ( Protocols p : captureProtocolsCache.getProtocols() ) {
+            ret.add( CaptureProtocolResponseItf.createFromProtocol(p) );
+        }
+
+        return ret;
+    }
+
+    // =====================================================================================================
+    // FRONT-END API / Endpoint List
+    // =====================================================================================================
+
+    public List<CaptureEndpointResponseItf> listEndpoints(
+            String userLogin
+    ) throws ITRightException {
+        try {
+            User u = userCommon.getUser(userLogin);
+            ArrayList<CaptureEndpointResponseItf> ret = new ArrayList<>();
+            if ( u.isInRole(UsersRolesCache.StandardRoles.ROLE_GOD_ADMIN) ) {
+                // list all
+                List<CaptureEndpoint> all = captureEndpointRepository.findAllCaptureEndpointByOrderByCreationMsDesc();
+                for ( CaptureEndpoint endp : all ) {
+                    // convert to response
+                    ret.add( CaptureEndpointResponseItf.fromCaptureEndpoint(endp) );
+                }
+            } else {
+                // list only own
+                List<CaptureEndpoint> my = captureEndpointRepository.findCaptureEndpointByOwnerOrderByCreationMsDesc(u.getLogin());
+                for ( CaptureEndpoint endp : my ) {
+                    // convert to response
+                    ret.add( CaptureEndpointResponseItf.fromCaptureEndpoint(endp) );
+                }
+            }
+            return ret;
+        } catch (ITNotFoundException x) {
+            log.warn("[capture] User not found when listing capture endpoints: {}", userLogin);
+            throw new ITRightException("capture-endpoint-list-user-not-authorized");
+        }
+    }
 
     // =====================================================================================================
     // FRONT-END API / Endpoint Creation

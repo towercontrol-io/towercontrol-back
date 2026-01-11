@@ -24,12 +24,18 @@ import com.disk91.capture.mdb.entities.Protocols;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface CaptureEndpointRepository extends MongoRepository<CaptureEndpoint,String> {
 
     CaptureEndpoint findOneByRef(String ref);
 
     CaptureEndpoint findFirstByName(String name);
+
+    List<CaptureEndpoint> findCaptureEndpointByOwnerOrderByCreationMsDesc(String owner);
+
+    List<CaptureEndpoint> findAllCaptureEndpointByOrderByCreationMsDesc();
 
 }
 

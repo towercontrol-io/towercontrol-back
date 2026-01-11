@@ -17,92 +17,114 @@
  *    WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  *    IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package com.disk91.capture.mdb.entities;
+package com.disk91.capture.api.interfaces;
 
+import com.disk91.capture.mdb.entities.Protocols;
 import com.disk91.capture.mdb.entities.sub.MandatoryField;
-import com.disk91.common.tools.CloneableObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.annotation.Transient;
-import org.springframework.data.mongodb.core.mapping.Document;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Document(collection = "capture_protocols")
-public class Protocols implements CloneableObject<Protocols> {
+@Tag(name = "Capture Protocols", description = "Capture protocols definition")
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class CaptureProtocolResponseItf {
 
-    @Transient
-    private final Logger log = LoggerFactory.getLogger(this.getClass());
-
-    @Id
+    @Schema(
+            description = "protocol unique identifier",
+            example = "",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
     private String id;
 
     // Protocol definition version, this allows to detect if related to an evolution of the protocol capabilities we
     // need to update the related capture points or device profiles... with, as an example some new mandatory fields.
+    @Schema(
+            description = "Protocol version",
+            example = "1",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
     protected int version;
 
     // Protocol family is the higher layer protocol name (eg: LORAWAN, SIGFOX, etc)
     // it is a slug that can be used in i18n on front-end (eg: protocol-lorawan)
+    @Schema(
+            description = "Protocol family",
+            example = "protocol-lorawan",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
     protected String protocolFamily;
 
     // Type is a sub-definition of the protocol, related to the service provider in general
     // ex for LORAWAN it can be HELIUM, THE THINGS NETWORK, ORANGE, ACTILITY, etc
     // it usually defines the payload format to use.
     // The format is a slug as well (eg: protocol-type-helium)
+    @Schema(
+            description = "Protocol type",
+            example = "protocol-type-helium",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
     protected String protocolType;
 
     // Version is the protocol version from time to time evolution of the frame format
     // eg for Helium it can be legacy, chirpstack v4, later v5 ...
     // The format is a slug as well (eg: protocol-version-legacy)
+    @Schema(
+            description = "Protocol type stack version",
+            example = "protocol-version-legacy",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
     protected String protocolVersion;
 
     // Description is a slug description of the protocol definition, so it can be i18n translated on front-end
     // this is more for sharing different information than the protocol hierarchy defined above.
+    @Schema(
+            description = "Protocol slug description",
+            example = "protocol-slug...",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
     protected String description;
 
     // Human-readable English description (short) for non i18n usage
+    @Schema(
+            description = "Protocol plaintext English description",
+            example = "LoRaWAN Helium legacy protocol",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
     protected String enDescription;
 
-    // Mandatory fields
 
-    // Processing class name is the full qualified java class name that will process the payload
-    // That way, new protocol processing can be added just by adding new classes implementing the processing interface
-    // This interface is able to process the authentication verification and the payload decoding and conversion to
-    // pivot object.
-    protected String processingClassName;
-
-    // login of the user who created the protocol entry (even if most of the time it will system)
-    protected String creationBy;
-
-    // creation date in MS since epoch
-    protected long creationMs;
-
+    @Schema(
+            description = "Definition of the mandatory fields to setup a capture endpoint with this protocol",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
     protected List<MandatoryField> mandatoryFields;
 
     // This indicates the default value for wide open when creating a capture endpoint with this protocol
+    @Schema(
+            description = "This protocol is wide open by default (no ownership right required to send data)",
+            example = "false",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
     protected boolean defaultWideOpen;
 
     // --------------------------------
 
-    @Override
-    public Protocols clone() {
-        Protocols p = new Protocols();
-        p.setId(this.id);
-        p.setVersion(this.version);
-        p.setProtocolFamily(this.protocolFamily);
-        p.setProtocolType(this.protocolType);
-        p.setProtocolVersion(this.protocolVersion);
-        p.setProcessingClassName(this.processingClassName);
-        p.setCreationBy(this.creationBy);
-        p.setCreationMs(this.creationMs);
-        p.setDescription(this.description);
-        p.setEnDescription(this.enDescription);
-        p.setDefaultWideOpen(this.defaultWideOpen);
+    public static CaptureProtocolResponseItf createFromProtocol(Protocols pr) {
+        CaptureProtocolResponseItf p = new CaptureProtocolResponseItf();
+        p.setId(pr.getId());
+        p.setVersion(pr.getVersion());
+        p.setProtocolFamily(pr.getProtocolFamily());
+        p.setProtocolType(pr.getProtocolType());
+        p.setProtocolVersion(pr.getProtocolVersion());
+        p.setDescription(pr.getDescription());
+        p.setEnDescription(pr.getEnDescription());
+        p.setDefaultWideOpen(pr.isDefaultWideOpen());
         p.setMandatoryFields(new ArrayList<>());
-        if ( this.mandatoryFields != null ) {
-            for ( MandatoryField mf : this.mandatoryFields ) {
+        if ( pr.getMandatoryFields() != null ) {
+            for ( MandatoryField mf : pr.getMandatoryFields() ) {
                 p.getMandatoryFields().add( mf.clone() );
             }
         }
@@ -111,12 +133,21 @@ public class Protocols implements CloneableObject<Protocols> {
 
     // --------------------------------
 
+
     public String getId() {
         return id;
     }
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public int getVersion() {
+        return version;
+    }
+
+    public void setVersion(int version) {
+        this.version = version;
     }
 
     public String getProtocolFamily() {
@@ -143,30 +174,6 @@ public class Protocols implements CloneableObject<Protocols> {
         this.protocolVersion = protocolVersion;
     }
 
-    public String getProcessingClassName() {
-        return processingClassName;
-    }
-
-    public void setProcessingClassName(String processingClassName) {
-        this.processingClassName = processingClassName;
-    }
-
-    public String getCreationBy() {
-        return creationBy;
-    }
-
-    public void setCreationBy(String creationBy) {
-        this.creationBy = creationBy;
-    }
-
-    public long getCreationMs() {
-        return creationMs;
-    }
-
-    public void setCreationMs(long creationMs) {
-        this.creationMs = creationMs;
-    }
-
     public String getDescription() {
         return description;
     }
@@ -181,14 +188,6 @@ public class Protocols implements CloneableObject<Protocols> {
 
     public void setEnDescription(String enDescription) {
         this.enDescription = enDescription;
-    }
-
-    public int getVersion() {
-        return version;
-    }
-
-    public void setVersion(int version) {
-        this.version = version;
     }
 
     public List<MandatoryField> getMandatoryFields() {

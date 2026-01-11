@@ -86,7 +86,7 @@ public class CaptureEndpoint implements CloneableObject<CaptureEndpoint> {
     protected long totalBadPayloadFormat = 0L;
     // Total frames rejected due to device right exception
     protected long totalBadDeviceRight = 0L;
-    // Total frames in Driver
+    // Total frames in the different raw -> pivot Driver
     protected long totalInDriver = 0L;
     // Total frames queued to be processed
     protected long totalQueuedToProcess = 0L;

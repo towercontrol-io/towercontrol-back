@@ -26,6 +26,7 @@ import com.disk91.common.api.interfaces.ActionResult;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITRightException;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -88,5 +89,49 @@ public class ApiCaptureCrud {
             return new ResponseEntity<>(ActionResult.BADREQUEST(e.getMessage()), HttpStatus.BAD_REQUEST);
         }
     }
+
+    /**
+     * Delete One of the Capture Endpoint for a given user
+     *
+     * This endpoint allows to delete one capture endpoint for user API key list
+     *
+     * This endpoint requires to have a completed signup process and must not be an API.
+     */
+    @Operation(
+            summary = "Delete One of the Capture Endpoint for a given user",
+            description = "This endpoint allows to delete one capture endpoint for user. Endpoint Ref used as a key" +
+                    " Users must have ROLE_LOGIN_COMPLETE and own the endpoint",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Capture endpoint deleted", content = @Content(schema = @Schema(implementation = ActionResult.class))),
+                    @ApiResponse(responseCode = "400", description = "Failed to delete endpoint", content = @Content(schema = @Schema(implementation = ActionResult.class))),
+                    @ApiResponse(responseCode = "403", description = "Not Authorized", content = @Content(schema = @Schema(implementation = ActionResult.class)))
+            }
+    )
+    @RequestMapping(
+            value = "/{keyId}/",
+            produces = "application/json",
+            method = RequestMethod.DELETE
+    )
+    @PreAuthorize("hasRole('ROLE_LOGIN_COMPLETE')")
+    // ----------------------------------------------------------------------
+    public ResponseEntity<?> deleteCaptureEndpoint(
+            HttpServletRequest request,
+            @Parameter(required = true, name = "keyId", description = "key identifier to delete")
+            @PathVariable String keyId
+    ) {
+        try {
+            captureEndpointService.deleteCaptureEndpoint(
+                    request,
+                    request.getUserPrincipal().getName(),
+                    keyId
+            );
+            return new ResponseEntity<>(ActionResult.OK("capture-endpoint-delete-success"), HttpStatus.OK);
+        } catch (ITParseException e) {
+            return new ResponseEntity<>(ActionResult.BADREQUEST(e.getMessage()), HttpStatus.BAD_REQUEST);
+        } catch (ITRightException e) {
+            return new ResponseEntity<>(ActionResult.FORBIDDEN(e.getMessage()), HttpStatus.FORBIDDEN);
+        }
+    }
+
 
 }

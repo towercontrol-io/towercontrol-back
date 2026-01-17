@@ -6,6 +6,7 @@ public class ActionCatalog {
         INGEST_QUEUE_FULL,
         INGEST_SERVICE_RESTORED,
         CREATE,
+        DELETE,
 
         UNKNOWN
     }
@@ -20,6 +21,8 @@ public class ActionCatalog {
                 return "ingest_service_restored";
             case CREATE:
                 return "create";
+            case DELETE:
+                return "delete";
             case UNKNOWN:
             default:
                 return "unknown";

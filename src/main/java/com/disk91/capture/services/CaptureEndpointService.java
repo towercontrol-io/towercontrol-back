@@ -38,6 +38,7 @@ import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITRightException;
 import com.disk91.users.mdb.entities.User;
+import com.disk91.users.services.UserCache;
 import com.disk91.users.services.UserCommon;
 import com.disk91.users.services.UsersRolesCache;
 import jakarta.servlet.http.HttpServletRequest;
@@ -64,10 +65,16 @@ public class CaptureEndpointService {
     protected CaptureProtocolsCache captureProtocolsCache;
 
     @Autowired
+    protected CaptureEndpointCache captureEndpointCache;
+
+    @Autowired
     protected CaptureEndpointRepository captureEndpointRepository;
 
     @Autowired
     protected CaptureConfig captureConfig;
+
+    @Autowired
+    protected UserCache userCache;
 
     // =====================================================================================================
     // FRONT-END API / Protocol List
@@ -114,6 +121,51 @@ public class CaptureEndpointService {
             throw new ITRightException("capture-endpoint-list-user-not-authorized");
         }
     }
+
+    // =====================================================================================================
+    // FRONT-END API / Endpoint Delete
+    // =====================================================================================================
+
+    public void deleteCaptureEndpoint(
+            HttpServletRequest request,
+            String requestorId,
+            String endpointId
+    ) throws ITParseException, ITRightException {
+
+        if (requestorId == null || requestorId.isEmpty()) {
+            throw new ITParseException("user-profile-login-invalid");
+        }
+
+        try {
+            User _requestor = userCache.getUser(requestorId);
+            try {
+                CaptureEndpoint e = captureEndpointCache.getCaptureEndpoint(endpointId);
+                if ( e.getOwner().compareTo(_requestor.getLogin()) == 0 || _requestor.isInRole(UsersRolesCache.StandardRoles.ROLE_GOD_ADMIN) ) {
+                    // authorized to delete
+                    captureEndpointRepository.delete(e);
+
+                    // Add audit trace
+                    auditIntegration.auditLog(
+                            ModuleCatalog.Modules.CAPTURE,
+                            ActionCatalog.getActionName(ActionCatalog.Actions.DELETE),
+                            _requestor.getLogin(),
+                            "Capture endpoint deletion from {0} requested by {1} for user {2} with ref {3}",
+                            new String[]{Tools.getRemoteIp(request), _requestor.getLogin(), e.getOwner(), e.getRef()}
+                    );
+                } else {
+                    log.warn("[capture] Requestor {} is not allowed to delete endpoint {}", requestorId, endpointId);
+                    throw new ITRightException("capture-endpoint-delete-no-rights");
+                }
+
+            } catch ( ITNotFoundException x ) {
+                throw new ITParseException("capture-endpoint-not-found");
+            }
+        } catch (ITNotFoundException x) {
+            log.error("[capture] Requestor {} not found", requestorId);
+            throw new ITRightException("user-profile-user-not-found");
+        }
+    }
+
 
     // =====================================================================================================
     // FRONT-END API / Endpoint Creation

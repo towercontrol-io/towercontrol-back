@@ -145,7 +145,7 @@ public class CaptureEndpointCache {
     /**
      * Get the capture endpoint from the cache or from the database if not in cache
      * No Object clone as we want to manage counters globally
-     * @param id - id to be retrieved
+     * @param id - id to be retrieved (REF Field)
      * @return the object
      * @throws ITNotFoundException if not found
      */

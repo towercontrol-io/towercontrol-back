@@ -70,14 +70,32 @@ public class CaptureProtocolsCache {
     @Autowired
     protected CaptureConfig captureConfig;
 
+    // ---- Large exemple of platform protocols definition ----
+    /*
+        "{'id':'system-lorawan-helium-legacy', 'version':1, " +
+          "'protocolFamily':'protocol-lorawan', 'protocolType':'protocol-helium', 'protocolVersion':'protocol-version-legacy', 'description':'lorawan-helium-legacy','enDescription':'Helium legacy', " +
+          "'processingClassName':'com.disk91.capture.drivers.standard.LoraWanHeliumChirpstackV4Driver', 'creationBy':'system', 'creationMs':0, 'defaultWideOpen':false, " +
+          "'mandatoryFields':[ " +
+            "{ 'name':'protocol-server-api-endpoint', 'valueType':'string,^https?://', 'description':'protocol-lorawan-helium-chirp-v4-api-endpoint', 'enDescription': 'Helium Chirpstack Api Endpoint'}," +
+            "{ 'name':'protocol-param-bool', 'valueType':'boolean', 'description':'protocol-lorawan-helium-chirp-v4-bool', 'enDescription': 'Helium Boolean Api Endpoint'}," +
+            "{ 'name':'protocol-param-enum', 'valueType':'enum[v1|v2|v3|v4]', 'description':'protocol-lorawan-helium-chirp-v4-apienum', 'enDescription': 'Enum single'}," +
+            "{ 'name':'protocol-param-enum-mul', 'valueType':'enum[v1|v2|v3|v4],multiple', 'description':'protocol-lorawan-helium-chirp-v4-enum-multt', 'enDescription': 'Enum multiple'}," +
+            "{ 'name':'protocol-param-number', 'valueType':'number', 'description':'protocol-lorawan-helium-chirp-v4-number', 'enDescription': 'Helium Chirpstack Number'}," +
+            "{ 'name':'protocol-param-number-limit', 'valueType':'number,5,20', 'description':'protocol-lorawan-helium-chirp-v4-number-limit', 'enDescription': 'Helium Chirpstack Number Limit'}," +
+            "{ 'name':'protocol-param-number-decimal', 'valueType':'decimal,-5.1,20.4', 'description':'protocol-lorawan-helium-chirp-v4-decimal-limit', 'enDescription': 'Helium Chirpstack Decimal Limit'}," +
+            "{ 'name':'protocol-param-number-date', 'valueType':'date', 'description':'protocol-lorawan-helium-chirp-v4-date', 'enDescription': 'Helium Chirpstack Date'}" +
+          "]" +
+        "}",
+     */
+
 
     // Platform protocols definitions, the database only stores custom protocols
     private final String [] pfProtocols = {
         "{'id':'system-lorawan-helium-chirpstack-v4', 'version':1, " +
-                "'protocolFamily':'protocol-lorawan', 'protocolType':'protocol-helium', 'protocolVersion':'protocol-helium-chirpstack-v4', 'description':'lorawan-helium-chirpstack-v4','enDescription':'Helium running Chirpstack V4', " +
+                "'protocolFamily':'protocol-lorawan', 'protocolType':'protocol-helium', 'protocolVersion':'protocol-version-chirpstack-v4', 'description':'lorawan-helium-chirpstack-v4','enDescription':'Helium running Chirpstack V4', " +
                 "'processingClassName':'com.disk91.capture.drivers.standard.LoraWanHeliumChirpstackV4Driver', 'creationBy':'system', 'creationMs':0, 'defaultWideOpen':false, " +
                 "'mandatoryFields':[ " +
-                  "{ 'name':'protocol-server-api-endpoint', 'valueType':'string,^http[s]://', 'description':'protocol-lorawan-helium-chirp-v4-api-endpoint', 'enDescription': 'Helium Chirpstack Api Endpoint'}" +
+                  "{ 'name':'protocol-server-api-endpoint', 'valueType':'string,^https?://', 'description':'protocol-lorawan-helium-chirp-v4-api-endpoint', 'enDescription': 'Helium Chirpstack Api Endpoint'}" +
                 "]" +
         "}",
     };

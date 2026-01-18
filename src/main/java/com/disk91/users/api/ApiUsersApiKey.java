@@ -59,7 +59,7 @@ public class ApiUsersApiKey {
     /**
      * Create a new API Key for a given user
      *
-     * This endpoints allows a user to create an apikey attached to his account. This apikey can reduce the user permissions
+     * This endpoint allows a user to create an apikey attached to his account. This apikey can reduce the user permissions
      * and have a longer validity than a standard users session token. It is also untouched by sign out operations and can be revoked
      * separately.
      *

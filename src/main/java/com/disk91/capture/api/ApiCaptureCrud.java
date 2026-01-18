@@ -19,12 +19,15 @@
  */
 package com.disk91.capture.api;
 
+import com.disk91.capture.api.interfaces.CaptureEndpointCreationBody;
 import com.disk91.capture.api.interfaces.CaptureEndpointResponseItf;
 import com.disk91.capture.api.interfaces.CaptureProtocolResponseItf;
 import com.disk91.capture.services.CaptureEndpointService;
 import com.disk91.common.api.interfaces.ActionResult;
+import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITRightException;
+import com.disk91.users.api.interfaces.UserApiTokenCreationBody;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -129,6 +132,52 @@ public class ApiCaptureCrud {
         } catch (ITParseException e) {
             return new ResponseEntity<>(ActionResult.BADREQUEST(e.getMessage()), HttpStatus.BAD_REQUEST);
         } catch (ITRightException e) {
+            return new ResponseEntity<>(ActionResult.FORBIDDEN(e.getMessage()), HttpStatus.FORBIDDEN);
+        }
+    }
+
+
+
+    /**
+     * Create a capture endpoint
+     *
+     * This endpoint allows a user to create a capture endpoint attached to user account. When apikey is used, the endpoint
+     * is associated to the real user.
+     *
+     * This endpoint requires to have a completed signup process and the right to create endpoint ( ROLE_BACKEND_CAPTURE )
+     *
+     */
+    @Operation(
+            summary = "Create a new capture endpoint ",
+            description = "This endpoint allows a user with ROLE_BACKEND_CAPTURE to create a capture endpoint to collect data." +
+                    " Users must have ROLE_LOGIN_COMPLETE, ROLE_USER_APIKEY, when API created, the role with be associated to the " +
+                    " real user behind the API key.",
+            responses = {
+                    @ApiResponse(responseCode = "201", description = "Capture endpoint created", content = @Content(schema = @Schema(implementation = ActionResult.class))),
+                    @ApiResponse(responseCode = "400", description = "Failed to create capture endpoint", content = @Content(schema = @Schema(implementation = ActionResult.class))),
+                    @ApiResponse(responseCode = "403", description = "Failed to create capture endpoint", content = @Content(schema = @Schema(implementation = ActionResult.class)))
+            }
+    )
+    @RequestMapping(
+            value = "",
+            produces = "application/json",
+            method = RequestMethod.POST
+    )
+    @PreAuthorize("hasRole('ROLE_LOGIN_COMPLETE') and hasRole('ROLE_BACKEND_CAPTURE')")
+    // ----------------------------------------------------------------------
+    public ResponseEntity<?> putUserApiKeyCreation(
+            HttpServletRequest request,
+            @RequestBody(required = true) CaptureEndpointCreationBody body
+    ) {
+        try {
+            captureEndpointService.createCaptureEndpoint(
+                    request,
+                    body
+            );
+            return new ResponseEntity<>(ActionResult.CREATED("capture-endpoint-created"), HttpStatus.CREATED);
+        } catch (ITNotFoundException | ITParseException e) {
+            return new ResponseEntity<>(ActionResult.BADREQUEST(e.getMessage()), HttpStatus.BAD_REQUEST);
+        } catch (ITRightException e){
             return new ResponseEntity<>(ActionResult.FORBIDDEN(e.getMessage()), HttpStatus.FORBIDDEN);
         }
     }

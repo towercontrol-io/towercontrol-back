@@ -73,9 +73,6 @@ public class CaptureEndpointService {
     @Autowired
     protected CaptureConfig captureConfig;
 
-    @Autowired
-    protected UserCache userCache;
-
     // =====================================================================================================
     // FRONT-END API / Protocol List
     // =====================================================================================================
@@ -137,7 +134,8 @@ public class CaptureEndpointService {
         }
 
         try {
-            User _requestor = userCache.getUser(requestorId);
+            // get user considering API key
+            User _requestor = userCommon.getUser(requestorId);
             try {
                 CaptureEndpoint e = captureEndpointCache.getCaptureEndpoint(endpointId);
                 if ( e.getOwner().compareTo(_requestor.getLogin()) == 0 || _requestor.isInRole(UsersRolesCache.StandardRoles.ROLE_GOD_ADMIN) ) {

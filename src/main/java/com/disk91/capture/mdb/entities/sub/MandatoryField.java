@@ -34,7 +34,7 @@ public class MandatoryField implements CloneableObject<MandatoryField> {
     // - decimal[,min,max] (eg: decimal,0.0,100.0 or decimal,-50.5,50.5 or decimal,0.0 or decimal)
     // - boolean
     // - date              (eg: date will be stored as EpocMs long value in a String)
-    // - enum(val1|val2|val3)[,multiple] (eg: enum[red|green|blue] enum value are slugs, multiple means several values can be selected, stored as comma separated values)
+    // - enum[val1|val2|val3](,multiple) (eg: enum[red|green|blue] enum value are slugs, multiple means several values can be selected, stored as comma separated values)
     private String valueType;
 
     // slug to describe the purpose of this field, used for i18n

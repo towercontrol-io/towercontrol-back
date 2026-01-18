@@ -141,6 +141,7 @@ public class CaptureEndpointService {
                 if ( e.getOwner().compareTo(_requestor.getLogin()) == 0 || _requestor.isInRole(UsersRolesCache.StandardRoles.ROLE_GOD_ADMIN) ) {
                     // authorized to delete
                     captureEndpointRepository.delete(e);
+                    captureEndpointCache.flushCaptureEndpoint(e.getRef());
 
                     // Add audit trace
                     auditIntegration.auditLog(

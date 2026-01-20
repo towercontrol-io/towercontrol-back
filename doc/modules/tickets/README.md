@@ -1,5 +1,8 @@
 ## Tickets module
 
+Ticket management module handles support interactions with users. This modules is part of the Non Community Edition 
+'NCE' of the platform.
+
 ### Purpose
 
 The tickets management module handles support interactions with users:
@@ -21,8 +24,22 @@ can be rewritten) and the answer given, which can be enriched with parts not vis
 This data can be exported in Markdown format to form a knowledge base for an LLM enabling automatic answer generation 
 and the construction of FAQs or suggested replies while the user is typing their question.
 
-Personal data will be marked `<` element to hide `>` in the markdown to be removed from the knowledge base exported. 
+Personal data will be marked `%` element to hide `%` in the markdown to be removed from the knowledge base exported. 
 Ticket reviewer will care about it.
+
+### Anonymous Tickets
+
+The module also supports the creation of anonymous tickets which can be created, for example, via contact forms.
+In this case, the model is special because there is no user account and we are required to keep the user's email address
+to reply to them. In that case, the `login` field will be used to store the interlocutor's email and it must be encrypted.
+In the `login` field, we will then find a prefix `email_` followed by the encrypted email.
+
+### Ticket responses
+
+It must be possible for a user to reply to tickets easily via a direct link that does not require being logged in. This
+link must be limited to a single reply and be time‑limited. This way it is possible to consult and reply from the
+notification email without being logged in. This must apply only to the ticket author. The responding administrator
+must be logged in.
 
 #### Ticket data model
 
@@ -32,6 +49,7 @@ The data is stored in two main tables in postgresql:
     ```json
     {
       "id" : String,                                 // Unique ticket identifier
+      "ticketId" : int,                              // Easier Id for user to track ticket in list
       "userLogin" : String,                          // Login of the user creating the ticket
       "creationMs" : Long,                           // Creation timestamp in milliseconds
       "closedMs" : Long,                             // Closing timestamp in milliseconds
@@ -44,6 +62,8 @@ The data is stored in two main tables in postgresql:
                                                      // For later used
       "priority" : Enum,                             // Ticket priority (low, medium, high, urgent)
       "assignedTo" : String                          // Login of the support manager assigned to the ticket
+      "directAccessToken" : String,                  // Token allowing direct access to the ticket for the user (reply without login)
+      "directAccessExpiryMs" : Long                  // Expiry timestamp for the direct access token
     }
     ```
 
@@ -59,3 +79,11 @@ The data is stored in two main tables in postgresql:
       "llmDescription" : String                      // Description for LLM knowledge base (rewritten content) (Md)
     }
     ```
+  
+## Behavior
+
+When a ticket is created, a message is sent to the user responsible for handling it. This is a unique email account 
+that will be configured in the properties file via `tickets.manager.email`. If it is empty, no email will be sent and 
+open tickets are accessible in the interface to users who have the `ROLE_SUPPORT_MANAGER` role.
+
+TODO : It is also possible to raise an alert via a Discord or Slack channel by configuring webhooks in the properties (later).

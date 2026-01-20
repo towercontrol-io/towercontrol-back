@@ -54,6 +54,9 @@ dependencies {
 	implementation group: 'org.flywaydb', name: 'flyway-core', version: '11.20.2'
     implementation group: 'com.google.protobuf', name: 'protobuf-java', version: '4.33.4'
 
+    // Markdown parser
+    implementation group: 'org.commonmark', name: 'commonmark', version: '0.27.1'
+
 	runtimeOnly group: 'io.jsonwebtoken', name: 'jjwt-impl', version: '0.13.0'
 	runtimeOnly group: 'io.jsonwebtoken', name: 'jjwt-jackson', version: '0.13.0'
 	runtimeOnly group: 'org.flywaydb', name: 'flyway-database-postgresql', version: '11.20.2'

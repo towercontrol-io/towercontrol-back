@@ -4,6 +4,7 @@ import com.disk91.capture.tests.CaptureTestsService;
 import com.disk91.common.config.CommonConfig;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.integration.tests.IntegrationTestsService;
+import com.disk91.tickets.tests.TicketsTestsService;
 import com.disk91.users.tests.UsersTestsService;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -77,6 +78,9 @@ public class ItcApplication implements CommandLineRunner, ExitCodeGenerator {
     @Autowired
     protected IntegrationTestsService integrationTestsService;
 
+    @Autowired
+    protected TicketsTestsService ticketsTestsService;
+
     protected void testsExecution() {
         if ( commonConfig.isCommonTestEnabled() ) {
             System.out.println(ANSI_BLUE+"================ Running Tests ========================"+ANSI_RESET);
@@ -84,9 +88,11 @@ public class ItcApplication implements CommandLineRunner, ExitCodeGenerator {
                 usersTestsService.runTests();
                 captureTestsService.runTests();
                 integrationTestsService.runTests();
+                ticketsTestsService.runTests();
 
 
                 captureTestsService.cleanTests();
+                ticketsTestsService.cleanTests();
                 System.out.println(ANSI_GREEN+"================ TESTS SUCCESS ========================"+ANSI_RESET);
             } catch (ITParseException e) {
                 System.out.println(ANSI_RED+"[ERROR] "+e.getMessage()+ANSI_RESET);

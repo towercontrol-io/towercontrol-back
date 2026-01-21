@@ -44,7 +44,7 @@ public class TicketsConfig {
         return ticketsAllowPublicView;
     }
 
-    @Value("{tickets.manager.email:}")
+    @Value("${tickets.manager.email:}")
     protected String ticketsManagerEmail;
     public String getTicketsManagerEmail() {
         return ticketsManagerEmail;

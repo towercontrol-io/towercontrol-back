@@ -61,6 +61,7 @@ public class Tools {
      * @return
      */
     public static boolean isAcceptedEmailSyntax(String email, String filters) {
+        if ( filters.isEmpty() ) return true;
         // filters is a list of regEx separated by , corresponding to rejected patterns
         String [] _filters = filters.split(",");
         for (String filter : _filters) {

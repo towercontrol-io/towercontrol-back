@@ -63,7 +63,8 @@ The data is stored in two main tables in postgresql:
       "priority" : Enum,                             // Ticket priority (low, medium, high, urgent)
       "assignedTo" : String                          // Login of the support manager assigned to the ticket
       "directAccessToken" : String,                  // Token allowing direct access to the ticket for the user (reply without login)
-      "directAccessExpiryMs" : Long                  // Expiry timestamp for the direct access token
+      "directAccessExpiryMs" : Long,                 // Expiry timestamp for the direct access token
+      "techContext" : String                         // Technical context information like sent by application
     }
     ```
 

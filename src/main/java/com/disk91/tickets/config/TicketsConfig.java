@@ -80,5 +80,16 @@ public class TicketsConfig {
         return ticketsAnonymousEncryptionIv;
     }
 
+    @Value("${ticket.anonymous.content.filters:}")
+    protected String ticketAnonymousContentFilters;
+    public String getTicketAnonymousContentFilters() {
+        return ticketAnonymousContentFilters;
+    }
+
+    @Value("${ticket.anonymous.hash.salt:6dea91831bce6b331d6ac0d69d973692}")
+    protected String ticketAnonymousHashSalt;
+    public String getTicketAnonymousHashSalt() {
+        return ticketAnonymousHashSalt;
+    }
 
 }

@@ -61,11 +61,15 @@ public class Tools {
      * @return
      */
     public static boolean isAcceptedEmailSyntax(String email, String filters) {
+        return isAcceptedStringSyntax(email,filters);
+    }
+
+    public static boolean isAcceptedStringSyntax(String s, String filters) {
         if ( filters.isEmpty() ) return true;
         // filters is a list of regEx separated by , corresponding to rejected patterns
         String [] _filters = filters.split(",");
         for (String filter : _filters) {
-            if (email.matches(filter)) return false;
+            if (s.matches(filter)) return false;
         }
         return true;
     }

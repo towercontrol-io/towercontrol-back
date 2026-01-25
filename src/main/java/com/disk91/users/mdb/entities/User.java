@@ -407,6 +407,13 @@ public class User implements CloneableObject<User> {
         this.sessionSecret = HexCodingTools.getRandomHexString(64);
     }
 
+    /**
+     * Return true until the user has been expired and personal information can't be decrypted anymore
+     */
+    public boolean isPersonalDataAccessible() {
+        return ( this.userSecret != null && !this.userSecret.isEmpty() );
+    }
+
 
     /**
      * When the password is changed, it is necessary to rekey all information, as the password is used as a key

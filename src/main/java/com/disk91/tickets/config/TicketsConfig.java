@@ -92,4 +92,26 @@ public class TicketsConfig {
         return ticketAnonymousHashSalt;
     }
 
+    // Param !0! ticketId !1! authKey
+    @Value("${ticket.anonymous.response.link:}")
+    protected String ticketAnonymousResponseLink;
+    public String getTicketAnonymousResponseLink(String ticketId, String authKey) {
+        String _ticketAnonymousResponseLink = this.ticketAnonymousResponseLink;
+        _ticketAnonymousResponseLink = _ticketAnonymousResponseLink.replace("!0!", ticketId);
+        _ticketAnonymousResponseLink = _ticketAnonymousResponseLink.replace("!1!", authKey);
+        return _ticketAnonymousResponseLink;
+    }
+
+    @Value("${tickets.discord.webhook.url:}")
+    protected String ticketsDiscordWebhookUrl;
+    public String getTicketsDiscordWebhookUrl() {
+        return ticketsDiscordWebhookUrl;
+    }
+
+    @Value("${tickets.email.user.update:true}")
+    protected boolean ticketsEmailUserUpdate;
+    public boolean isTicketsEmailUserUpdate() {
+        return ticketsEmailUserUpdate;
+    }
+
 }

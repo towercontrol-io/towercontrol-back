@@ -64,7 +64,9 @@ The data is stored in two main tables in postgresql:
       "assignedTo" : String                          // Login of the support manager assigned to the ticket
       "directAccessToken" : String,                  // Token allowing direct access to the ticket for the user (reply without login)
       "directAccessExpiryMs" : Long,                 // Expiry timestamp for the direct access token
-      "techContext" : String                         // Technical context information like sent by application
+      "techContext" : String,                        // Technical context information like sent by application
+      "userPending" : boolean,                       // true when admin added a message and user response is pending
+      "adminPending" : boolean                       // true when user added a message and admin response is pending
     }
     ```
 

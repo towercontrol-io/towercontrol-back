@@ -24,8 +24,9 @@ can be rewritten) and the answer given, which can be enriched with parts not vis
 This data can be exported in Markdown format to form a knowledge base for an LLM enabling automatic answer generation 
 and the construction of FAQs or suggested replies while the user is typing their question.
 
-Personal data will be marked `%` element to hide `%` in the markdown to be removed from the knowledge base exported. 
-Ticket reviewer will care about it.
+Personal data will be marked `%` element to hide `%` in the Markdown to be removed from the knowledge base exported. 
+Ticket reviewer will care about it. Personal data are not displayed to admin & user until the admin decide to unmask 
+them for a single access. This action is traced in audit log.
 
 ### Anonymous Tickets
 
@@ -40,6 +41,13 @@ It must be possible for a user to reply to tickets easily via a direct link that
 link must be limited to a single reply and be time‑limited. This way it is possible to consult and reply from the
 notification email without being logged in. This must apply only to the ticket author. The responding administrator
 must be logged in.
+
+### FAQ Tickets
+
+A ticket can become an FAQ entry: it is a ticket with a defined subject and an associated answer in the ticket body that 
+can generally be used as a basis for building an FAQ. Typically, a ticket created by a support manager who wants to save 
+a template question/answer for users to consult. Some FAQs can be publicly accessible without logging in, while others 
+are available only to authenticated users.
 
 #### Ticket data model
 
@@ -58,6 +66,8 @@ The data is stored in two main tables in postgresql:
       "content" : String,                            // Ticket content (initial message) (Markdown format)
       "llmDescription" : String,                     // Description for LLM knowledge base (rewritten content) (Md)
       "context" : [ CustomField ],                   // Custom fields providing context information (groups, device...)
+      "faqEligible" : boolean,                       // true when ticket can be used to enrich FAQ / Knowledge base
+      "faqPublic" : boolean,                         // true when ticket can be made public in FAQ / Knowledge base
                                                      // -------------------------------
                                                      // For later used
       "priority" : Enum,                             // Ticket priority (low, medium, high, urgent)
@@ -89,4 +99,8 @@ When a ticket is created, a message is sent to the user responsible for handling
 that will be configured in the properties file via `tickets.manager.email`. If it is empty, no email will be sent and 
 open tickets are accessible in the interface to users who have the `ROLE_SUPPORT_MANAGER` role.
 
-TODO : It is also possible to raise an alert via a Discord or Slack channel by configuring webhooks in the properties (later).
+When properties `tickets.discord.webhook.url` is set, a notification is also set on the Discord webhook to notify on 
+ticket creation and updates.
+
+When an administrator sends a reply to a user, an email is sent to the user to inform them provided that `tickets.email.user.update` 
+is true.

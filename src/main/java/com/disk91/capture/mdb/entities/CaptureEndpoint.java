@@ -90,6 +90,8 @@ public class CaptureEndpoint implements CloneableObject<CaptureEndpoint> {
     protected long totalInDriver = 0L;
     // Total frames queued to be processed
     protected long totalQueuedToProcess = 0L;
+    // Total frames refused due to billing restrictions
+    protected long totalBillingRefused = 0L;
 
     // --------------------------------
 
@@ -102,6 +104,7 @@ public class CaptureEndpoint implements CloneableObject<CaptureEndpoint> {
         this.totalBadOwnerRefused = 0L;
         this.totalInDriver = 0L;
         this.totalQueuedToProcess = 0L;
+        this.totalBillingRefused = 0L;
     }
 
     public synchronized void incTotalFramesReceived() {
@@ -132,10 +135,9 @@ public class CaptureEndpoint implements CloneableObject<CaptureEndpoint> {
         this.totalInDriver++;
     }
 
-    public synchronized void incTotalQueuedToProcess() {
-        this.totalQueuedToProcess++;
-    }
+    public synchronized void incTotalQueuedToProcess() {this.totalQueuedToProcess++;}
 
+    public synchronized void incTotalBillingRefused() {this.totalBillingRefused++;}
     // --------------------------------
 
     @Override
@@ -166,6 +168,7 @@ public class CaptureEndpoint implements CloneableObject<CaptureEndpoint> {
         p.setTotalBadPayloadFormat(this.totalBadPayloadFormat);
         p.setTotalInDriver(this.totalInDriver);
         p.setTotalQueuedToProcess(this.totalQueuedToProcess);
+        p.setTotalBillingRefused(this.totalBillingRefused);
         return p;
     }
 
@@ -322,5 +325,13 @@ public class CaptureEndpoint implements CloneableObject<CaptureEndpoint> {
 
     public void setTotalQueuedToProcess(long totalQueuedToProcess) {
         this.totalQueuedToProcess = totalQueuedToProcess;
+    }
+
+    public long getTotalBillingRefused() {
+        return totalBillingRefused;
+    }
+
+    public void setTotalBillingRefused(long totalBillingRefused) {
+        this.totalBillingRefused = totalBillingRefused;
     }
 }

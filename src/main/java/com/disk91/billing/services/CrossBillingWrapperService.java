@@ -17,7 +17,7 @@
  *    WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  *    IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package com.disk91.users.services;
+package com.disk91.billing.services;
 
 import com.disk91.common.config.CommonConfig;
 import jakarta.annotation.PostConstruct;
@@ -28,10 +28,10 @@ import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.stereotype.Service;
 
 @Service
-public class CrossUserWrapperService {
+public class CrossBillingWrapperService {
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
-    Object privUserWrapperService = null;
+    Object privBillingWrapperService = null;
 
     @Autowired
     protected CommonConfig commonConfig;
@@ -45,76 +45,75 @@ public class CrossUserWrapperService {
      * response for the CE version.
      */
     @PostConstruct
-    private void initUserCrossWrapperService() {
-        log.info("[users] Init CrossWrapper Service");
+    private void initBillingWrapperService() {
+        log.info("[Billing] Init CrossWrapper Service");
         if ( commonConfig.isCommonNceEnable() ) {
             try {
-                Class<?> clazz = Class.forName("com.disk91.users.services.PrivUserWrapperService");
-                privUserWrapperService = beanFactory.createBean(clazz);
-                log.info("\u001B[34m[Users] Running Non Community Edition features\u001B[0m");
+                Class<?> clazz = Class.forName("com.disk91.billing.services.PrivBillingWrapperService");
+                privBillingWrapperService = beanFactory.createBean(clazz);
+                log.info("\u001B[34m[Billing] Running Non Community Edition features\u001B[0m");
                 return;
             } catch (ClassNotFoundException e) {
-                privUserWrapperService = null;
+                privBillingWrapperService = null;
             } catch (Exception e) {
-                log.error("[Users] Failed to load the PrivUserWrapperService class : {}", e.getMessage());
+                log.error("[Billing] Failed to load the PrivBillingWrapperService class : {}", e.getMessage());
             }
         }
-        log.info("[Users] Running Community Edition");
+        log.info("[Billing] Running Community Edition");
     }
 
     public boolean isNceEnabled() {
-        return ( privUserWrapperService != null && commonConfig.isCommonNceEnable() );
+        return ( privBillingWrapperService != null && commonConfig.isCommonNceEnable() );
     }
 
     /**
-     * Function to verify captcha during user registration, return true if captcha is valid
-     * false if not correctly completed. This function calls the NCE implementation if available,
-     * otherwise returns true (no captcha in CE)
+     * Function to authorize a packet to be proceeded when received, based on the user billing rules
      *
-     * @param secret
+     * @param deviceId - Device id receiving the packet
+     *
      * @return
      */
-    public boolean userRegistrationVerifyCaptcha(String secret) {
+    public boolean billingPacketReceptionAuthorized(String deviceId) {
         if ( isNceEnabled() ) {
             try {
-                return (boolean) privUserWrapperService.getClass()
-                        .getMethod("userRegistrationVerifyCaptcha", String.class)
-                        .invoke(privUserWrapperService, secret);
+                return (boolean) privBillingWrapperService.getClass()
+                        .getMethod("billingPacketReceptionAuthorized", String.class)
+                        .invoke(privBillingWrapperService, deviceId);
             } catch (Exception e) {
-                log.error("[Users] Failed to call userRegistrationVerifyCaptcha : {}", e.getMessage());
+                log.error("[Billing] Failed to call billingPacketReceptionAuthorized : {}", e.getMessage());
             }
         }
-        // default Community Edition behavior : no captcha
+        // default Community Edition behavior : accept all
         if ( commonConfig.isCommonNceEnable() ) {
-            log.warn("[Users] Captcha verification failed to call NCE code with NCE enabled, refusing captcha");
-            log.warn("[Users] With CE version, please deactivate Captcha feature (not supported)");
             return true;
         }
         return true;
     }
 
     /**
-     * Function to force validation of a captcha for testing purpose only
+     * Function to authorize a group creation, verify the group limitations associated to
+     * billing
      *
-     * @param secret
+     * @param parentId - GroupParent Id
+     * @paral userId - User Id
+     *
      * @return
      */
-    public void userRegistrationForceCaptcha(String secret) {
+    public boolean billingGroupCreationAuthorized(String userId, String parentId) {
         if ( isNceEnabled() ) {
             try {
-                privUserWrapperService.getClass()
-                        .getMethod("userRegistrationForceCaptcha", String.class)
-                        .invoke(privUserWrapperService, secret);
-                return;
+                return (boolean) privBillingWrapperService.getClass()
+                        .getMethod("billingGroupCreationAuthorized", String.class, String.class)
+                        .invoke(privBillingWrapperService, userId, parentId);
             } catch (Exception e) {
-                log.error("[Users] Failed to call userRegistrationForceCaptcha : {}", e.getMessage());
+                log.error("[Billing] Failed to call billingGroupCreationAuthorized : {}", e.getMessage());
             }
         }
-        // default Community Edition behavior : no captcha
+        // default Community Edition behavior : accept all
         if ( commonConfig.isCommonNceEnable() ) {
-            log.warn("[Users] Captcha force failed to call NCE code with NCE enabled, refusing captcha");
+            return true;
         }
+        return true;
     }
-
 
 }

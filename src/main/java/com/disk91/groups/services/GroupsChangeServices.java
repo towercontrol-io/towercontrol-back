@@ -20,6 +20,7 @@
 package com.disk91.groups.services;
 
 import com.disk91.audit.integration.AuditIntegration;
+import com.disk91.billing.services.CrossBillingWrapperService;
 import com.disk91.common.config.ModuleCatalog;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
@@ -67,6 +68,9 @@ public class GroupsChangeServices {
     @Autowired
     protected AuditIntegration auditIntegration;
 
+    @Autowired
+    protected CrossBillingWrapperService crossBillingWrapperService;
+
     // =====================================================================================================
     // CREATE GROUPS
     // =====================================================================================================
@@ -111,6 +115,11 @@ public class GroupsChangeServices {
             throw new ITParseException("groups-invalid-user-request");
         } catch (ITRightException x) {
             throw new ITRightException("groups-group-creation-refused");
+        }
+
+        // Check the rights for group creation (related to billing)
+        if ( !crossBillingWrapperService.billingGroupCreationAuthorized(userId, body.getParentId()) ) {
+            throw new ITRightException("groups-group-creation-refused-billing");
         }
 
         // Here the user and the group rights are ok to proceed.
@@ -177,6 +186,11 @@ public class GroupsChangeServices {
             throw new ITParseException("groups-invalid-user-request");
         } catch (ITRightException x) {
             throw new ITRightException("groups-group-creation-refused");
+        }
+
+        // Check the rights for group creation (related to billing)
+        if ( !crossBillingWrapperService.billingGroupCreationAuthorized(userId, body.getParentId()) ) {
+            throw new ITRightException("groups-group-creation-refused-billing");
         }
 
         // Here the user and the group rights are ok to proceed.

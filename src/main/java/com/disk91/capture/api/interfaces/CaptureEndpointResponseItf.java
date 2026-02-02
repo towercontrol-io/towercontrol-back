@@ -164,6 +164,13 @@ public class CaptureEndpointResponseItf {
     )
     protected long totalQueuedToProcess;
 
+    @Schema(
+            description = "Stats - total frames refused due to billing restrictions",
+            example = "1250",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    protected long totalBillingRefused;
+
 
     // ==========================================
 
@@ -193,6 +200,7 @@ public class CaptureEndpointResponseItf {
         res.setTotalBadPayloadFormat(ce.getTotalBadPayloadFormat());
         res.setTotalBadDeviceRight(ce.getTotalBadDeviceRight());
         res.setTotalQueuedToProcess(ce.getTotalQueuedToProcess());
+        res.setTotalBillingRefused(ce.getTotalBillingRefused());
         return res;
     }
 
@@ -341,5 +349,13 @@ public class CaptureEndpointResponseItf {
 
     public void setTotalQueuedToProcess(long totalQueuedToProcess) {
         this.totalQueuedToProcess = totalQueuedToProcess;
+    }
+
+    public long getTotalBillingRefused() {
+        return totalBillingRefused;
+    }
+
+    public void setTotalBillingRefused(long totalBillingRefused) {
+        this.totalBillingRefused = totalBillingRefused;
     }
 }

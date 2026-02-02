@@ -22,6 +22,7 @@ package com.disk91.capture.services;
 import com.disk91.audit.integration.AuditIntegration;
 import com.disk91.billing.integration.BillingActions;
 import com.disk91.billing.integration.BillingIntegration;
+import com.disk91.billing.services.CrossBillingWrapperService;
 import com.disk91.capture.api.interfaces.CaptureResponseItf;
 import com.disk91.capture.interfaces.AbstractProtocol;
 import com.disk91.capture.interfaces.CaptureIngestResponse;
@@ -77,6 +78,9 @@ public class CaptureIngestService {
 
     @Autowired
     private BillingIntegration billingIntegration;
+
+    @Autowired
+    private CrossBillingWrapperService crossBillingWrapperService;
 
     // Cache the protocols class to avoid recreation each time
     protected final HashMap<String, AbstractProtocol> protocolCache = new HashMap<>();
@@ -160,22 +164,28 @@ public class CaptureIngestService {
                             // Enqueue for processing
                             try {
                                 e.incTotalFramesAcceptedToProcess();
-                                captureAsyncProcessService.enqueueRawData(pivot.getPivot());
-                                incrementIngestSuccess();
-                                e.incTotalQueuedToProcess();
+                                // Make sure the fame can be processed according to billing rules
+                                if ( crossBillingWrapperService.billingPacketReceptionAuthorized(
+                                        pivot.getPivot().getMetadata().getDeviceId()
+                                )) {
+                                    captureAsyncProcessService.enqueueRawData(pivot.getPivot());
+                                    incrementIngestSuccess();
+                                    e.incTotalQueuedToProcess();
 
-                                // record for billing
-                                ArrayList<CustomField> params = new ArrayList<>();
-                                params.add( new CustomField("size", ""+pivot.getPivot().getPayloadSize()) );
-                                params.add( new CustomField("duplicates", ""+pivot.getPivot().getNwkStations().size()) );
-                                params.add( new CustomField("protocol", p.getId()) );
-                                params.add( new CustomField("dateMs", ""+pivot.getPivot().getRxTimestampMs()) );
-                                billingIntegration.billingLog(
-                                        ModuleCatalog.Modules.CAPTURE,
-                                        BillingActions.BILLING_FRAME_RX,
-                                        params
-                                );
-
+                                    // record for billing
+                                    ArrayList<CustomField> params = new ArrayList<>();
+                                    params.add(new CustomField("size", "" + pivot.getPivot().getPayloadSize()));
+                                    params.add(new CustomField("duplicates", "" + pivot.getPivot().getNwkStations().size()));
+                                    params.add(new CustomField("protocol", p.getId()));
+                                    params.add(new CustomField("dateMs", "" + pivot.getPivot().getRxTimestampMs()));
+                                    billingIntegration.billingLog(
+                                            ModuleCatalog.Modules.CAPTURE,
+                                            BillingActions.BILLING_FRAME_RX,
+                                            params
+                                    );
+                                } else {
+                                    e.incTotalBillingRefused();
+                                }
                             } catch (ITOverQuotaException x) {
                                 try {
                                     // the system is shutting down or overloaded, this frame is rejected

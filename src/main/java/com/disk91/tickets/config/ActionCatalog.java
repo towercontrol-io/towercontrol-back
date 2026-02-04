@@ -17,38 +17,25 @@
  *    WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  *    IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package com.disk91.common.config;
+package com.disk91.tickets.config;
 
-public class ModuleCatalog {
-    public enum Modules {
-        USERS,
-        GROUPS,
-        AUDIT,
-        DEVICES,
-        CAPTURE,
-        BILLING,
-        TICKETS,
-        CUSTOM
+public class ActionCatalog {
+    public enum Actions {
+        TICKET_QUICK_UPDATE,
+        TICKET_UPDATE,
+
+        UNKNOWN
     }
 
-    public static String getServiceName(ModuleCatalog.Modules service) {
-        if (service == ModuleCatalog.Modules.USERS) {
-            return "users";
-        } else if (service == ModuleCatalog.Modules.GROUPS) {
-            return "groups";
-        } else if (service == ModuleCatalog.Modules.AUDIT) {
-            return "audit";
-        } else if (service == ModuleCatalog.Modules.DEVICES) {
-            return "devices";
-        } else if (service == ModuleCatalog.Modules.CAPTURE) {
-            return "capture";
-        } else if (service == ModuleCatalog.Modules.BILLING) {
-            return "billing";
-        } else if (service == ModuleCatalog.Modules.TICKETS) {
-            return "tickets";
-        } else if (service == ModuleCatalog.Modules.CUSTOM) {
-            return "custom";
+    public static String getActionName(Actions action) {
+        switch (action) {
+            case TICKET_QUICK_UPDATE:
+                return "quick_update_ticket";
+            case TICKET_UPDATE:
+                return "update_ticket";
+            case UNKNOWN:
+            default:
+                return "unknown";
         }
-        return null;
     }
 }

@@ -23,6 +23,7 @@ public class ActionCatalog {
     public enum Actions {
         TICKET_QUICK_UPDATE,
         TICKET_UPDATE,
+        MESSAGE_UPDATE,
 
         UNKNOWN
     }
@@ -33,6 +34,8 @@ public class ActionCatalog {
                 return "quick_update_ticket";
             case TICKET_UPDATE:
                 return "update_ticket";
+            case MESSAGE_UPDATE:
+                return "update_message";
             case UNKNOWN:
             default:
                 return "unknown";

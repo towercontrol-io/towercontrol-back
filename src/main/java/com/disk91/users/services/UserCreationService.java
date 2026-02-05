@@ -137,7 +137,14 @@ public class UserCreationService {
 
         // The Request has a valid email
         // Check if not already existing
-        User u = userRepository.findOneUserByLogin(User.encodeLogin(body.getEmail()));
+        User u = null;
+        try {
+            u = userRepository.findOneUserByLogin(User.encodeLogin(body.getEmail()));
+        } catch (Exception x) {
+            Now.randomSleep(15, 45);
+            log.error("[users] User creation, normal behavior when checking existing user {}", x.getMessage());
+            throw new ITTooManyException("user-creation-refused");
+        }
         if (u != null) {
             Now.randomSleep(15, 45);
             log.warn("[users] User creation, already registered ");

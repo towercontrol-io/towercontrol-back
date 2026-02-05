@@ -563,9 +563,9 @@ public class User implements CloneableObject<User> {
         return ret;
     }
 
-    public void setEncLogin(String login) throws ITParseException {
+    public void setEncLogin(String email) throws ITParseException {
         try {
-            this.login = encodeLogin(login);
+            this.login = encodeLogin(email);
         } catch (ITParseException e) {
             log.error("[users] Error while hashing login", e);
             throw new ITParseException("Unsupported hashing algorithm");

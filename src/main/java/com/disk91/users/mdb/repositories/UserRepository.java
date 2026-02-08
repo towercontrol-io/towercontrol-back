@@ -21,6 +21,7 @@
 package com.disk91.users.mdb.repositories;
 
 import com.disk91.users.mdb.entities.User;
+import com.disk91.users.services.UsersRolesCache;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -66,5 +67,11 @@ public interface UserRepository extends MongoRepository<User,String> {
      */
     @Query(value = "{ 'apiKeys.id' : ?0 }")
     public User findByApiKeyId(String apiKeyId);
+
+    /**
+     * Find user by role, at least one
+     */
+    @Query(value = "{ 'roles' : { $in : ?0 } }")
+    public List<User> findByRoles(List<UsersRolesCache.StandardRoles> roles);
 
 }

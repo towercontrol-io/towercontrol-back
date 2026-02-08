@@ -7,10 +7,14 @@ import com.disk91.groups.services.GroupsServices;
 import com.disk91.users.mdb.entities.User;
 import com.disk91.users.mdb.entities.sub.UserAcl;
 import com.disk91.users.mdb.entities.sub.UserApiKeys;
+import com.disk91.users.mdb.repositories.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class UserCommon {
@@ -304,6 +308,26 @@ public class UserCommon {
             if ( ! _u.isInRole(UsersRolesCache.StandardRoles.ROLE_REGISTERED_USER)) throw new ITNotFoundException("user-rights-not-registered-user");
             return _u;
         }
+    }
+
+
+    @Autowired
+    protected UserRepository userRepository;
+
+    /**
+     * Get a list of user with a specific role, verifying the user is active & registered
+     * @param roles - roles to check ( at least one of the roles must be in the user roles)
+     * @return the list of User structure matching the role
+     * @throws ITNotFoundException - when not found or not active / registered
+     */
+    public List<User> getUsersByRole(List<UsersRolesCache.StandardRoles> roles) {
+        List<User> users = userRepository.findByRoles(roles);
+        List<User> res = new ArrayList<>();
+        for ( User u : users ) {
+            if ( ! u.isActive() || u.isLocked() ) continue;
+            res.add(u);
+        }
+        return res;
     }
 
 }

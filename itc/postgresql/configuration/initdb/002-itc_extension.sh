@@ -4,4 +4,5 @@ set -e
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname="itc" <<-EOSQL
     create extension pg_trgm;
     create extension hstore;
+    create extension vector;
 EOSQL

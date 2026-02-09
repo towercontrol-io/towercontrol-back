@@ -83,7 +83,11 @@ services:
   ## ==============================================================
   ## Postgresql
   postgres:
-    image: postgres:17-alpine
+    build:
+      context: ./postgresql/build
+      dockerfile: Dockerfile
+      args:
+        POSTGRES_VERSION: "17"
     restart: unless-stopped
     command: postgres -c 'max_connections=250'
     volumes:

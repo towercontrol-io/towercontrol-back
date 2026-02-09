@@ -2,6 +2,7 @@ package com.disk91;
 
 import com.disk91.capture.tests.CaptureTestsService;
 import com.disk91.common.config.CommonConfig;
+import com.disk91.common.tests.LLMTestsService;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.integration.tests.IntegrationTestsService;
 import com.disk91.tickets.tests.TicketsTestsService;
@@ -81,6 +82,9 @@ public class ItcApplication implements CommandLineRunner, ExitCodeGenerator {
     @Autowired
     protected TicketsTestsService ticketsTestsService;
 
+    @Autowired
+    protected LLMTestsService llmTestsService;
+
     protected void testsExecution() {
         if ( commonConfig.isCommonTestEnabled() ) {
             System.out.println(ANSI_BLUE+"================ Running Tests ========================"+ANSI_RESET);
@@ -89,6 +93,10 @@ public class ItcApplication implements CommandLineRunner, ExitCodeGenerator {
                 captureTestsService.runTests();
                 integrationTestsService.runTests();
                 ticketsTestsService.runTests();
+                if ( !commonConfig.getLlmProvider().isEmpty() ) {
+                    llmTestsService.runTests();
+                    llmTestsService.cleanTests();
+                }
 
 
                 captureTestsService.cleanTests();

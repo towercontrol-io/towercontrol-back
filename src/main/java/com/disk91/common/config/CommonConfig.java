@@ -191,4 +191,72 @@ public class CommonConfig {
         return commonNceEnable;
     }
 
+
+    // ----------------------------------------------
+    // LLM Configuration
+    // ----------------------------------------------
+
+    public static final String LLM_PROVIDER_OLLAMA = "ollama";
+    public static final String LLM_PROVIDER_OPENAI = "openai";
+
+    @Value("${common.llm.provider:ollama}")
+    protected String llmProvider;
+    public String getLlmProvider() {
+        return llmProvider;
+    }
+
+    @Value("${common.llm.ollama.url:http://localhost:11434}")
+    protected String llmOllamaUrl;
+    public String getLlmOllamaUrl() {
+        return llmOllamaUrl;
+    }
+
+    @Value("${common.llm.openai.url:https://api.openai.com/v1}")
+    protected String llmOpenAiUrl;
+    public String getLlmOpenAiUrl() {
+        return llmOpenAiUrl;
+    }
+
+    @Value("${common.llm.openai.key:}")
+    protected String llmOpenAiKey;
+    public String getLlmOpenAiKey() {
+        return llmOpenAiKey;
+    }
+
+    @Value("${common.llm.ollama.chat.model:llama3}")
+    protected String llmOllamaChatModel;
+    public String getLlmOllamaChatModel() {
+        return llmOllamaChatModel;
+    }
+
+    @Value("${common.llm.ollama.embedding.model:nomic-embed-text}")
+    protected String llmOllamaEmbeddingModel;
+    public String getLlmOllamaEmbeddingModel() {
+        return llmOllamaEmbeddingModel;
+    }
+
+    @Value("${common.llm.openai.chat.model:gpt-4o-mini}")
+    protected String llmOpenAiChatModel;
+    public String getLlmOpenAiChatModel() {
+        return llmOpenAiChatModel;
+    }
+
+    @Value("${common.llm.openai.embedding.model:text-embedding-3-small}")
+    protected String llmOpenAiEmbeddingModel;
+    public String getLlmOpenAiEmbeddingModel() {
+        return llmOpenAiEmbeddingModel;
+    }
+
+    @Value("${common.llm.rag.topk:5}")
+    protected int llmRagTopK;
+    public int getLlmRagTopK() {
+        return llmRagTopK;
+    }
+
+    @Value("${common.llm.rag.similarity.threshold:0.7}")
+    protected double llmRagSimilarityThreshold;
+    public double getLlmRagSimilarityThreshold() {
+        return llmRagSimilarityThreshold;
+    }
+
 }

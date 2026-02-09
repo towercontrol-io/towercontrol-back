@@ -57,6 +57,12 @@ dependencies {
     // Markdown parser
     implementation group: 'org.commonmark', name: 'commonmark', version: '0.27.1'
 
+    // Spring AI dependencies
+    implementation platform("org.springframework.ai:spring-ai-bom:1.1.2")
+	implementation 'org.springframework.ai:spring-ai-starter-model-ollama'
+	implementation 'org.springframework.ai:spring-ai-starter-model-openai'
+	implementation 'org.springframework.ai:spring-ai-starter-vector-store-pgvector'
+
 	runtimeOnly group: 'io.jsonwebtoken', name: 'jjwt-impl', version: '0.13.0'
 	runtimeOnly group: 'io.jsonwebtoken', name: 'jjwt-jackson', version: '0.13.0'
 	runtimeOnly group: 'org.flywaydb', name: 'flyway-database-postgresql', version: '11.20.2'

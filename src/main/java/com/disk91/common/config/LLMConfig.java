@@ -19,9 +19,9 @@
  */
 package com.disk91.common.config;
 
+import com.disk91.common.tools.exceptions.ITNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.ollama.OllamaChatModel;
@@ -37,13 +37,16 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.pgvector.PgVectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
- * Spring AI Configuration - Configures LLM providers (Ollama/OpenAI) and Vector Store
+ * Spring AI Configuration - Configures LLM providers (Ollama/OpenAI)
+ * This will route the AI interaction to the right provider base on configuration file
+ *
  */
 @Configuration
 public class LLMConfig {
@@ -53,15 +56,12 @@ public class LLMConfig {
     @Autowired
     protected CommonConfig commonConfig;
 
-    @Autowired
-    protected JdbcTemplate jdbcTemplate;
-
     /**
      * Create the Chat Model based on the configured provider
      * @return ChatModel instance for the active provider
      */
     @Bean
-    public ChatModel chatModel() {
+    public ChatModel chatModel() throws ITNotFoundException {
         String provider = commonConfig.getLlmProvider();
         log.info("[common][llm] Initializing chat model with provider: {}", provider);
 
@@ -70,7 +70,7 @@ public class LLMConfig {
         } else if ( CommonConfig.LLM_PROVIDER_OLLAMA.equals(provider) ) {
             return createOllamaChatModel();
         }
-        return null;
+        throw new ITNotFoundException("common-llm-provider-not-set");
     }
 
     /**
@@ -78,50 +78,17 @@ public class LLMConfig {
      * @return EmbeddingModel instance for the active provider
      */
     @Bean
-    public EmbeddingModel embeddingModel() {
+    public EmbeddingModel embeddingModel() throws ITNotFoundException {
         String provider = commonConfig.getLlmProvider();
         log.info("[common][llm] Initializing embedding model with provider: {}", provider);
 
         if (CommonConfig.LLM_PROVIDER_OPENAI.equals(provider)) {
             return createOpenAiEmbeddingModel();
         } else if ( CommonConfig.LLM_PROVIDER_OLLAMA.equals(provider) ) {
-            // Default to Ollama
             return createOllamaEmbeddingModel();
         }
-        return null;
+        throw new ITNotFoundException("common-llm-provider-not-set");
     }
-
-    /**
-     * Create the ChatClient builder
-     * @param chatModel - The chat model to use
-     * @return ChatClient.Builder instance
-     */
-    @Bean
-    public ChatClient.Builder chatClientBuilder(ChatModel chatModel) {
-        return ChatClient.builder(chatModel);
-    }
-
-    /**
-     * Create the PgVector Store for RAG
-     * @param embeddingModel - The embedding model to use
-     * @return VectorStore instance using PostgreSQL pgvector
-     */
-    /*
-    @Bean
-    @Primary
-    public VectorStore vectorStore(EmbeddingModel embeddingModel) {
-        log.info("[common][llm] Initializing PgVector store for RAG");
-        return PgVectorStore.builder(jdbcTemplate, embeddingModel)
-                .dimensions(1536)
-                .distanceType(PgVectorStore.PgDistanceType.COSINE_DISTANCE)
-                .indexType(PgVectorStore.PgIndexType.HNSW)
-                .initializeSchema(true)
-                .schemaName("public")
-                .vectorTableName("llm_vector_store")
-                .build();
-    }
-    */
-
 
     // ==========================================
     // Private methods for provider instantiation
@@ -192,4 +159,63 @@ public class LLMConfig {
                         .build()
         );
     }
+
+    // =============================================================
+    // MANAGE VECTOR STORE
+    // -----------------------------------------------
+    // OpenAI and Ollama doesn't have the same vector store constraint, using
+    // different kind of vector size, so we need to create dedicated vector store for each,
+    // based on configuration and route the call to the right one, depending on the configuration
+
+    public static final String VECTOR_STORE_OLLAMA = "common_llm_ollama_vector_store";
+    public static final String VECTOR_STORE_OPENAI = "common_llm_openai_vector_store";
+
+    @Bean
+    @Qualifier("ollamaEmbeddingModel")
+    @ConditionalOnProperty(name = "common.llm.provider", havingValue = "ollama")
+    public EmbeddingModel ollamaEmbeddingModel(/* deps ollama */) {
+        return createOllamaEmbeddingModel();
+    }
+
+    @Bean
+    @Qualifier("openAiEmbeddingModel")
+    @ConditionalOnProperty(name = "common.llm.provider", havingValue = "openai")
+    public EmbeddingModel openAiEmbeddingModel(/* deps openai */) {
+        return createOpenAiEmbeddingModel();
+    }
+
+    @Bean
+    @Qualifier("ollamaVectorStore")
+    @ConditionalOnProperty(name = "common.llm.provider", havingValue = "ollama")
+    public VectorStore ollamaVectorStore(
+            JdbcTemplate jdbcTemplate,
+            @Qualifier("ollamaEmbeddingModel") EmbeddingModel embeddingModel) {
+
+        return PgVectorStore.builder(jdbcTemplate, embeddingModel)
+                .dimensions(768)
+                .distanceType(PgVectorStore.PgDistanceType.COSINE_DISTANCE)
+                .indexType(PgVectorStore.PgIndexType.HNSW)
+                .initializeSchema(false)
+                .schemaName("public")
+                .vectorTableName(VECTOR_STORE_OLLAMA)
+                .build();
+    }
+
+    @Bean
+    @Qualifier("openaiVectorStore")
+    @ConditionalOnProperty(name = "common.llm.provider", havingValue = "openai")
+    public VectorStore openaiVectorStore(
+            JdbcTemplate jdbcTemplate,
+            @Qualifier("openAiEmbeddingModel") EmbeddingModel embeddingModel) {
+
+        return PgVectorStore.builder(jdbcTemplate, embeddingModel)
+                .dimensions(1536)
+                .distanceType(PgVectorStore.PgDistanceType.COSINE_DISTANCE)
+                .indexType(PgVectorStore.PgIndexType.HNSW)
+                .initializeSchema(false)
+                .schemaName("public")
+                .vectorTableName(VECTOR_STORE_OPENAI)
+                .build();
+    }
+
 }

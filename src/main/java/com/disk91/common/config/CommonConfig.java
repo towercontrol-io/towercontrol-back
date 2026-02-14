@@ -205,31 +205,31 @@ public class CommonConfig {
         return llmProvider;
     }
 
-    @Value("${common.llm.ollama.url:http://localhost:11434}")
+    @Value("${spring.ai.ollama.base-url:http://localhost:11434}")
     protected String llmOllamaUrl;
     public String getLlmOllamaUrl() {
         return llmOllamaUrl;
     }
 
-    @Value("${common.llm.openai.url:https://api.openai.com/v1}")
+    @Value("${common.llm.openai.url:https://api.openai.com}")
     protected String llmOpenAiUrl;
     public String getLlmOpenAiUrl() {
         return llmOpenAiUrl;
     }
 
-    @Value("${common.llm.openai.key:}")
+    @Value("${spring.ai.openai.api-key:_}")
     protected String llmOpenAiKey;
     public String getLlmOpenAiKey() {
         return llmOpenAiKey;
     }
 
-    @Value("${common.llm.ollama.chat.model:llama3}")
+    @Value("${spring.ai.ollama.chat.options.model:llama3}")
     protected String llmOllamaChatModel;
     public String getLlmOllamaChatModel() {
         return llmOllamaChatModel;
     }
 
-    @Value("${common.llm.ollama.embedding.model:nomic-embed-text}")
+    @Value("${spring.ai.ollama.embedding.options.model:nomic-embed-text}")
     protected String llmOllamaEmbeddingModel;
     public String getLlmOllamaEmbeddingModel() {
         return llmOllamaEmbeddingModel;

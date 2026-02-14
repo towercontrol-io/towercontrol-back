@@ -62,7 +62,7 @@ public class LLMService {
     protected ChatClient.Builder chatClientBuilder;
 
     @Autowired
-    protected VectorStore vectorStore;
+    protected LLMVectorStoreService llmVectorStoreService;
 
     @Autowired
     protected JdbcTemplate jdbcTemplate;
@@ -132,7 +132,7 @@ public class LLMService {
                 .build();
 
         // Retrieve relevant documents
-        List<Document> relevantDocs = vectorStore.similaritySearch(searchRequest);
+        List<Document> relevantDocs = llmVectorStoreService.getVectorStore().similaritySearch(searchRequest);
 
         if (relevantDocs.isEmpty()) {
             log.info("[common][llm] No relevant documents found for query in knowledge base: {}", body.getKnowledgeBaseId());
@@ -153,20 +153,14 @@ public class LLMService {
         ChatClient chatClient = chatClientBuilder.build();
 
         String response;
-        long llmTimeoutMs = 60_000; // 60 seconds timeout
         try {
             // Execute LLM call with a timeout to avoid blocking indefinitely
-            response = java.util.concurrent.CompletableFuture.supplyAsync(() ->
-                    chatClient.prompt()
+            response = chatClient.prompt()
                             .system(systemPrompt)
                             .user(body.getQuery())
                             .call()
-                            .content()
-            ).get(llmTimeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS);
-        } catch (java.util.concurrent.TimeoutException e) {
-            log.error("[common][llm] LLM call timeout for KB {} after {}ms", body.getKnowledgeBaseId(), llmTimeoutMs);
-            throw new ITParseException("llm-timeout");
-        } catch (InterruptedException | java.util.concurrent.ExecutionException e) {
+                            .content();
+        } catch ( Exception e) {
             log.error("[common][llm] LLM call failed for KB {}: {}", body.getKnowledgeBaseId(), e.getMessage());
             throw new ITParseException("llm-call-failed");
         }
@@ -198,7 +192,7 @@ public class LLMService {
      * @param documentBody - The document to add
      * @throws ITParseException - When document parameters are invalid
      */
-    public void addDocument(String knowledgeBaseId, KnowledgeDocumentBody documentBody) throws ITParseException {
+    public void addDocument(String knowledgeBaseId, KnowledgeDocumentBody documentBody) throws ITParseException, ITNotFoundException {
         // Validate input parameters
         if (knowledgeBaseId == null || knowledgeBaseId.isBlank()) {
             log.warn("[common][llm] Add document attempt with empty knowledge base ID");
@@ -236,7 +230,7 @@ public class LLMService {
 
         // Create and add document
         Document document = new Document(documentBody.getContent(), metadata);
-        vectorStore.add(List.of(document));
+        llmVectorStoreService.getVectorStore().add(List.of(document));
 
         // Invalidate cache for this knowledge base
         knowledgeBaseCache.remove(knowledgeBaseId);
@@ -250,7 +244,7 @@ public class LLMService {
      * @param documents - List of documents to add
      * @throws ITParseException - When document parameters are invalid
      */
-    public void addDocuments(String knowledgeBaseId, List<KnowledgeDocumentBody> documents) throws ITParseException {
+    public void addDocuments(String knowledgeBaseId, List<KnowledgeDocumentBody> documents) throws ITParseException,ITNotFoundException {
         if (knowledgeBaseId == null || knowledgeBaseId.isBlank()) {
             log.warn("[common][llm] Batch add documents attempt with empty knowledge base ID");
             throw new ITParseException("llm-kb-id-required");
@@ -293,7 +287,7 @@ public class LLMService {
         }
 
         // Add all documents in batch
-        vectorStore.add(docsToAdd);
+        llmVectorStoreService.getVectorStore().add(docsToAdd);
 
         // Invalidate cache
         knowledgeBaseCache.remove(knowledgeBaseId);
@@ -306,35 +300,24 @@ public class LLMService {
      * @param knowledgeBaseId - The knowledge base identifier
      * @param documentId - The document identifier to delete
      */
-    public void deleteDocument(String knowledgeBaseId, String documentId) {
+    public void deleteDocument(String knowledgeBaseId, String documentId) throws ITNotFoundException{
         if (knowledgeBaseId == null || documentId == null) {
-            return;
+            throw new ITNotFoundException("common-llm-document-id-required");
         }
 
         log.debug("[common][llm] Deleting document {} from knowledge base {}", documentId, knowledgeBaseId);
 
-        // Find documents matching the criteria
-        FilterExpressionBuilder filterBuilder = new FilterExpressionBuilder();
-        var filter = filterBuilder.and(
-                filterBuilder.eq(METADATA_KB_ID, knowledgeBaseId),
-                filterBuilder.eq(METADATA_DOC_ID, documentId)
-        ).build();
+        String sql = """
+            DELETE FROM %s
+            WHERE metadata->>'%s' = ?
+              AND metadata->>'%s' = ?
+            """.formatted(llmVectorStoreService.getVectorStoreTableName()
+        , METADATA_KB_ID, METADATA_DOC_ID);
+        jdbcTemplate.update(sql, knowledgeBaseId, documentId);
 
-        SearchRequest searchRequest = SearchRequest.builder()
-                .query("")
-                .topK(100)
-                .filterExpression(filter)
-                .build();
+        knowledgeBaseCache.remove(knowledgeBaseId);
+        log.info("[common][llm] Document {} deleted from knowledge base {}", documentId, knowledgeBaseId);
 
-        List<Document> docsToDelete = vectorStore.similaritySearch(searchRequest);
-        if (!docsToDelete.isEmpty()) {
-            List<String> ids = docsToDelete.stream()
-                    .map(Document::getId)
-                    .collect(Collectors.toList());
-            vectorStore.delete(ids);
-            knowledgeBaseCache.remove(knowledgeBaseId);
-            log.info("[common][llm] Document {} deleted from knowledge base {}", documentId, knowledgeBaseId);
-        }
     }
 
     /**
@@ -342,7 +325,7 @@ public class LLMService {
      * @param knowledgeBaseId - The knowledge base identifier
      * @throws ITNotFoundException - When the knowledge base does not exist
      */
-    public void deleteKnowledgeBase(String knowledgeBaseId) throws ITNotFoundException {
+    public void deleteKnowledgeBase(String knowledgeBaseId) throws ITNotFoundException, ITNotFoundException {
         if (knowledgeBaseId == null || knowledgeBaseId.isBlank()) {
             throw new ITNotFoundException("llm-kb-id-required");
         }
@@ -351,28 +334,17 @@ public class LLMService {
             throw new ITNotFoundException("llm-kb-not-found");
         }
 
+        String sql = """
+            DELETE FROM %s
+            WHERE metadata->>'%s' = ?
+            """.formatted(llmVectorStoreService.getVectorStoreTableName()
+                , METADATA_KB_ID);
+        jdbcTemplate.update(sql, knowledgeBaseId);
+
+
         log.info("[common][llm] Deleting knowledge base: {}", knowledgeBaseId);
-
-        // Find all documents in this knowledge base
-        FilterExpressionBuilder filterBuilder = new FilterExpressionBuilder();
-        var filter = filterBuilder.eq(METADATA_KB_ID, knowledgeBaseId).build();
-
-        SearchRequest searchRequest = SearchRequest.builder()
-                .query("")
-                .topK(10000)
-                .filterExpression(filter)
-                .build();
-
-        List<Document> docsToDelete = vectorStore.similaritySearch(searchRequest);
-        if (!docsToDelete.isEmpty()) {
-            List<String> ids = docsToDelete.stream()
-                    .map(Document::getId)
-                    .collect(Collectors.toList());
-            vectorStore.delete(ids);
-        }
-
         knowledgeBaseCache.remove(knowledgeBaseId);
-        log.info("[common][llm] Knowledge base {} deleted, {} documents removed", knowledgeBaseId, docsToDelete.size());
+        log.info("[common][llm] Knowledge base {} deleted", knowledgeBaseId);
     }
 
     /**
@@ -394,7 +366,7 @@ public class LLMService {
 
         // Query the vector store for document count and last sync
         Long documentCount = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM vector_store WHERE metadata->>'knowledge_base_id' = ?",
+                "SELECT COUNT(*) FROM %s WHERE metadata->>'%s' = ?".formatted(llmVectorStoreService.getVectorStoreTableName(), METADATA_KB_ID),
                 Long.class,
                 knowledgeBaseId
         );
@@ -404,7 +376,7 @@ public class LLMService {
         }
 
         Long lastSync = jdbcTemplate.queryForObject(
-                "SELECT MAX((metadata->>'created_at')::bigint) FROM vector_store WHERE metadata->>'knowledge_base_id' = ?",
+                "SELECT MAX((metadata->>'%s')::bigint) FROM %s WHERE metadata->>'%s' = ?".formatted(METADATA_CREATED_AT,llmVectorStoreService.getVectorStoreTableName(),METADATA_KB_ID),
                 Long.class,
                 knowledgeBaseId
         );
@@ -424,15 +396,15 @@ public class LLMService {
      * List all available knowledge bases
      * @return List of knowledge base information
      */
-    public List<KnowledgeBaseInfoResponseItf> listKnowledgeBases() {
+    public List<KnowledgeBaseInfoResponseItf> listKnowledgeBases() throws ITNotFoundException {
         log.debug("[common][llm] Listing all knowledge bases");
 
         List<Map<String, Object>> results = jdbcTemplate.queryForList(
-                "SELECT metadata->>'knowledge_base_id' as kb_id, " +
+                "SELECT metadata->>'%s' as kb_id, ".formatted(METADATA_KB_ID) +
                         "COUNT(*) as doc_count, " +
-                        "MAX((metadata->>'created_at')::bigint) as last_sync " +
-                        "FROM vector_store " +
-                        "GROUP BY metadata->>'knowledge_base_id'"
+                        "MAX((metadata->>'%s')::bigint) as last_sync ".formatted(METADATA_CREATED_AT) +
+                        "FROM "+llmVectorStoreService.getVectorStoreTableName()+" " +
+                        "GROUP BY metadata->>'%s'".formatted(METADATA_KB_ID)
         );
 
         List<KnowledgeBaseInfoResponseItf> knowledgeBases = new ArrayList<>();
@@ -479,7 +451,7 @@ public class LLMService {
      * @param knowledgeBaseId - The knowledge base identifier
      * @return true if the knowledge base exists
      */
-    public boolean knowledgeBaseExists(String knowledgeBaseId) {
+    public boolean knowledgeBaseExists(String knowledgeBaseId) throws ITNotFoundException {
         if (knowledgeBaseId == null || knowledgeBaseId.isBlank()) {
             return false;
         }
@@ -490,7 +462,7 @@ public class LLMService {
         }
 
         Long count = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM vector_store WHERE metadata->>'knowledge_base_id' = ?",
+                "SELECT COUNT(*) FROM %s WHERE metadata->>'%s' = ?".formatted(llmVectorStoreService.getVectorStoreTableName(), METADATA_KB_ID),
                 Long.class,
                 knowledgeBaseId
         );

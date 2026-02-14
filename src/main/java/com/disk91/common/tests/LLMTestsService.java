@@ -86,7 +86,7 @@ public class LLMTestsService {
             addTestFaqDocuments();
             createdKnowledgeBases.add(TEST_KB_ID);
             commonTestsService.success("[llm] Successfully added 3 FAQ documents to knowledge base '{}'", TEST_KB_ID);
-        } catch (ITParseException x) {
+        } catch (ITParseException | ITNotFoundException x) {
             commonTestsService.error("[llm] Failed to add FAQ documents: {}", x.getMessage());
             throw new ITParseException("[llm] failed to create test knowledge base");
         }
@@ -146,6 +146,9 @@ public class LLMTestsService {
         } catch (ITNotFoundException | ITParseException x) {
             commonTestsService.error("[llm] RAG query failed: {}", x.getMessage());
             throw new ITParseException("[llm] failed RAG query for device reset");
+        } catch (Exception x) {
+            commonTestsService.error("[llm] RAG query failed uncatch Exception : {}", x.getMessage());
+            throw new ITParseException("[llm] failed RAG query for device reset");
         }
 
         // Test 4: Query about WiFi connection
@@ -177,6 +180,9 @@ public class LLMTestsService {
 
         } catch (ITNotFoundException | ITParseException x) {
             commonTestsService.error("[llm] WiFi RAG query failed: {}", x.getMessage());
+            throw new ITParseException("[llm] failed RAG query for WiFi connection");
+        } catch (Exception x) {
+            commonTestsService.error("[llm] WiFi query failed uncatch Exception : {}", x.getMessage());
             throw new ITParseException("[llm] failed RAG query for WiFi connection");
         }
 
@@ -210,6 +216,9 @@ public class LLMTestsService {
         } catch (ITNotFoundException | ITParseException x) {
             commonTestsService.error("[llm] Battery RAG query failed: {}", x.getMessage());
             throw new ITParseException("[llm] failed RAG query for battery life");
+        } catch (Exception x) {
+            commonTestsService.error("[llm] Battery RAG query failed uncatch Exception : {}", x.getMessage());
+            throw new ITParseException("[llm] failed RAG query for battery life");
         }
 
         // Test 6: Test query with invalid knowledge base
@@ -228,6 +237,9 @@ public class LLMTestsService {
         } catch (ITParseException x) {
             commonTestsService.error("[llm] Unexpected parse exception: {}", x.getMessage());
             throw x;
+        } catch (Exception x) {
+            commonTestsService.error("[llm] Non existent KB uncatch Exception : {}", x.getMessage());
+            throw new ITParseException("[llm] failed non existant KB test ");
         }
 
         // Test 7: Test simple text generation without RAG
@@ -292,7 +304,7 @@ public class LLMTestsService {
      * Add test FAQ documents to the knowledge base
      * @throws ITParseException - When document addition fails
      */
-    protected void addTestFaqDocuments() throws ITParseException {
+    protected void addTestFaqDocuments() throws ITParseException, ITNotFoundException {
         // Add document 1 - Device reset
         KnowledgeDocumentBody doc1 = new KnowledgeDocumentBody();
         doc1.setDocumentId(FAQ_DOC_1_ID);

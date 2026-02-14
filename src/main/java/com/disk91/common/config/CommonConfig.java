@@ -211,7 +211,7 @@ public class CommonConfig {
         return llmOllamaUrl;
     }
 
-    @Value("${common.llm.openai.url:https://api.openai.com}")
+    @Value("${spring.ai.openai.base-url:https://api.openai.com}")
     protected String llmOpenAiUrl;
     public String getLlmOpenAiUrl() {
         return llmOpenAiUrl;
@@ -235,13 +235,13 @@ public class CommonConfig {
         return llmOllamaEmbeddingModel;
     }
 
-    @Value("${common.llm.openai.chat.model:gpt-4o-mini}")
+    @Value("${spring.ai.openai.chat.options.model:gpt-4o-mini}")
     protected String llmOpenAiChatModel;
     public String getLlmOpenAiChatModel() {
         return llmOpenAiChatModel;
     }
 
-    @Value("${common.llm.openai.embedding.model:text-embedding-3-small}")
+    @Value("${spring.ai.openai.embedding.options.model:text-embedding-3-small}")
     protected String llmOpenAiEmbeddingModel;
     public String getLlmOpenAiEmbeddingModel() {
         return llmOpenAiEmbeddingModel;

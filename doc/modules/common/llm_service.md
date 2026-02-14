@@ -16,15 +16,16 @@ Add the following properties to your `common.properties` file:
 common.llm.provider=${COMMON_LLM_PROVIDER:ollama}
 
 # Ollama Configuration
-common.llm.ollama.url=${COMMON_LLM_OLLAMA_URL:http://localhost:11434}
-common.llm.ollama.chat.model=${COMMON_LLM_OLLAMA_CHAT_MODEL:llama3}
-common.llm.ollama.embedding.model=${COMMON_LLM_OLLAMA_EMBEDDING_MODEL:nomic-embed-text}
+spring.ai.ollama.base-url=${COMMON_LLM_OLLAMA_URL:http://localhost:11434}
+spring.ai.ollama.chat.options.model=${COMMON_LLM_OLLAMA_CHAT_MODEL:llama3}
+spring.ai.ollama.embedding.options.model=${COMMON_LLM_OLLAMA_EMBEDDING_MODEL:nomic-embed-text}
 
 # OpenAI Configuration
-common.llm.openai.url=${COMMON_LLM_OPENAI_URL:https://api.openai.com/v1}
-common.llm.openai.key=${COMMON_LLM_OPENAI_KEY:}
-common.llm.openai.chat.model=${COMMON_LLM_OPENAI_CHAT_MODEL:gpt-4o-mini}
-common.llm.openai.embedding.model=${COMMON_LLM_OPENAI_EMBEDDING_MODEL:text-embedding-3-small}
+spring.ai.openai.base-url=${COMMON_LLM_OPENAI_URL:https://api.openai.com}
+spring.ai.openai.api-key=${COMMON_LLM_OPENAI_KEY:_}
+spring.ai.openai-sdk.timeout=${COMMON_LLM_OPENAI_SDK_TIMEOUT:30000}
+spring.ai.openai.chat.options.model=${COMMON_LLM_OPENAI_CHAT_MODEL:gpt-4o-mini}
+spring.ai.openai.embedding.options.model=${COMMON_LLM_OPENAI_EMBEDDING_MODEL:text-embedding-3-small}
 
 # RAG Configuration
 common.llm.rag.topk=${COMMON_LLM_RAG_TOPK:5}

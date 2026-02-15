@@ -36,7 +36,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -83,6 +82,12 @@ public class LLMService {
             Use only the information from the context to answer questions.
             If the context doesn't contain relevant information, say that you don't have enough information to answer.
             Always be concise and accurate in your responses.
+            Responses are short but complete enough to answer the question based on the context.
+            
+            Important:
+            - The response language is the same as the question language.
+            - Format the response in Markdown.
+            - Don't use emojis or any other non-textual elements in your response.
             
             Context:
             {context}
@@ -469,6 +474,54 @@ public class LLMService {
 
         return count != null && count > 0;
     }
+
+
+    /**
+     * Check if a knowledge document exists
+     * @param knowledgeBaseId - The knowledge base identifier
+     * @return true if the knowledge base exists
+     */
+    public boolean knowledgeDocumentExists(String knowledgeBaseId, String documentId) throws ITNotFoundException {
+        if (knowledgeBaseId == null || knowledgeBaseId.isBlank() || documentId == null || documentId.isBlank()) {
+            return false;
+        }
+
+        Long count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM %s WHERE metadata->>'%s' = ? AND metadata->>'%s' = ? ".formatted(
+                        llmVectorStoreService.getVectorStoreTableName(),
+                        METADATA_KB_ID,
+                        METADATA_DOC_ID),
+                Long.class,
+                knowledgeBaseId,
+                documentId
+        );
+
+        return count != null && count > 0;
+    }
+
+    /**
+     * List the existing DocumentIDs for a given knowledge base
+     * @param knowledgeBaseId - The knowledge base identifier
+     * @return List of document IDs in the knowledge base
+     * @throws ITNotFoundException - When the knowledge base does not exist
+     */
+    public List<String> listKnowledgeDocumentIds(String knowledgeBaseId) throws ITNotFoundException {
+        if (knowledgeBaseId == null || knowledgeBaseId.isBlank()) {
+            throw new ITNotFoundException("llm-kb-id-required");
+        }
+
+        if (!knowledgeBaseExists(knowledgeBaseId)) {
+            throw new ITNotFoundException("llm-kb-not-found");
+        }
+
+        return jdbcTemplate.queryForList(
+                "SELECT metadata->>'%s' FROM %s WHERE metadata->>'%s' = ?".formatted(METADATA_DOC_ID, llmVectorStoreService.getVectorStoreTableName(), METADATA_KB_ID),
+                String.class,
+                knowledgeBaseId
+        );
+
+    }
+
 
     /**
      * Get the current LLM provider name

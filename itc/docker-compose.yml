@@ -110,7 +110,7 @@ services:
     logging: *logs
 
   ## ==============================================================
-  ## Postgresql
+  ## PostgreSQL
   postgres:
     build:
       context: ./postgresql/builds

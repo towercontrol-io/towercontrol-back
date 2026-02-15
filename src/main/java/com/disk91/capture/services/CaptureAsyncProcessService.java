@@ -261,12 +261,14 @@ public class CaptureAsyncProcessService {
 
     @PreDestroy
     private void stopWorkers() {
+        log.info("[capture] Capture workers stopping");
         running.set(false);      // stop enqueuing new data
         int maxWaitSeconds = 60;
         while ( rawQueueEstimatedSize.get() > 0 && maxWaitSeconds > 0 ) {
             Now.sleep(1_000);
             maxWaitSeconds--;
         }
+        if ( maxWaitSeconds == 0 ) log.warn("[capture] Capture workers time out (1)");
         if (workers != null) {
             workers.shutdown();
             try {
@@ -280,9 +282,12 @@ public class CaptureAsyncProcessService {
         }
         // Run the final flush of the store queue
         forceFlushStore = true;
-        while ( !flushedStore ) {
+        maxWaitSeconds = 60;
+        while ( !flushedStore && maxWaitSeconds > 0 ) {
             Now.sleep(1_000);
+            maxWaitSeconds--;
         }
+        if ( maxWaitSeconds == 0 ) log.warn("[capture] Capture workers time out (2)");
         log.info("[capture] Stopped capture async workers");
     }
 

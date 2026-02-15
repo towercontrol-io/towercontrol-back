@@ -106,6 +106,7 @@ public class IntegrationService {
      */
     @PreDestroy
     public void shutdown() {
+        log.info("[integration] Integration workers stopping");
         if ( this.integrationConfig.isIntegrationRouteMemoryEnabled() ) {
             // @TODO : persist the event store to database for later processing
             stopInMemoryWorkers();

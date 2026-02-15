@@ -33,6 +33,7 @@ setup_base: .FORCE
 	cp -R ./itc/* $(CONF_DIR)
 	cp ./itc/.env $(CONF_DIR)/
 	rm $(CONF_DIR)/postgresql/data/.empty
+	rm $(CONF_DIR)/prometheus/data/.empty
 	-sudo chown -R nobody:nogroup $(CONF_DIR)/prometheus
 	-sudo chown -R 472:root $(CONF_DIR)/grafana
 

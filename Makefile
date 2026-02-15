@@ -14,19 +14,19 @@ endif
 
 push-nce: check-tag .FORCE
 	# Use make push-nce VERSION=1.2.3 to push the image with the tag 1.2.3 and latest
-	docker login
-	./gradlew build -x test && docker build -t disk91/itc-nce:$(TAG) .
-	docker tag disk91/itc-nce:$(TAG) disk91/itc-nce:latest
-	docker push disk91/itc-nce:$(TAG)
-	docker push disk91/itc-nce:latest
+	$(DOCKER_CMD) login
+	./gradlew build -x test && $(DOCKER_CMD) buildx build --platform linux/amd64,linux/arm64 -t disk91/itc-nce:$(TAG) .
+	$(DOCKER_CMD) tag disk91/itc-nce:$(TAG) disk91/itc-nce:latest
+	$(DOCKER_CMD) push disk91/itc-nce:$(TAG)
+	$(DOCKER_CMD) push disk91/itc-nce:latest
 
 push-ce: check-tag .FORCE
 	# Use make push-ce VERSION=1.2.3 to push the image with the tag 1.2.3 and latest
-	docker login
-	./gradlew build -x test && docker build -t disk91/itc-back:$(TAG) .
-	docker tag disk91/itc-back:$(TAG) disk91/itc-back:latest
-	docker push disk91/itc-back:$(TAG)
-	docker push disk91/itc-back:latest
+	$(DOCKER_CMD) login
+	./gradlew build -x test && $(DOCKER_CMD) buildx build --platform linux/amd64,linux/arm64 -t disk91/itc-back:$(TAG) .
+	$(DOCKER_CMD) tag disk91/itc-back:$(TAG) disk91/itc-back:latest
+	$(DOCKER_CMD) push disk91/itc-back:$(TAG)
+	$(DOCKER_CMD) push disk91/itc-back:latest
 
 setup_base: .FORCE
 	mkdir $(CONF_DIR)

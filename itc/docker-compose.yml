@@ -15,31 +15,60 @@ services:
       - ./data:/data
     environment:
       - COMMON_INSTANCE_ID=aZgtj01LkPqzXvWm
-      - COMMON_SERVICE_NAME=IotTowerControl
-      - COMMON_SERVICE_BACK_DOMAIN=itc-back.foo.bar
-      - COMMON_SERVICE_BACK_BASEURL=https://itc-back.foo.bar
-      - COMMON_SERVICE_FRONT_DOMAIN=itc-front.foo.bar
-      - COMMON_SERVICE_FRONT_BASEURL=https://itc-front.foo.bar
-      - COMMON_ENCRYPTION_KEY=d5b504d560363cfe33890c4f5343f387
+      - COMMON_SERVICE_NAME=${ITC_SERVICE_NAME}
+      - COMMON_SERVICE_BACK_DOMAIN=${ITC_BACK_DOMAIN}
+      - COMMON_SERVICE_BACK_BASEURL=${ITC_BACK_BASE_URL}
+      - COMMON_SERVICE_FRONT_DOMAIN=${ITC_FRONT_DOMAIN}
+      - COMMON_SERVICE_FRONT_BASEURL=${ITC_FRONT_BASE_URL}
+      - COMMON_ENCRYPTION_KEY=${ITC_ENCRYPTION_KEY}
       - COMMON_PSQL_USER=itc
       - COMMON_PSQL_PASSWORD=itc-password
-      - COMMON_GOOGLE_API_KEY=
+      - COMMON_GOOGLE_API_KEY=${ITC_GOOGLE_API_KEY}
       - AUDIT_LOGS_DECRYPTION_ENABLED=true
       - COMMON_EMAIL_PASSWORD=
-      - COMMON_EMAIL_SENDER=no-reply@foo.bar
-      - USERS_SUPERADMIN_EMAIL=superadmin@foo.bar
-      - USERS_SUPERADMIN_PASSWORD=changeme
-      - USERS_SESSION_KEY=4f2a6b8c9d1e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a
+      - COMMON_EMAIL_SENDER=${ITC_EMAIL_SENDER}
+      - TICKETS_MANAGER_EMAIL=${ITC_EMAIL_TICKET_SENDER}
+      - USERS_SUPERADMIN_EMAIL=${ITC_SUPERADMIN_EMAIL}
+      - USERS_SUPERADMIN_PASSWORD=${ITC_SUPERADMIN_PASSWORD}
+      - USERS_SESSION_KEY=${ITC_SESSION_KEY}
       - USERS_DATA_PRIVACY_EXPIRATION_DAYS=365
-      - USERS_DEFAULT_ROLES=ROLE_DEVICE_READ,ROLE_DEVICE_WRITE,ROLE_BACKEND_CAPTURE,ROLE_USER_APIKEY
+      - USERS_DEFAULT_ROLES=ROLE_DEVICE_READ,ROLE_DEVICE_WRITE,ROLE_BACKEND_CAPTURE,ROLE_USER_APIKEY,ROLE_TICKET_USER
       - USERS_APIKEY_AUTHORIZED_ROLES=ROLE_DEVICE_WRITE,ROLE_BACKEND_CAPTURE,ROLE_GLOBAL_CAPTURE
-      - TICKET_ANONYMOUS_HASH_SALT=6dea91831bce6b331d6ac0d69d973692
+      - TICKET_ANONYMOUS_HASH_SALT=${ITC_ANONYMOUS_TICKET_SALT}
+      - USERS_REGISTRATION_PATH=/front/public/register?verificationKey=!0!
+      - USERS_LOSTPASSWORD_PATH=/front/public/password-change?verificationKey=!0!
     ports:
       - "127.0.0.1:8091:8081"
     networks:
       - public_net
       - mongo_net
       - monitoring_net
+    profiles:
+      - itc
+    logging: &logs
+      driver: "json-file"
+      options:
+        max-size: "100m"
+
+  ## ==============================================================
+  ## Frontend - (admin)
+  itc-front:
+    image: disk91/itc-front
+    container_name: itc-front
+    restart: unless-stopped
+    depends_on:
+      itc:
+        condition: service_started
+    environment:
+      - NUXT_PUBLIC_SERVICE_NAME=${ITC_SERVICE_NAME}
+      - NUXT_PUBLIC_BACKEND_API_BASE=${ITC_BACK_BASE_URL}
+      - NUXT_PUBLIC_EULA_LINK=${ITC_EULA_LINK}
+      - NUXT_PUBLIC_APIDOC_LINK=${ITC_FRONT_BASE_URL}/api/swagger-ui/index.html
+      - NUXT_PUBLIC_ENABLE_TICKETING_FEATURES=true
+    ports:
+      - "127.0.0.1:8093:80"
+    networks:
+      - public_net
     profiles:
       - itc
     logging: &logs
@@ -58,8 +87,8 @@ services:
       - 443:443
     restart: unless-stopped
     environment:
-      - DOMAIN_NAME=
-      - SECONDARY_NAME=
+      - DOMAIN_NAME=${ITC_FRONT_DOMAIN}
+      - SECONDARY_NAME=${ITC_BACK_DOMAIN}
     volumes:
       - ./nginx/configuration/:/etc/nginx/templates:rw,cached
       - ./nginx/certbot/:/var/www/certbot/:ro
@@ -118,7 +147,7 @@ services:
       retries: 3
       start_period: 30s
     ports:
-      - 127.0.0.1:27220:27017
+      - "127.0.0.1:27220:27017"
     restart: always
     volumes:
       - ./mongo/scripts:/scripts
@@ -149,7 +178,7 @@ services:
        retries: 3
        start_period: 30s
      ports:
-       - 127.0.0.1:27221:27017
+       - "127.0.0.1:27221:27017"
      restart: always
      volumes:
        - ./mongo/scripts:/scripts
@@ -320,7 +349,7 @@ services:
       - monitoring_net
       - public_net
     ports:
-      - 127.0.0.1:8092:8092
+      - "127.0.0.1:8092:8092"
     logging: *logs
 
 networks:

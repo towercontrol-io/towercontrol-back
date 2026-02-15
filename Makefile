@@ -29,8 +29,9 @@ push-ce: check-tag .FORCE
 	$(DOCKER_CMD) push disk91/itc-back:latest
 
 setup_base: .FORCE
-	mkdir $(CONF_DIR)
+	mkdir -p $(CONF_DIR)
 	cp -R ./itc/* $(CONF_DIR)
+	cp ./itc/.env $(CONF_DIR)/
 	rm $(CONF_DIR)/postgresql/data/.empty
 	-sudo chown -R nobody:nogroup $(CONF_DIR)/prometheus
 	-sudo chown -R 472:root $(CONF_DIR)/grafana
@@ -47,7 +48,7 @@ setup_nginx: .FORCE
 # If you have a problem running setup with missing X11 ...
 # this is related to docker login
 # run gpg2 --full-generate-key
-setup_shared: setup_base .FORCE
+setup_sharded: setup_base .FORCE
 	cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo up --force-recreate -d ; cd -
 	-sleep 10
 	$(DOCKER_CMD) exec mongo-config-01 sh -c "mongosh < /scripts/config-server"
@@ -59,7 +60,7 @@ setup_shared: setup_base .FORCE
 	-sleep 10
 	cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo stop ; cd -
 
-setup: setup_shared .FORCE
+setup: setup_sharded .FORCE
 
 clear-setup: stop
 	echo "Are you sure, this will delete all mongodb data ?"
@@ -69,7 +70,7 @@ clear-setup: stop
 
 build: back
 
-install: setup_shared back
+install: setup_sharded back
 
 start:
 	@if [ -d $(CONF_DIR)/nginx/ssl/accounts ]; then \

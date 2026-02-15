@@ -113,7 +113,7 @@ services:
   ## Postgresql
   postgres:
     build:
-      context: ./postgresql/build
+      context: ./postgresql/builds
       dockerfile: Dockerfile
       args:
         POSTGRES_VERSION: "17"

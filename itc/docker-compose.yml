@@ -15,6 +15,7 @@ services:
       - ./data:/data
     environment:
       - COMMON_INSTANCE_ID=aZgtj01LkPqzXvWm
+      - COMMON_NCE_ENABLE=${ITC_NCE_ENABLE}
       - COMMON_SERVICE_NAME=${ITC_SERVICE_NAME}
       - COMMON_SERVICE_BACK_DOMAIN=${ITC_BACK_DOMAIN}
       - COMMON_SERVICE_BACK_BASEURL=${ITC_BACK_BASE_URL}
@@ -40,6 +41,12 @@ services:
       - TICKET_ANONYMOUS_HASH_SALT=${ITC_ANONYMOUS_TICKET_SALT}
       - USERS_REGISTRATION_PATH=/front/public/register?verificationKey=!0!
       - USERS_LOSTPASSWORD_PATH=/front/public/password-change?verificationKey=!0!
+      - COMMON_LLM_PROVIDER=${ITC_LLM_PROVIDER}
+      - COMMON_LLM_OPENAI_KEY=${ITC_LLM_OPENAI_KEY}
+      - COMMON_LLM_OPENAI_EMBEDDING_MODEL=${ITC_LLM_OPENAI_EMBEDDING_MODEL}
+      - COMMON_LLM_OPENAI_CHAT_MODEL=${ITC_LLM_OPENAI_CHAT_MODEL}
+      - COMMON_LLM_OLLAMA_URL=${ITC_LLM_OLLAMA_URL}
+      - COMMON_LLM_OLLAMA_CHAT_MODEL=${ITC_LLM_OLLAMA_CHAT_MODEL}
     ports:
       - "127.0.0.1:8091:8081"
     networks:
@@ -69,7 +76,7 @@ services:
       - NUXT_PUBLIC_APIDOC_LINK=${ITC_FRONT_BASE_URL}/api/swagger-ui/index.html
       - NUXT_PUBLIC_ENABLE_TICKETING_FEATURES=true
     ports:
-      - "127.0.0.1:8093:80"
+      - "127.0.0.1:8093:3000"
     networks:
       - public_net
     profiles:

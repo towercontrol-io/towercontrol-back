@@ -84,15 +84,30 @@ public class UserRegistrationService {
     @Autowired
     protected AuditIntegration auditIntegration;
 
+
+    /**
+     * Retro compatibility and default behavior
+     * @param body
+     * @param req
+     * @throws ITParseException
+     * @throws ITTooManyException
+     * @throws ITRightException
+     */
+    public void requestAccountCreation(UserAccountRegistrationBody body, HttpServletRequest req)
+    throws ITParseException, ITTooManyException, ITRightException {
+        this.requestAccountCreation(body, req, true);
+    }
+
+
     /**
      * Create a UserPending entry when the user request format is valid, email not filtered and do not already exist
      * The function will add delay to limit the ability to understand the underlying behavior and even if reports
      * the reason of refusal, the upper layer may silently refuse the request (responding OK en errors)
-     * The function sent Email on success
+     * The function sent Email on success when sendlink is true
      * @throws ITParseException
      * @throws ITTooManyException
      */
-    public void requestAccountCreation(UserAccountRegistrationBody body, HttpServletRequest req)
+    public void requestAccountCreation(UserAccountRegistrationBody body, HttpServletRequest req, boolean sendLink)
         throws ITParseException, ITTooManyException, ITRightException {
 
         this.incRegistrationAttempt();
@@ -170,7 +185,7 @@ public class UserRegistrationService {
         // and send an email if needed
 
         userRegistrationRepository.save(ur);
-        if (usersConfig.isUsersRegistrationLinkByEmail()) {
+        if (usersConfig.isUsersRegistrationLinkByEmail() && sendLink) {
             Locale locale = emailTools.extractLocale(req, Locale.forLanguageTag(commonConfig.getCommonLangDefault()));
             // In case the registration path is empty, the validation code is directly printed in the email, in the other case,
             // the email contains the link to the frontend.

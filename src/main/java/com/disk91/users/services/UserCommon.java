@@ -310,6 +310,13 @@ public class UserCommon {
         }
     }
 
+    /**
+     * Save user with cache update. (avoid direct call to repository or cache and save to keep cache updated)
+     * @param u User to save
+     */
+    public void saveUser(User u) {
+        userCache.saveUser(u);
+    }
 
     @Autowired
     protected UserRepository userRepository;

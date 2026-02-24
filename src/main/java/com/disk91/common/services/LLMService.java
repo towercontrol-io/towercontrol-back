@@ -106,17 +106,17 @@ public class LLMService {
         // Validate input parameters
         if (body.getKnowledgeBaseId() == null || body.getKnowledgeBaseId().isBlank()) {
             log.warn("[common][llm] Query attempt with empty knowledge base ID");
-            throw new ITParseException("llm-kb-id-required");
+            throw new ITParseException("common-llm-kb-id-required");
         }
         if (body.getQuery() == null || body.getQuery().isBlank()) {
             log.warn("[common][llm] Query attempt with empty query");
-            throw new ITParseException("llm-query-required");
+            throw new ITParseException("common-llm-query-required");
         }
 
         // Check if knowledge base exists
         if (!knowledgeBaseExists(body.getKnowledgeBaseId())) {
             log.warn("[common][llm] Query attempt on non-existent knowledge base: {}", body.getKnowledgeBaseId());
-            throw new ITNotFoundException("llm-kb-not-found");
+            throw new ITNotFoundException("common-llm-kb-not-found");
         }
 
         log.debug("[common][llm] Processing RAG query for knowledge base: {}", body.getKnowledgeBaseId());
@@ -167,7 +167,7 @@ public class LLMService {
                             .content();
         } catch ( Exception e) {
             log.error("[common][llm] LLM call failed for KB {}: {}", body.getKnowledgeBaseId(), e.getMessage());
-            throw new ITParseException("llm-call-failed");
+            throw new ITParseException("common-llm-call-failed");
         }
 
         // Extract source document IDs
@@ -201,15 +201,15 @@ public class LLMService {
         // Validate input parameters
         if (knowledgeBaseId == null || knowledgeBaseId.isBlank()) {
             log.warn("[common][llm] Add document attempt with empty knowledge base ID");
-            throw new ITParseException("llm-kb-id-required");
+            throw new ITParseException("common-llm-kb-id-required");
         }
         if (documentBody.getDocumentId() == null || documentBody.getDocumentId().isBlank()) {
             log.warn("[common][llm] Add document attempt with empty document ID");
-            throw new ITParseException("llm-doc-id-required");
+            throw new ITParseException("common-llm-doc-id-required");
         }
         if (documentBody.getContent() == null || documentBody.getContent().isBlank()) {
             log.warn("[common][llm] Add document attempt with empty content");
-            throw new ITParseException("llm-doc-content-required");
+            throw new ITParseException("common-llm-doc-content-required");
         }
 
         log.debug("[common][llm] Adding document {} to knowledge base {}", documentBody.getDocumentId(), knowledgeBaseId);
@@ -252,11 +252,11 @@ public class LLMService {
     public void addDocuments(String knowledgeBaseId, List<KnowledgeDocumentBody> documents) throws ITParseException,ITNotFoundException {
         if (knowledgeBaseId == null || knowledgeBaseId.isBlank()) {
             log.warn("[common][llm] Batch add documents attempt with empty knowledge base ID");
-            throw new ITParseException("llm-kb-id-required");
+            throw new ITParseException("common-llm-kb-id-required");
         }
         if (documents == null || documents.isEmpty()) {
             log.warn("[common][llm] Batch add documents attempt with empty document list");
-            throw new ITParseException("llm-docs-required");
+            throw new ITParseException("common-llm-docs-required");
         }
 
         log.info("[common][llm] Batch adding {} documents to knowledge base {}", documents.size(), knowledgeBaseId);
@@ -266,10 +266,10 @@ public class LLMService {
 
         for (KnowledgeDocumentBody docBody : documents) {
             if (docBody.getDocumentId() == null || docBody.getDocumentId().isBlank()) {
-                throw new ITParseException("llm-doc-id-required");
+                throw new ITParseException("common-llm-doc-id-required");
             }
             if (docBody.getContent() == null || docBody.getContent().isBlank()) {
-                throw new ITParseException("llm-doc-content-required");
+                throw new ITParseException("common-llm-doc-content-required");
             }
 
             // Build metadata
@@ -332,11 +332,11 @@ public class LLMService {
      */
     public void deleteKnowledgeBase(String knowledgeBaseId) throws ITNotFoundException, ITNotFoundException {
         if (knowledgeBaseId == null || knowledgeBaseId.isBlank()) {
-            throw new ITNotFoundException("llm-kb-id-required");
+            throw new ITNotFoundException("common-llm-kb-id-required");
         }
 
         if (!knowledgeBaseExists(knowledgeBaseId)) {
-            throw new ITNotFoundException("llm-kb-not-found");
+            throw new ITNotFoundException("common-llm-kb-not-found");
         }
 
         String sql = """
@@ -360,7 +360,7 @@ public class LLMService {
      */
     public KnowledgeBaseInfoResponseItf getKnowledgeBaseInfo(String knowledgeBaseId) throws ITNotFoundException {
         if (knowledgeBaseId == null || knowledgeBaseId.isBlank()) {
-            throw new ITNotFoundException("llm-kb-id-required");
+            throw new ITNotFoundException("common-llm-kb-id-required");
         }
 
         // Check cache first
@@ -377,7 +377,7 @@ public class LLMService {
         );
 
         if (documentCount == null || documentCount == 0) {
-            throw new ITNotFoundException("llm-kb-not-found");
+            throw new ITNotFoundException("common-llm-kb-not-found");
         }
 
         Long lastSync = jdbcTemplate.queryForObject(
@@ -507,11 +507,11 @@ public class LLMService {
      */
     public List<String> listKnowledgeDocumentIds(String knowledgeBaseId) throws ITNotFoundException {
         if (knowledgeBaseId == null || knowledgeBaseId.isBlank()) {
-            throw new ITNotFoundException("llm-kb-id-required");
+            throw new ITNotFoundException("common-llm-kb-id-required");
         }
 
         if (!knowledgeBaseExists(knowledgeBaseId)) {
-            throw new ITNotFoundException("llm-kb-not-found");
+            throw new ITNotFoundException("common-llm-kb-not-found");
         }
 
         return jdbcTemplate.queryForList(

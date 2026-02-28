@@ -129,7 +129,7 @@ public class ApiUsersProfile {
     /**
      * Change Password endpoint - logged user
      *
-     * This endpoint allows a user to change its password after beeing logged. It can be used for regular password change but also for
+     * This endpoint allows a user to change its password after being logged. It can be used for regular password change but also for
      * password expiration. In this case the user will have to upgrade its token to access the full APIs.
      *
      * This endpoint needs to have a 1FA completed process at least
@@ -151,7 +151,7 @@ public class ApiUsersProfile {
     )
     @PreAuthorize("hasAnyRole('ROLE_LOGIN_1FA')")
     // ----------------------------------------------------------------------
-    public ResponseEntity<?> changeSlefPasswordProfile(
+    public ResponseEntity<?> changeSelfPasswordProfile(
             HttpServletRequest request,
             @RequestBody(required = true) UserPasswordChangeBody body
             ) {

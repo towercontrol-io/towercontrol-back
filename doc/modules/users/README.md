@@ -112,6 +112,51 @@ and allows the authentication token to be renewed without having all functional 
 
 For being used, the JWT token must be preceded by the `Bearer` keyword. 
 
+### Authentication Flow Diagram
+
+```
+   ┌─────────────────┐
+   │  Submit Login   │
+   │ (email/password)│
+   └────────┬────────┘
+            │
+            v
+   ┌─────────────────┐
+   │   POST /signin  │
+   └────────┬────────┘
+            │
+            v
+       ┌────┴────┐
+       │ Success?│
+       └────┬────┘
+            │
+       ┌────┴────────────────┬─────────────────┬──────────────┐
+       │                     │                 │              │
+       v                     v                 v              v
+   ┌─────────┐       ┌─────────────┐   ┌─────────────┐  ┌────────┐
+   │Password │       │ Conditions  │   │  2FA        │  │  Full  │
+   │Expired? │       │ to Validate?│   │  Required?  │  │ Access │
+   └────┬────┘       └──────┬──────┘   └──────┬──────┘  └────────┘
+        │                   │                 │
+        v                   v                 v
+   ┌─────────┐       ┌─────────────┐    ┌─────────────┐
+   │ Change  │       │   Accept    │    │   Receive   │
+   │Password │       │  Conditions │    │  2FA Code   │
+   └────┬────┘       └──────┬──────┘    └──────┬──────┘
+        │                   │                  │
+        └──────────┬────────┴──────────────────┘
+                   │
+                   v
+            ┌──────────────────┐
+            │ GET /upgrade?2fa │
+            └──────┬───────────┘
+                   │
+                   v
+            ┌──────────────┐
+            │ Full Access  │
+            └──────────────┘
+```
+
 ### Brute force protection on user login
 
 When a new login or session upgrade is received, we verify the login attempt is

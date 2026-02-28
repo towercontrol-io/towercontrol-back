@@ -50,6 +50,115 @@ as a consequence, without a new login of the user with the right password, the d
 * Accounts pending creation are stored in a separate table that is progressively cleaned up—either because the accounts have been created
   or because they did not pass the next stage and have been rejected.
 
+#### User account creation flow diagram
+
+```
+┌─────────────────────┐
+│ Get Configuration   │
+│ GET /config/        │
+└──────────┬──────────┘
+           │
+           v
+┌─────────────────────┐
+│  Fill Registration  │
+│  Form (Email +      │
+│  optional code)     │
+└──────────┬──────────┘
+           │
+           v
+┌─────────────────────┐
+│ POST /registration/ │
+│      register       │
+└──────────┬──────────┘
+           │
+           v
+    ┌──────┴──────┐
+    │  Always     │
+    │  Success    │
+    └──────┬──────┘
+           │
+           v
+┌─────────────────────┐
+│  Check Email        │
+│  (if valid request) │
+└──────────┬──────────┘
+           │
+           v
+┌─────────────────────┐
+│ Click Verification  │
+│ Link with           │
+│ validationID        │
+└──────────┬──────────┘
+           │
+           v
+┌─────────────────────┐
+│  Fill Account       │
+│  Creation Form      │
+│  (Password + EULA)  │
+└──────────┬──────────┘
+           │
+           v
+┌─────────────────────┐
+│Complete the captcha │
+│  when enabled       │
+│  and Non Community  │
+│  Edition            │
+└──────────┬──────────┘
+           │
+           v
+┌─────────────────────┐
+│ POST /creation/     │
+│      create         │
+└──────────┬──────────┘
+           │
+      ┌────┴────┐
+      │Success? │
+      └────┬────┘
+           │
+    ┌──────┴──────┬──────────────┐
+    │             │              │
+    v             v              v
+┌────────┐  ┌─────────┐  ┌──────────────┐
+│Created │  │ Error   │  │ Show Error   │
+│        │  │ 400     │  │ Message      │
+└───┬────┘  └─────────┘  └──────────────┘
+    │
+    v
+┌─────────────┐
+│Auto Valid?  │
+└──────┬──────┘
+       │
+  ┌────┴────┬──────────┐
+  │         │          │
+  v         v          v
+┌──────┐ ┌──────┐ ┌────────────┐
+│ Yes  │ │  No  │ │ Redirect   │
+│Login │ │Wait  │ │ to Login / │
+│Page  │ │Admin │ │ Show Info  │
+└──────┘ └──────┘ └────────────┘
+```
+#### User creation security
+
+During the user creation phase, Email verification is performed based on different rules:
+- email size, should not exceed `users.registration.email.maxlength` parameter
+- email format, should match email standard format
+- email structure, should not match any of the `users.registration.email.filters` regex patterns, separated by `,`
+
+#### Password creation rules
+
+The password creation & change must respect the rules defined in the configuration files and set by the following
+variables (or the env var equivalent):
+- `users.password.min.size` : (USER_PASSWORD_MIN_SIZE) - minimum password size ; default 8
+- `users.password.min.uppercase` : (USER_PASSWORD_MIN_UPPERCASE) - minimum number of uppercase characters
+- `users.password.min.lowercase` : (USER_PASSWORD_MIN_LOWERCASE) - minimum number of lowercase characters
+- `users.password.min.numbers` : (USER_PASSWORD_MIN_NUMBERS) - minimum number of numbers
+- `users.password.min.symbols` : (USER_PASSWORD_MIN_SYMBOLS) - minimum number of symbols
+
+To protect the password against dictionary attacks, the password hash uses a per-user salt, randomly generated at user. To avoid
+a database attack exposing the salt and the hash of the password, the password can be altered with a pre-string `users.password.header`
+and a post-string `users.password.footer` to be added to the password before hashing. The pre-string and post-string are stored in configuration
+file not be exposed to database attack.
+
 #### User account deletion
 Admin can delete a user account but standard user can only delete its account. 
 Account deletion is virtual in a first step. The account has its userKey cleared to make sure the 
@@ -63,28 +172,6 @@ immediately destroyed.
 #### User email messages
 The user service is able to send email messages to users. The email content is defined in the configuration file and can be
 modified by the administrator. The email content is defined in the `users.messages_xx.properties` files.
-
-#### User creation security
-
-During the user creation phase, Email verification is performed based on different rules:
-- email size, should not exceed `users.registration.email.maxlength` parameter
-- email format, should match email standard format
-- email structure, should not match any of the `users.registration.email.filters` regex patterns, separated by `,`
-
-#### Password creation rules
-
-The password creation & change must respect the rules defined in the configuration files and set by the following 
-variables (or the env var equivalent):
-- `users.password.min.size` : (USER_PASSWORD_MIN_SIZE) - minimum password size ; default 8
-- `users.password.min.uppercase` : (USER_PASSWORD_MIN_UPPERCASE) - minimum number of uppercase characters
-- `users.password.min.lowercase` : (USER_PASSWORD_MIN_LOWERCASE) - minimum number of lowercase characters
-- `users.password.min.numbers` : (USER_PASSWORD_MIN_NUMBERS) - minimum number of numbers
-- `users.password.min.symbols` : (USER_PASSWORD_MIN_SYMBOLS) - minimum number of symbols
-
-To protect the password against dictionary attacks, the password hash uses a per-user salt, randomly generated at user. To avoid
-a database attack exposing the salt and the hash of the password, the password can be altered with a pre-string `users.password.header` 
-and a post-string `users.password.footer` to be added to the password before hashing. The pre-string and post-string are stored in configuration
-file not be exposed to database attack.
 
 ## User login
 

@@ -95,3 +95,7 @@ stop:
 		cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) --profile mongo --profile itc --profile monitoring stop -t 600 ; cd - ;\
     fi
 
+renew-cert:
+	@if [ -d $(CONF_DIR)/nginx/ssl/accounts ]; then \
+		cd $(CONF_DIR) ; $(DOCKER_COMP_CMD) run --rm certbot renew ; $(DOCKER_CMD) restart itc_run-nginx-1 ; cd - ;\
+	fi

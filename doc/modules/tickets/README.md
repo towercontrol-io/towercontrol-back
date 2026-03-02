@@ -49,6 +49,10 @@ can generally be used as a basis for building an FAQ. Typically, a ticket create
 a template question/answer for users to consult. Some FAQs can be publicly accessible without logging in, while others 
 are available only to authenticated users.
 
+There are two types of FAQs:
+- Public FAQs that are accessible without authentication and can therefore be used on a website
+- Private FAQs that require authentication and are therefore accessible only to users logged in to the platform.
+
 #### Ticket data model
 
 The data is stored in two main tables in postgresql:
@@ -104,3 +108,23 @@ ticket creation and updates.
 
 When an administrator sends a reply to a user, an email is sent to the user to inform them provided that `tickets.email.user.update` 
 is true.
+
+
+## Use the FAQ
+
+The api returns a list of FAQ entries using the following format:
+```json
+{
+  "topic" : String,                        // Faq topic (Markdown format)
+  "content" : String,                      // Faq content (Markdown format)
+  "totalFaq" : Number                      // Total number of FAQ entries available (for pagination)
+}
+```
+
+There is two endpoints available to retrieve FAQ entries:
+- `GET /tickets/1.0/public/faq` to retrieve public FAQ entries that do not require authentication
+- `GET /tickets/1.0/faq` to retrieve private FAQ entries that require authentication and are therefore accessible only to users logged in to the platform.
+
+It's possible to pass request parameters to limit the number of FAQ entries returned and to paginate results:
+- `page` (default to 0): page number to retrieve
+- `size` (default to 10): number of FAQ entries per page

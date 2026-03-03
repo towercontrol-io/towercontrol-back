@@ -115,13 +115,14 @@ is true.
 The api returns a list of FAQ entries using the following format:
 ```json
 {
+  "id": Number,                            // Unique FAQ identifier (underlaying number, not consecutive)
   "topic" : String,                        // Faq topic (Markdown format)
   "content" : String,                      // Faq content (Markdown format)
   "totalFaq" : Number                      // Total number of FAQ entries available (for pagination)
 }
 ```
 
-There is two endpoints available to retrieve FAQ entries:
+There are two endpoints available to retrieve FAQ entries:
 - `GET /tickets/1.0/public/faq` to retrieve public FAQ entries that do not require authentication
 - `GET /tickets/1.0/faq` to retrieve private FAQ entries that require authentication and are therefore accessible only to users logged in to the platform.
 

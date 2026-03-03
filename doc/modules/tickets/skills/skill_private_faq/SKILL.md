@@ -59,7 +59,7 @@ As a functional summary:
 
 ### Step 3: Display FAQ entries
 - Display the list of FAQ entries received from the backend
-- Each entry shows the topic and content in Markdown format
+- (Important) Each entry shows the topic and content in **Markdown** format
 - Implement pagination controls using the `totalFaq` field to calculate total pages
 
 ### Step 4: Handle errors

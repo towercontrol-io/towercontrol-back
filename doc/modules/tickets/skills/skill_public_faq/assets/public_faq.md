@@ -102,6 +102,7 @@ Once the FAQ entries are retrieved from the backend, they should be displayed to
 - `totalFaq`: The total number of FAQ entries available (used for pagination)
 
 The fields `id` and `totalFaq` should not be displayed to the user, they are only used for internal management and pagination.
+Important : `topic` and `content` fields are in Markdown format, so they should be rendered accordingly to display the formatted content to the user.
 
 The front-end should:
 1. Parse and render the Markdown content in both `topic` and `content` fields

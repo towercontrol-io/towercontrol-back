@@ -28,6 +28,7 @@ Planned for the future
 
 ### Natively supported integrations
 - `Helium / Chirpstack` via HTTP(s) with JSON formatting, authentication via header (api_key or JWT token)
+- `Sigfox` via HTTP(s) callback, authentication via header (api_key or JWT token)
 
 #### How to setup Helium / Chirpstack integration (case of single tenant)
 1) Create an API key with the roles `ROLE_GLOBAL_CAPTURE` and `ROLE_BACKEND_CAPTURE` and `ROLE_DEVICE_WRITE`

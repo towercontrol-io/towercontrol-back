@@ -46,7 +46,8 @@ but only metadata, while aiming to be generic with respect to possible integrati
     nwkTimeNs: "long",                       // Original data timestamp nanoseconds part (when available)
     nwkDeviceId: "string",                   // Device Id as identified on the network
     deviceId: "string",                      // Device Id as identified in the platform
-    sessionCounter: "int",                  // Session counter when available or deducted
+    dataStreamId: "string",                  // Data stream Id as identified in the platform
+    sessionCounter: "int",                   // Session counter when available or deducted
     frameCounter: "int",                     // Frame counter when available
     framePort: "int",                        // Frame port when available
     confirmReq: "boolean",                   // Whether the frame has confirme request flag

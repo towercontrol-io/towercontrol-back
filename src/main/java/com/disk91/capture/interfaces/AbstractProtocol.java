@@ -48,7 +48,7 @@ public abstract class AbstractProtocol {
      */
     protected boolean keepHeader(String headerName) {
         // List of headers to refuse (no interest to keep them)
-        String [] headersToKeep = new String[] {
+        String [] headersReject = new String[] {
                 "Authorization",
                 "X-Forwarded-For",
                 "X-Real-IP",
@@ -58,7 +58,7 @@ public abstract class AbstractProtocol {
                 "Accept",
                 "User-Agent"
         };
-        for ( String h : headersToKeep ) {
+        for ( String h : headersReject ) {
             if ( h.equalsIgnoreCase(headerName) ) return false;
         }
         return true;

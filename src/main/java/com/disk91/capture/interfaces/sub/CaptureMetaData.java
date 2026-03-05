@@ -62,6 +62,14 @@ public class CaptureMetaData implements CloneableObject<CaptureMetaData> {
     protected String deviceId;
 
     @Schema(
+            description = "Stream Id as identified in the platform",
+            example = "",
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED
+    )
+    protected String dataStreamId;
+
+
+    @Schema(
             description = "Session counter when available",
             example = "42",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED
@@ -148,6 +156,7 @@ public class CaptureMetaData implements CloneableObject<CaptureMetaData> {
         o.nwkTimeNs = this.nwkTimeNs;
         o.nwkDeviceId = this.nwkDeviceId;
         o.deviceId = this.deviceId;
+        o.dataStreamId = this.dataStreamId;
         o.sessionCounter = this.sessionCounter;
         o.frameCounterUp = this.frameCounterUp;
         o.frameCounterDwn = this.frameCounterDwn;
@@ -289,5 +298,13 @@ public class CaptureMetaData implements CloneableObject<CaptureMetaData> {
 
     public void setFrameCounterDwn(int frameCounterDwn) {
         this.frameCounterDwn = frameCounterDwn;
+    }
+
+    public String getDataStreamId() {
+        return dataStreamId;
+    }
+
+    public void setDataStreamId(String dataStreamId) {
+        this.dataStreamId = dataStreamId;
     }
 }

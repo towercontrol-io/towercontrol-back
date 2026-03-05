@@ -1,0 +1,471 @@
+/*
+ * Copyright (c) 2018.
+ *
+ *  This is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  this software is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  -------------------------------------------------------------------------------
+ *  Author : Paul Pinault aka disk91
+ *  See https://www.disk91.com
+ *
+ *  Commercial license of this software can be obtained contacting disk91.com or ingeniousthings.fr
+ *  -------------------------------------------------------------------------------
+ *
+ */
+
+package com.disk91.capture.drivers.standard.sigfox;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * Summary
+ *
+ * Parse a sigfox incoming callback structure to extract and qualify the data
+ * Later this object will be used to be map to a specific object. This allows to have
+ * a common capture point whatever is the message type source.
+ * The objective is to simplify the way we implement the callback in sigfox.
+ * ----------------------------------------------------------------------------------
+ * Support :
+ *  - DATA POST
+ *  - SERVICE POST
+ *  - ERROR POST
+ *
+ * @author Paul Pinault
+ */
+public class SigfoxCommonMessage {
+
+    protected static final Logger log = LoggerFactory.getLogger(SigfoxCommonMessage.class);
+
+    public static final int INFOCODE_SUCCESS            =   0;
+    public static final int INFOCODE_NOANSWER           =   1;
+    public static final int INFOCODE_INVALIDPAYLOAD     =   2;
+    public static final int INFOCODE_OVERRUN_ERROR      =   3;
+    public static final int INFOCODE_NETWORK_ERROR      =   4;
+    public static final int INFOCODE_PENDING            =   5;
+    public static final int INFOCODE_NO_DWN_CONTRACT    =   6;
+    public static final int INFOCODE_TOO_MANY_REQ       =   7;
+    public static final int INFOCODE_INVALID_CONFIG     =   8;
+    public static final int INFOCODE_ROAMING_PENDING    =   10;
+
+    public static final String TYPE_DATA = "data";
+    public static final String TYPE_SERVICE_STATUS = "srv_status";
+    public static final String TYPE_SERVICE_ACK = "srv_ack";
+    public static final String TYPE_SERVICE_GEOLOC = "srv_geoloc";
+    public static final String TYPE_SERVICE_ADVANCED = "srv_advanced";
+    public static final String TYPE_ERROR = "error";
+
+    public enum MessageType {
+        DATA,SERVICE_STATUS,SERVICE_ACK,ERROR, UNKNOWN, SERVICE_GEO, LOST
+    };
+
+
+    // --------------------------------------------------------
+    // Common mandatory elements
+
+    @JsonIgnore private boolean _device = false;
+    private String device;
+
+    @JsonIgnore private boolean _time = false;
+    private long time;
+
+    @JsonIgnore private boolean _type = false;
+    private String type;
+    @JsonIgnore private MessageType messagetype = MessageType.UNKNOWN;
+
+    // -------------------------------------------------------
+    // Other common but not especially mandatory
+
+    @JsonIgnore private boolean _seq = false;
+    private int seq;
+
+    @JsonIgnore private boolean _lat = false;
+    private double lat;
+
+    @JsonIgnore private boolean _lng = false;
+    private double lng;
+
+    @JsonIgnore private boolean _radius = false;
+    private int radius;
+
+    @JsonIgnore private boolean _user = false;
+    private String user;
+
+    @JsonIgnore private boolean _version = false;
+    private int version;
+
+    @JsonIgnore private boolean _repeat = false;
+    private int repeat = 1;
+
+    // -------------------------------------------------------
+    // Radio & network elements
+
+    @JsonIgnore private boolean _duplicate = false;
+    private boolean duplicate;
+
+    @JsonIgnore private boolean _signal = false;
+    private double signal;
+
+    @JsonIgnore private boolean _station = false;
+    private String station;
+
+    @JsonIgnore private boolean _avgSignal = false;
+    private double avgSignal;
+
+    @JsonIgnore private boolean _rssi = false;
+    private double rssi;
+
+    // -------------------------------------------------------
+    // Data specific messages
+    @JsonIgnore private boolean _data = false;
+    private String data;
+
+    @JsonIgnore private boolean _ack = false;
+    private boolean ack;
+
+    // -------------------------------------------------------
+    // Service specific messages
+    @JsonIgnore private boolean _temp = false;
+    private double  temp;
+
+    @JsonIgnore private boolean _batt = false;
+    private double batt;
+
+    @JsonIgnore private boolean _infoCode = false;
+    private int infoCode;
+
+    @JsonIgnore private boolean _infoMessage = false;
+    private String infoMessage;
+
+    @JsonIgnore private boolean _downlinkAck = false;
+    private String downlinkAck;
+
+    @JsonIgnore private boolean _downlinkOverusage = false;
+    private boolean downlinkOverusage;
+
+    // -------------------------------------------------------
+    // Error specific messages
+    @JsonIgnore private boolean _info = false;
+    private String info;
+
+    @JsonIgnore private boolean _severity = false;
+    private String severity;
+
+    // -------------------------------------------------------
+    // Encryption specific
+    @JsonIgnore private boolean _isDecrypted = false;
+    @JsonIgnore private int [] _decryptedPayload;
+
+
+    // ==================================================================================
+    // Advanced functions
+    // ----------------------------------------------------------------------------------
+    //
+    // ==================================================================================
+
+    // -------------------------------------------------------------------------------
+    // Verify the data received to be compliant with the expectation
+    public boolean isValidMessage() {
+
+        if ( !_device || !_time || !_type ) return false;
+
+        switch ( this.messagetype ) {
+            case DATA:
+                if ( !_seq || !_data ) return false;
+                break;
+            case SERVICE_STATUS:
+                if ( !_seq || !_temp || !_batt ) return false;
+                break;
+            case SERVICE_ACK:
+                if ( !_infoCode ) return false;
+                break;
+            case SERVICE_GEO:
+                if ( !_radius || !_lat || !_lng ) return false;
+                break;
+            case ERROR:
+                if ( !_info ) return false;
+                break;
+            default:
+                return false;
+        }
+        return true;
+    }
+
+    // ==================================================================================
+    // Getter & Setters
+    // ----------------------------------------------------------------------------------
+    //
+    // ==================================================================================
+
+
+    public String getDevice() {
+        return device;
+    }
+    public void setDevice(String device) {
+        if ( device.matches("^[0-9A-F]+$") ) {
+            this.device = device;
+            this._device = true;
+        } else {
+            log.warn("[capture][sigfox] Received invalid device id ({})",device);
+        }
+    }
+
+    public String getType() {
+        return type;
+    }
+    public void setType(String type) {
+        this.type = type;
+        this._type = true;
+        if ( this.type.compareToIgnoreCase(TYPE_DATA) == 0 ) {
+            this.messagetype = MessageType.DATA;
+        } else if ( this.type.compareToIgnoreCase(TYPE_SERVICE_STATUS) == 0) {
+            this.messagetype = MessageType.SERVICE_STATUS;
+        } else if ( this.type.compareToIgnoreCase(TYPE_SERVICE_ACK) == 0) {
+            this.messagetype = MessageType.SERVICE_ACK;
+        } else if ( this.type.compareToIgnoreCase(TYPE_SERVICE_GEOLOC) == 0 ) {
+            this.messagetype = MessageType.SERVICE_GEO;
+        } else if ( this.type.compareToIgnoreCase(TYPE_ERROR) == 0) {
+            this.messagetype = MessageType.ERROR;
+        } else  this.messagetype = MessageType.UNKNOWN;
+    }
+
+    public MessageType getMessagetype() {
+        return messagetype;
+    }
+
+    public long getTime() {
+        return time;
+    }
+    public long getTimeMs() { return time*1000; }
+    public void setTime(long time) {
+        this.time = time;
+        this._time = true;
+    }
+
+    public boolean isDuplicate() {
+        return duplicate;
+    }
+    public void setDuplicate(boolean duplicate) {
+        this.duplicate = duplicate;
+        this._duplicate = true;
+    }
+
+    public double getSignal() {
+        return signal;
+    }
+    public void setSignal(double signal) {
+        this.signal = signal;
+        this._signal = true;
+    }
+
+    public String getStation() {
+        return station;
+    }
+    public void setStation(String station) {
+        this.station = station;
+        this._station = true;
+    }
+
+    public String getData() {
+        return data;
+    }
+    public void setData(String data) {
+        this.data = data;
+        this._data=true;
+    }
+
+    public double getLat() {
+        return lat;
+    }
+    public void setLat(double lat) {
+        this.lat = lat;
+        this._lat = true;
+    }
+
+    public double getLng() {
+        return lng;
+    }
+    public void setLng(double lng) {
+        this.lng = lng;
+        this._lng = true;
+    }
+
+    public int getSeq() {
+        return seq;
+    }
+    public void setSeq(int seq) {
+        this.seq = seq;
+        this._seq = true;
+    }
+
+    public double getAvgSignal() {
+        return avgSignal;
+    }
+    public void setAvgSignal(double avgSignal) {
+        this.avgSignal = avgSignal;
+        this._avgSignal = true;
+    }
+
+    public boolean isAck() {
+        return ack;
+    }
+    public void setAck(boolean ack) {
+        this.ack = ack;
+        this._ack = true;
+    }
+
+    public double getRssi() {
+        return rssi;
+    }
+    public void setRssi(double rssi) {
+        this.rssi = rssi;
+        this._rssi = true;
+    }
+
+    public double getTemp() {
+        return temp;
+    }
+    public void setTemp(double temp) {
+        this.temp = temp;
+        this._temp = true;
+    }
+
+    public double getBatt() {
+        return batt;
+    }
+    public void setBatt(double batt) {
+        this.batt = batt;
+        this._batt = true;
+    }
+
+    public int getInfoCode() {
+        return infoCode;
+    }
+    public void setInfoCode(int infoCode) {
+        this.infoCode = infoCode;
+        this._infoCode = true;
+    }
+
+    public String getInfoMessage() {
+        return infoMessage;
+    }
+    public void setInfoMessage(String infoMessage) {
+        this.infoMessage = infoMessage;
+        this._infoMessage = true;
+    }
+
+    public String getDownlinkAck() {
+        return downlinkAck;
+    }
+    public void setDownlinkAck(String downlinkAck) {
+        this.downlinkAck = downlinkAck;
+        this._downlinkAck = true;
+    }
+
+    public boolean isDownlinkOverusage() {
+        return downlinkOverusage;
+    }
+    public void setDownlinkOverusage(boolean downlinkOverusage) {
+        this.downlinkOverusage = downlinkOverusage;
+        this._downlinkOverusage = true;
+    }
+
+    public String getInfo() {
+        return info;
+    }
+    public void setInfo(String info) {
+        this.info = info;
+        this._info = true;
+    }
+
+    public String getSeverity() {
+        return severity;
+    }
+    public void setSeverity(String severity) {
+        this.severity = severity;
+        this._severity = true;
+    }
+
+    public int getRadius() {
+        return radius;
+    }
+    public void setRadius(int radius) {
+        this.radius = radius;
+        this._radius = true;
+    }
+
+    public String getUser() {
+        return user;
+    }
+    public void setUser(String user) {
+        this.user = user;
+        this._user = true;
+    }
+
+    public int getVersion() {
+        return version;
+    }
+    public void setVersion(int version) {
+        this.version = version;
+        this._version = true;
+    }
+
+    public int getRepeat() {
+        return (_repeat)?repeat:1;
+    }
+
+    public void setRepeat(int repeat) {
+        this.repeat = repeat;
+        this._repeat = true;
+    }
+
+    // ==================================================================================
+    // Serialize
+    // ----------------------------------------------------------------------------------
+    //
+    // ==================================================================================
+
+    @Override
+    public String toString() {
+        String ret = "SigfoxCommonMessage{";
+        ret += (_device)?("device='" + device + '\''):"";
+        ret += (_time)?(", time=" + time):"";
+        ret += (_type)?(", type='" + type + '\''):"";
+        ret += (_seq)?(", seq=" + seq):"";
+        ret += (_data)?(", data='" + data + '\''):"";
+        ret += (_duplicate)?(", duplicate=" + duplicate):"";
+        ret += (_station)?(", station='" + station + '\''):"";
+        ret += (_signal)?(", signal=" + signal):"";
+        ret += (_avgSignal)?(", avgSignal=" + avgSignal):"";
+        ret += (_rssi)?(", rssi=" + rssi):"";
+        ret += (_lat)?(", lat=" + lat):"";
+        ret += (_lng)?(", lng=" + lng):"";
+        ret += (_radius)?(", radius=" + radius):"";
+        ret += (_ack)?(", ack=" + ack):"";
+        ret += (_temp)?(", temp=" + temp):"";
+        ret += (_batt)?(", batt=" + batt):"";
+        ret += (_infoCode)?(", infoCode=" + infoCode):"";
+        ret += (_infoMessage)?(", infoMessage=" + infoMessage):"";
+        ret += (_downlinkAck)?(", downlinkAck=" + downlinkAck):"";
+        ret += (_downlinkOverusage)?(", downlinkOverusage=" + downlinkOverusage):"";
+        ret += (_info)?(", info=" +info):"";
+        ret += (_severity)?(", severity=" + severity):"";
+        ret += (_user)?(", user=" + user):"";
+        ret += (_version)?(", version=" + version):"";
+        ret += (_repeat)?(", repeat=" + repeat):"";
+        ret += '}';
+        return ret;
+
+    }
+}

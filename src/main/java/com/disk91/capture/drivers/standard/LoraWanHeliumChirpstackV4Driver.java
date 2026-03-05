@@ -255,6 +255,7 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
         }
         meta.setNwkDeviceId(payload.getDeviceInfo().getDevEui());
         meta.setDeviceId(d.getId());
+        meta.setDataStreamId(d.getDataStreamId());
         meta.setSessionCounter(0);
         meta.setFrameCounterUp(payload.getfCnt());
         meta.setFrameCounterDwn(payload.getfCntDown());

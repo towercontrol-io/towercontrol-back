@@ -62,26 +62,7 @@ to be extensible without impacting the main processing logic. To describe a prot
 which, like roles, has a static in-memory definition for very fast access but can be supplemented by additional database 
 entries.
 
-```json
-{
-  "id": "string",                            // Unique identifier of the protocol
-  "protocolFamily": "string",                // Protocol family (e.g., Sigfox, LoRaWan...)
-  "protocolType": "string",                  // Protocol type (e.g., lorawan-helium)
-  "protocolVersion" : "string",              // Protocol version (e.g., lorawan-helium-chirpstack-v4)
-  "description": "string",                   // Description of the protocol (slug for i18n)
-  "enDescription": "string",                 // English description of the protocol
-  "processingClassName": "string",           // Fully qualified class name of the driver implementing this protocol
-  "creationMs": "long",                      // Creation timestamp in milliseconds since epoch
-  "createdBy": "string",                     // Creator identifier (system or user)
-  "defaultWideOpen" : "boolean",             // Default value for wideOpen flag indicating each device will directly reach the endpoint
-  "mandatoryFields": [{
-      "name": "string",                        // Name of the mandatory field
-      "valueType": "string",                   // Value type of the mandatory field (string, boolean, number)
-      "description": "string",                 // Description of the mandatory field (I18N key formated slug)
-      "enDescription": "string"                // English description of the mandatory field
-    }]                                       // List of mandatory fields required to configure this protocol
-}
-```
+See the [protocol definition](protocols.md) documentation for more details.
 
 ### Wide Open mode
 

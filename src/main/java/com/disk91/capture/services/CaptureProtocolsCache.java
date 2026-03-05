@@ -70,7 +70,7 @@ public class CaptureProtocolsCache {
     @Autowired
     protected CaptureConfig captureConfig;
 
-    // ---- Large exemple of platform protocols definition ----
+    // ---- Large example of platform protocols definition ----
     /*
         "{'id':'system-lorawan-helium-legacy', 'version':1, " +
           "'protocolFamily':'protocol-lorawan', 'protocolType':'protocol-helium', 'protocolVersion':'protocol-version-legacy', 'description':'lorawan-helium-legacy','enDescription':'Helium legacy', " +
@@ -95,7 +95,20 @@ public class CaptureProtocolsCache {
                 "'protocolFamily':'protocol-lorawan', 'protocolType':'protocol-helium', 'protocolVersion':'protocol-version-chirpstack-v4', 'description':'lorawan-helium-chirpstack-v4','enDescription':'Helium running Chirpstack V4', " +
                 "'processingClassName':'com.disk91.capture.drivers.standard.LoraWanHeliumChirpstackV4Driver', 'creationBy':'system', 'creationMs':0, 'defaultWideOpen':false, " +
                 "'mandatoryFields':[ " +
-                  "{ 'name':'protocol-server-api-endpoint', 'valueType':'string,^https?://', 'description':'protocol-lorawan-helium-chirp-v4-api-endpoint', 'enDescription': 'Helium Chirpstack Api Endpoint'}" +
+                  "{ 'name':'protocol-server-api-endpoint', 'valueType':'string,^https?://', 'description':'protocol-lorawan-helium-chirp-v4-api-endpoint', 'enDescription': 'Helium Chirpstack Api Endpoint'}" + "," +
+                  "{ 'name':'protocol-server-api-key', 'valueType':'string,^.*', 'description':'protocol-lorawan-helium-chirp-v4-api-apikey', 'enDescription': 'Helium Chirpstack Api Key'}" +
+                "]" +
+        "}",
+        "{'id':'system-sigfox-v2', 'version':1, " +
+                "'protocolFamily':'protocol-sigfox', 'protocolType':'protocol-sigfox', 'protocolVersion':'protocol-version-sigfox-v2', 'description':'protocol-sigfox-v2','enDescription':'Sigfox V2', " +
+                "'processingClassName':'com.disk91.capture.drivers.standard.SigfoxV2Driver', 'creationBy':'system', 'creationMs':0, 'defaultWideOpen':false, " +
+                "'mandatoryFields':[ " +
+                   "{ 'name':'protocol-server-api-endpoint', 'valueType':'string,^https?://', 'description':'protocol-sigfox-api-endpoint', 'enDescription': 'Sigfox API Endpoint'}" + "," +
+                   "{ 'name':'protocol-server-api-user', 'valueType':'string,^.*', 'description':'protocol-sigfox-api-user', 'enDescription': 'Sigfox API User'}" + "," +
+                   "{ 'name':'protocol-server-api-password', 'valueType':'string,^.*', 'description':'protocol-sigfox-api-password', 'enDescription': 'Sigfox API Password'}" +  "," +
+                   "{ 'name':'protocol-server-create-callback', 'valueType':'boolean', 'description':'protocol-sigfox-create-callback', 'enDescription': 'Create the callback when true'}" + "," +
+                   "{ 'name':'protocol-server-device-type', 'valueType':'string,^.*', 'description':'protocol-sigfox-device-type', 'enDescription': 'Device Type name or Id for devices'}" + "," +
+                   "{ 'name':'protocol-server-group', 'valueType':'string,^.*', 'description':'protocol-sigfox-group', 'enDescription': 'Group name or Id for devices'}" +
                 "]" +
         "}",
     };

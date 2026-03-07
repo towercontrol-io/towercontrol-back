@@ -20,6 +20,7 @@
 package com.disk91.capture.mdb.entities;
 
 import com.disk91.capture.mdb.entities.sub.MandatoryField;
+import com.disk91.capture.mdb.entities.sub.ProtocolId;
 import com.disk91.common.tools.CloneableObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,6 +85,9 @@ public class Protocols implements CloneableObject<Protocols> {
     // This indicates the default value for wide open when creating a capture endpoint with this protocol
     protected boolean defaultWideOpen;
 
+    // List of protocol ID pool definition related to this protocol definition.
+    protected List<ProtocolId> protocolIds;
+
     // --------------------------------
 
     @Override
@@ -104,6 +108,12 @@ public class Protocols implements CloneableObject<Protocols> {
         if ( this.mandatoryFields != null ) {
             for ( MandatoryField mf : this.mandatoryFields ) {
                 p.getMandatoryFields().add( mf.clone() );
+            }
+        }
+        p.setProtocolIds(new ArrayList<>());
+        if ( this.protocolIds != null ) {
+            for ( ProtocolId pid : this.protocolIds ) {
+                p.getProtocolIds().add( pid.clone() );
             }
         }
         return p;
@@ -205,5 +215,13 @@ public class Protocols implements CloneableObject<Protocols> {
 
     public void setDefaultWideOpen(boolean defaultWideOpen) {
         this.defaultWideOpen = defaultWideOpen;
+    }
+
+    public List<ProtocolId> getProtocolIds() {
+        return protocolIds;
+    }
+
+    public void setProtocolIds(List<ProtocolId> protocolIds) {
+        this.protocolIds = protocolIds;
     }
 }

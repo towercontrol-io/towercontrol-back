@@ -25,7 +25,18 @@ class. The goal is to be able to add drivers without impacting the open-source c
       "valueType": "string",                   // Value type of the mandatory field (string, boolean, number)
       "description": "string",                 // Description of the mandatory field (I18N key formated slug)
       "enDescription": "string"                // English description of the mandatory field
-    }]                                       // List of mandatory fields required to configure this protocol
+    }],                                       // List of mandatory fields required to configure this protocol
+  "protocolIds" : [{
+     "name" : "string",                        // Name of the protocol identifier type (static, dynamic, otaa, abp...)
+     "description": "string",                  // Description of the protocol identifier type (I18N key formated slug)
+     "enDescription": "string",                // English description of the protocol identifier type
+     "mandatoryFields": [{
+          "name": "string",                    // Name of the mandatory field
+          "valueType": "string",               // Value type of the mandatory field (string, boolean, number)
+          "description": "string",             // Description of the mandatory field (I18N key formated slug)
+          "enDescription": "string"            // English description of the mandatory field
+     }]                                       // List of mandatory fields for a single subscription identifier
+  }]
 }
 ```
 

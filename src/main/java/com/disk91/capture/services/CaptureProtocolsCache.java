@@ -84,6 +84,28 @@ public class CaptureProtocolsCache {
             "{ 'name':'protocol-param-number-limit', 'valueType':'number,5,20', 'description':'protocol-lorawan-helium-chirp-v4-number-limit', 'enDescription': 'Helium Chirpstack Number Limit'}," +
             "{ 'name':'protocol-param-number-decimal', 'valueType':'decimal,-5.1,20.4', 'description':'protocol-lorawan-helium-chirp-v4-decimal-limit', 'enDescription': 'Helium Chirpstack Decimal Limit'}," +
             "{ 'name':'protocol-param-number-date', 'valueType':'date', 'description':'protocol-lorawan-helium-chirp-v4-date', 'enDescription': 'Helium Chirpstack Date'}" +
+          "]," +
+          "'protocolIds':[ " +
+            "{ 'name':'protocol-id1', 'description':'protocol-lorawan-helium-chirp-v4-id1', 'enDescription': 'Helium Chirpstack Id1', 'mandatoryFields':[ " +
+                "{ 'name':'protocol-server-api-endpoint', 'valueType':'string,^https?://', 'description':'protocol-lorawan-helium-chirp-v4-api-endpoint', 'enDescription': 'Helium Chirpstack Api Endpoint'}," +
+                "{ 'name':'protocol-param-bool', 'valueType':'boolean', 'description':'protocol-lorawan-helium-chirp-v4-bool', 'enDescription': 'Helium Boolean Api Endpoint'}," +
+                "{ 'name':'protocol-param-enum', 'valueType':'enum[v1|v2|v3|v4]', 'description':'protocol-lorawan-helium-chirp-v4-apienum', 'enDescription': 'Enum single'}," +
+                "{ 'name':'protocol-param-enum-mul', 'valueType':'enum[v1|v2|v3|v4],multiple', 'description':'protocol-lorawan-helium-chirp-v4-enum-multt', 'enDescription': 'Enum multiple'}," +
+                "{ 'name':'protocol-param-number', 'valueType':'number', 'description':'protocol-lorawan-helium-chirp-v4-number', 'enDescription': 'Helium Chirpstack Number'}," +
+                "{ 'name':'protocol-param-number-limit', 'valueType':'number,5,20', 'description':'protocol-lorawan-helium-chirp-v4-number-limit', 'enDescription': 'Helium Chirpstack Number Limit'}," +
+                "{ 'name':'protocol-param-number-decimal', 'valueType':'decimal,-5.1,20.4', 'description':'protocol-lorawan-helium-chirp-v4-decimal-limit', 'enDescription': 'Helium Chirpstack Decimal Limit'}," +
+                "{ 'name':'protocol-param-number-date', 'valueType':'date', 'description':'protocol-lorawan-helium-chirp-v4-date', 'enDescription': 'Helium Chirpstack Date'}" +
+            "] }," +
+            "{ 'name':'protocol-id2', 'description':'protocol-lorawan-helium-chirp-v4-id2', 'enDescription': 'Helium Chirpstack Id2', 'mandatoryFields':[ " +
+                "{ 'name':'protocol-server-api-endpoint', 'valueType':'string,^https?://', 'description':'protocol-lorawan-helium-chirp-v4-api-endpoint', 'enDescription': 'Helium Chirpstack Api Endpoint'}," +
+                "{ 'name':'protocol-param-bool', 'valueType':'boolean', 'description':'protocol-lorawan-helium-chirp-v4-bool', 'enDescription': 'Helium Boolean Api Endpoint'}," +
+                "{ 'name':'protocol-param-enum', 'valueType':'enum[v1|v2|v3|v4]', 'description':'protocol-lorawan-helium-chirp-v4-apienum', 'enDescription': 'Enum single'}," +
+                "{ 'name':'protocol-param-enum-mul', 'valueType':'enum[v1|v2|v3|v4],multiple', 'description':'protocol-lorawan-helium-chirp-v4-enum-multt', 'enDescription': 'Enum multiple'}," +
+                "{ 'name':'protocol-param-number', 'valueType':'number', 'description':'protocol-lorawan-helium-chirp-v4-number', 'enDescription': 'Helium Chirpstack Number'}," +
+                "{ 'name':'protocol-param-number-limit', 'valueType':'number,5,20', 'description':'protocol-lorawan-helium-chirp-v4-number-limit', 'enDescription': 'Helium Chirpstack Number Limit'}," +
+                "{ 'name':'protocol-param-number-decimal', 'valueType':'decimal,-5.1,20.4', 'description':'protocol-lorawan-helium-chirp-v4-decimal-limit', 'enDescription': 'Helium Chirpstack Decimal Limit'}," +
+                "{ 'name':'protocol-param-number-date', 'valueType':'date', 'description':'protocol-lorawan-helium-chirp-v4-date', 'enDescription': 'Helium Chirpstack Date'}" +
+            "] }," +
           "]" +
         "}",
      */
@@ -97,7 +119,15 @@ public class CaptureProtocolsCache {
                 "'mandatoryFields':[ " +
                   "{ 'name':'protocol-server-api-endpoint', 'valueType':'string,^https?://', 'description':'protocol-lorawan-helium-chirp-v4-api-endpoint', 'enDescription': 'Helium Chirpstack Api Endpoint'}" + "," +
                   "{ 'name':'protocol-server-api-key', 'valueType':'string,^.*', 'description':'protocol-lorawan-helium-chirp-v4-api-apikey', 'enDescription': 'Helium Chirpstack Api Key'}" +
-                "]" +
+                "]," +
+                "'protocolIds':[ " +
+                    "{ 'name':'lorawan-dynamic-ids', 'description':'protocol-lorawan-dynamic-ids', 'enDescription': 'LoRa Network Server provided device identifiers', 'mandatoryFields':[ " +
+                    "] }," +
+                    "{ 'name':'lorawan-static-ids', 'description':'protocol-lorawan-static-ids', 'enDescription': 'LoRaWAN OTAA static Ids', 'mandatoryFields':[ " +
+                        "{ 'name':'lorawan-dev', 'valueType':'string,^[0123456789ABCDEF]{16}', 'description':'protocol-lorawan-id-deveui', 'enDescription': 'Device EUI64'}" + "," +
+                        "{ 'name':'lorawan-join', 'valueType':'string,^[0123456789ABCDEF]{32}', 'description':'protocol-lorawan-id-joineui', 'enDescription': 'Join EUI, 128 bits hex format'}" + "," +
+                        "{ 'name':'lorawan-key', 'valueType':'string,^[0123456789ABCDEF]{32}', 'description':'protocol-lorawan-id-appkey', 'enDescription': 'App Key, 128 bits hex format, stored encrypted'}" + "," +
+                "] }," +
         "}",
         "{'id':'system-sigfox-v2', 'version':1, " +
                 "'protocolFamily':'protocol-sigfox', 'protocolType':'protocol-sigfox', 'protocolVersion':'protocol-version-sigfox-v2', 'description':'protocol-sigfox-v2','enDescription':'Sigfox V2', " +
@@ -109,8 +139,20 @@ public class CaptureProtocolsCache {
                    "{ 'name':'protocol-server-create-callback', 'valueType':'boolean', 'description':'protocol-sigfox-create-callback', 'enDescription': 'Create the callback when true'}" + "," +
                    "{ 'name':'protocol-server-device-type', 'valueType':'string,^.*', 'description':'protocol-sigfox-device-type', 'enDescription': 'Device Type name or Id for devices'}" + "," +
                    "{ 'name':'protocol-server-group', 'valueType':'string,^.*', 'description':'protocol-sigfox-group', 'enDescription': 'Group name or Id for devices'}" +
+                   "{ 'name':'protocol-id-reassignment', 'valueType':'enum[no-reuse|reuse-last|reuse-first]', 'description':'protocol-sigfox-is-reassignment', 'enDescription': 'ID reassignment strategy'}" +
+                "]," +
+                "'protocolIds':[ " +
+                   "{ 'name':'sigfox-id-pac', 'description':'protocol-sigfox-idpac', 'enDescription': 'Sigfox ID & PAC Credentials', 'mandatoryFields':[ " +
+                        "{ 'name':'sigfox-id', 'valueType':'string,^[0123456789ABCDEF]{8}', 'description':'protocol-sigfox-id-id', 'enDescription': 'Sigfox ID, 32 bits hex format'}" + "," +
+                        "{ 'name':'sigfox-pac', 'valueType':'string,^[0123456789ABCDEF]{16}', 'description':'protocol-sigfox-id-pac', 'enDescription': 'Sigfox PAC, 128 bits hex format'}" + "," +
+                   "] }," +
+                    "{ 'name':'sigfox-id-pac-psk', 'description':'protocol-sigfox-id-pac-psk', 'enDescription': 'Sigfox ID,PAC with PSK Credentials', 'mandatoryFields':[ " +
+                        "{ 'name':'sigfox-id', 'valueType':'string,^[0123456789ABCDEF]{8}', 'description':'protocol-sigfox-id-id', 'enDescription': 'Sigfox ID, 32 bits hex format'}" + "," +
+                        "{ 'name':'sigfox-pac', 'valueType':'string,^[0123456789ABCDEF]{16}', 'description':'protocol-sigfox-id-pac', 'enDescription': 'Sigfox PAC, 128 bits hex format'}" + "," +
+                        "{ 'name':'sigfox-psk', 'valueType':'string,^[0123456789ABCDEF]{32}', 'description':'protocol-sigfox-id-psk', 'enDescription': 'Sigfox PSK, 128 bits hex format, stored encrypted'}" + "," +
+                   "] }," +
                 "]" +
-        "}",
+            "}",
     };
 
     /**

@@ -15,6 +15,7 @@ services:
       - ./data:/data
     environment:
       - COMMON_INSTANCE_ID=aZgtj01LkPqzXvWm
+      - COMMON_LANG_DEFAULT=${ITC_LANG_DEFAULT}
       - COMMON_NCE_ENABLE=${ITC_NCE_ENABLE}
       - COMMON_SERVICE_NAME=${ITC_SERVICE_NAME}
       - COMMON_SERVICE_BACK_DOMAIN=${ITC_BACK_DOMAIN}

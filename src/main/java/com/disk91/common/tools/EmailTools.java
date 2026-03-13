@@ -57,7 +57,8 @@ public class EmailTools {
                 log.info("[common][email] Sending email to ({}) with subject ({}) and text ({})", to, subject, text);
             } else {
                 MimeMessage message = sender.createMimeMessage();
-                MimeMessageHelper helper = new MimeMessageHelper(message);
+                // Force UTF-8 encoding to handle accented characters
+                MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
                 helper.setFrom(from);
                 helper.setTo(to);
                 helper.setText(text);

@@ -129,3 +129,23 @@ There are two endpoints available to retrieve FAQ entries:
 It's possible to pass request parameters to limit the number of FAQ entries returned and to paginate results:
 - `page` (default to 0): page number to retrieve
 - `size` (default to 10): number of FAQ entries per page
+
+## Available Skills for Front-end Integration
+
+The tickets module provides several skills to help integrate ticket functionality into front-end applications. 
+These skills contain detailed implementation guidelines, API documentation, and code examples for TypeScript/Nuxt.js 4:
+
+### [skill_contact_form](skills/skill_contact_form/SKILL.md)
+Create a contact form for anonymous users to submit support tickets. Includes two-step validation to reduce spam.
+
+### [skill_public_faq](skills/skill_public_faq/SKILL.md)
+Display public FAQ entries without authentication. Useful for public websites and self-service support pages.
+
+### [skill_public_response](skills/skill_public_response/SKILL.md)
+Allow anonymous users to view and respond to tickets they created using a ticket ID and access key. No authentication required.
+
+### [skill_private_faq](skills/skill_private_faq/SKILL.md)
+Display FAQ entries for authenticated users only. Requires login to access.
+
+
+

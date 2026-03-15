@@ -22,6 +22,7 @@ package com.disk91.common.tools;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -38,10 +39,10 @@ public class DiscordTools {
     /**
      * Send a message on discord using a webhook
      *
-     * @param to - dicsord webhook url
+     * @param to - discord webhook url
      * @param text - body of the message
      * @param subject - title of the message
-     * @param from - cutsom string, don't use an email
+     * @param from - custom string, don't use an email
      */
     @Async
     public void send(String to, String text, String subject, String from) {
@@ -54,11 +55,15 @@ public class DiscordTools {
             payload.put("content", content.substring(0, Math.min(content.length(), 1800)) );
 
             // Send HTTP POST request to Discord webhook
-            WebClient webClient = WebClient.builder().build();
+            WebClient webClient = WebClient.builder()
+                    .defaultHeader(HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8")
+                    .build();
 
             webClient.post()
                     .uri(to)
                     .contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .acceptCharset(java.nio.charset.StandardCharsets.UTF_8)
                     .bodyValue(payload)
                     .retrieve()
                     .toBodilessEntity()

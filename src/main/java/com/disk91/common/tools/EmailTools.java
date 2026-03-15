@@ -58,10 +58,10 @@ public class EmailTools {
             } else {
                 MimeMessage message = sender.createMimeMessage();
                 // Force UTF-8 encoding to handle accented characters
-                MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
+                MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
                 helper.setFrom(from);
                 helper.setTo(to);
-                helper.setText(text);
+                helper.setText(text,false);
                 helper.setSubject(subject);
                 sender.send(message);
             }

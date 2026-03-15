@@ -4,8 +4,10 @@
 A full implementation for the public ticket response can be based on the contact form implementation for Nuxt.js 4. 
 The project is accessible on GitHub at the following URL: [towercontrol-front](https://github.com/towercontrol-io/towercontrol-front)
 With the following relevant links:
-- [Public Ticket View page](https://github.com/towercontrol-io/towercontrol-front/blob/main/app/pages/front/public/contact.vue)
-- [Public Ticket View component](https://github.com/towercontrol-io/towercontrol-front/blob/main/app/components/tickets/ContactForm.vue)
+- [Public Ticket View page](https://github.com/towercontrol-io/towercontrol-front/blob/main/app/pages/front/public/contact-view.vue)
+- [Public Ticket View component](https://github.com/towercontrol-io/towercontrol-front/blob/main/app/components/tickets/TicketContent.vue)
+  - Used with `ticketId` and `authKey` props set from URL parameters in the page.
+  - Used with `isAdmin` prop set to false and `ticket` prop undefined.
 - [Public Ticket View API data structures](https://github.com/towercontrol-io/towercontrol-front/blob/main/app/types/tickets.ts)
 - [Public Ticket View API integration](https://github.com/towercontrol-io/towercontrol-front/blob/main/app/plugins/api.backend.tickets.ts)
   - `ticketsModulePublicOneTicket` : read the ticket & messages

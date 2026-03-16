@@ -126,31 +126,32 @@ public class CaptureProtocolsCache {
                     "{ 'name':'lorawan-static-ids', 'description':'protocol-lorawan-static-ids', 'enDescription': 'LoRaWAN OTAA static Ids', 'mandatoryFields':[ " +
                         "{ 'name':'lorawan-dev', 'valueType':'string,^[0123456789ABCDEF]{16}', 'description':'protocol-lorawan-id-deveui', 'enDescription': 'Device EUI64'}" + "," +
                         "{ 'name':'lorawan-join', 'valueType':'string,^[0123456789ABCDEF]{32}', 'description':'protocol-lorawan-id-joineui', 'enDescription': 'Join EUI, 128 bits hex format'}" + "," +
-                        "{ 'name':'lorawan-key', 'valueType':'string,^[0123456789ABCDEF]{32}', 'description':'protocol-lorawan-id-appkey', 'enDescription': 'App Key, 128 bits hex format, stored encrypted'}" + "," +
-                "] }," +
+                        "{ 'name':'lorawan-key', 'valueType':'string,^[0123456789ABCDEF]{32}', 'description':'protocol-lorawan-id-appkey', 'enDescription': 'App Key, 128 bits hex format, stored encrypted'} " +
+                    "] }" +
+                " ]" +
         "}",
         "{'id':'system-sigfox-v2', 'version':1, " +
                 "'protocolFamily':'protocol-sigfox', 'protocolType':'protocol-sigfox', 'protocolVersion':'protocol-version-sigfox-v2', 'description':'protocol-sigfox-v2','enDescription':'Sigfox V2', " +
                 "'processingClassName':'com.disk91.capture.drivers.standard.SigfoxV2Driver', 'creationBy':'system', 'creationMs':0, 'defaultWideOpen':false, " +
                 "'mandatoryFields':[ " +
-                   "{ 'name':'protocol-server-api-endpoint', 'valueType':'string,^https?://', 'description':'protocol-sigfox-api-endpoint', 'enDescription': 'Sigfox API Endpoint'}" + "," +
-                   "{ 'name':'protocol-server-api-user', 'valueType':'string,^.*', 'description':'protocol-sigfox-api-user', 'enDescription': 'Sigfox API User'}" + "," +
-                   "{ 'name':'protocol-server-api-password', 'valueType':'string,^.*', 'description':'protocol-sigfox-api-password', 'enDescription': 'Sigfox API Password'}" +  "," +
-                   "{ 'name':'protocol-server-create-callback', 'valueType':'boolean', 'description':'protocol-sigfox-create-callback', 'enDescription': 'Create the callback when true'}" + "," +
-                   "{ 'name':'protocol-server-device-type', 'valueType':'string,^.*', 'description':'protocol-sigfox-device-type', 'enDescription': 'Device Type name or Id for devices'}" + "," +
-                   "{ 'name':'protocol-server-group', 'valueType':'string,^.*', 'description':'protocol-sigfox-group', 'enDescription': 'Group name or Id for devices'}" +
-                   "{ 'name':'protocol-id-reassignment', 'valueType':'enum[no-reuse|reuse-last|reuse-first]', 'description':'protocol-sigfox-is-reassignment', 'enDescription': 'ID reassignment strategy'}" +
+                   "{ 'name':'protocol-sigfox-api-endpoint', 'valueType':'string,^https?://', 'description':'protocol-sigfox-api-endpoint-desc', 'enDescription': 'Sigfox API Endpoint'}" + "," +
+                   "{ 'name':'protocol-sigfox-api-user', 'valueType':'string,^.*', 'description':'protocol-sigfox-api-user-desc', 'enDescription': 'Sigfox API User'}" + "," +
+                   "{ 'name':'protocol-sigfox-api-password', 'valueType':'string,^.*', 'description':'protocol-sigfox-api-password-desc', 'enDescription': 'Sigfox API Password'}" +  "," +
+                   "{ 'name':'protocol-sigfox-create-callback', 'valueType':'boolean', 'description':'protocol-sigfox-create-callback-desc', 'enDescription': 'Create the callback when true'}" + "," +
+                   "{ 'name':'protocol-sigfox-device-type', 'valueType':'string,^.*', 'description':'protocol-sigfox-device-type-desc', 'enDescription': 'Device Type name or Id for devices'}" + "," +
+                   "{ 'name':'protocol-sigfox-group', 'valueType':'string,^.*', 'description':'protocol-sigfox-group-desc', 'enDescription': 'Group name or Id for devices'}" + "," +
+                   "{ 'name':'protocol-sigfox-id-reassignment', 'valueType':'enum[no-reuse|reuse-last|reuse-first]', 'description':'protocol-sigfox-id-reassignment-desc', 'enDescription': 'ID reassignment strategy'}" +
                 "]," +
                 "'protocolIds':[ " +
                    "{ 'name':'sigfox-id-pac', 'description':'protocol-sigfox-idpac', 'enDescription': 'Sigfox ID & PAC Credentials', 'mandatoryFields':[ " +
                         "{ 'name':'sigfox-id', 'valueType':'string,^[0123456789ABCDEF]{8}', 'description':'protocol-sigfox-id-id', 'enDescription': 'Sigfox ID, 32 bits hex format'}" + "," +
-                        "{ 'name':'sigfox-pac', 'valueType':'string,^[0123456789ABCDEF]{16}', 'description':'protocol-sigfox-id-pac', 'enDescription': 'Sigfox PAC, 128 bits hex format'}" + "," +
+                        "{ 'name':'sigfox-pac', 'valueType':'string,^[0123456789ABCDEF]{16}', 'description':'protocol-sigfox-id-pac', 'enDescription': 'Sigfox PAC, 128 bits hex format'}" +
                    "] }," +
-                    "{ 'name':'sigfox-id-pac-psk', 'description':'protocol-sigfox-id-pac-psk', 'enDescription': 'Sigfox ID,PAC with PSK Credentials', 'mandatoryFields':[ " +
+                   "{ 'name':'sigfox-id-pac-psk', 'description':'protocol-sigfox-id-pac-psk', 'enDescription': 'Sigfox ID,PAC with PSK Credentials', 'mandatoryFields':[ " +
                         "{ 'name':'sigfox-id', 'valueType':'string,^[0123456789ABCDEF]{8}', 'description':'protocol-sigfox-id-id', 'enDescription': 'Sigfox ID, 32 bits hex format'}" + "," +
                         "{ 'name':'sigfox-pac', 'valueType':'string,^[0123456789ABCDEF]{16}', 'description':'protocol-sigfox-id-pac', 'enDescription': 'Sigfox PAC, 128 bits hex format'}" + "," +
-                        "{ 'name':'sigfox-psk', 'valueType':'string,^[0123456789ABCDEF]{32}', 'description':'protocol-sigfox-id-psk', 'enDescription': 'Sigfox PSK, 128 bits hex format, stored encrypted'}" + "," +
-                   "] }," +
+                        "{ 'name':'sigfox-psk', 'valueType':'string,^[0123456789ABCDEF]{32}', 'description':'protocol-sigfox-id-psk', 'enDescription': 'Sigfox PSK, 128 bits hex format, stored encrypted'}" +
+                   "] }" +
                 "]" +
             "}",
     };
@@ -280,6 +281,7 @@ public class CaptureProtocolsCache {
                 protocolsCache.putIfAbsent(p.getId(), p);
             } catch (JsonProcessingException e) {
                 log.error("[capture] Error loading platform protocols {} due to {}", r, e.getMessage());
+                log.error("[capture] Definition is {}", r.replace("'", "\""));
             }
         }
         // load the custom roles if any

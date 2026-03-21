@@ -21,6 +21,7 @@ package com.disk91.capture.api.interfaces;
 
 import com.disk91.capture.mdb.entities.Protocols;
 import com.disk91.capture.mdb.entities.sub.MandatoryField;
+import com.disk91.capture.mdb.entities.sub.ProtocolId;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -110,6 +111,9 @@ public class CaptureProtocolResponseItf {
     )
     protected boolean defaultWideOpen;
 
+    // List of protocol ID pool definition related to this protocol definition.
+    protected List<ProtocolId> protocolIds;
+
     // --------------------------------
 
     public static CaptureProtocolResponseItf createFromProtocol(Protocols pr) {
@@ -126,6 +130,12 @@ public class CaptureProtocolResponseItf {
         if ( pr.getMandatoryFields() != null ) {
             for ( MandatoryField mf : pr.getMandatoryFields() ) {
                 p.getMandatoryFields().add( mf.clone() );
+            }
+        }
+        p.setProtocolIds(new ArrayList<>());
+        if  ( pr.getProtocolIds() != null ) {
+            for ( ProtocolId pid : pr.getProtocolIds() ) {
+                p.getProtocolIds().add( pid.clone() );
             }
         }
         return p;
@@ -204,5 +214,13 @@ public class CaptureProtocolResponseItf {
 
     public void setDefaultWideOpen(boolean defaultWideOpen) {
         this.defaultWideOpen = defaultWideOpen;
+    }
+
+    public List<ProtocolId> getProtocolIds() {
+        return protocolIds;
+    }
+
+    public void setProtocolIds(List<ProtocolId> protocolIds) {
+        this.protocolIds = protocolIds;
     }
 }

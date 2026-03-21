@@ -28,6 +28,7 @@ import com.disk91.capture.config.CaptureConfig;
 import com.disk91.capture.mdb.entities.CaptureEndpoint;
 import com.disk91.capture.mdb.entities.Protocols;
 import com.disk91.capture.mdb.entities.sub.MandatoryField;
+import com.disk91.capture.mdb.entities.sub.ProtocolId;
 import com.disk91.capture.mdb.repositories.CaptureEndpointRepository;
 import com.disk91.common.config.ModuleCatalog;
 import com.disk91.common.tools.CustomField;
@@ -248,6 +249,25 @@ public class CaptureEndpointService {
             endp.setCustomConfig(new ArrayList<>());
             for ( CustomField cf : body.getCustomConfig() ) {
                 endp.getCustomConfig().add( cf.clone() );
+            }
+
+            // Check the ID type
+            if ( body.getIdTypeName() == null || body.getIdTypeName().isEmpty() ) {
+                // this is allowed
+                endp.setIdTypeName("");
+            } else {
+                // check if existing in the protocol definition
+                boolean found = false;
+                for ( ProtocolId pid : p.getProtocolIds() ) {
+                    if ( pid.getName().equals(body.getIdTypeName()) ) {
+                        found = true;
+                        break;
+                    }
+                }
+                if  ( !found ) {
+                    throw new ITParseException("capture-endpoint-id-type-invalid");
+                }
+                endp.setIdTypeName(body.getIdTypeName());
             }
 
             // Generate a ref for the endpoint

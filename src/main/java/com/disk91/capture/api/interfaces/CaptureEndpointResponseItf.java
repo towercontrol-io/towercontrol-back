@@ -105,6 +105,12 @@ public class CaptureEndpointResponseItf {
     )
     protected List<CustomField> customConfig;
 
+    @Schema(
+            description = "Name of ID typ  supported by this endpoint",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    protected String idTypeName;
+
     // stats
 
     @Schema(
@@ -192,6 +198,7 @@ public class CaptureEndpointResponseItf {
             }
         }
         res.setCustomConfig(cf);
+        res.setIdTypeName(ce.getIdTypeName());
         res.setTotalFramesReceived(ce.getTotalFramesReceived());
         res.setTotalFramesAcceptedToPivot(ce.getTotalFramesAcceptedToPivot());
         res.setTotalInDriver(ce.getTotalInDriver());
@@ -357,5 +364,13 @@ public class CaptureEndpointResponseItf {
 
     public void setTotalBillingRefused(long totalBillingRefused) {
         this.totalBillingRefused = totalBillingRefused;
+    }
+
+    public String getIdTypeName() {
+        return idTypeName;
+    }
+
+    public void setIdTypeName(String idTypeName) {
+        this.idTypeName = idTypeName;
     }
 }

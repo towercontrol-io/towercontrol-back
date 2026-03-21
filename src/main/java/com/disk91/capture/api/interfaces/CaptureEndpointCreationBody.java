@@ -74,6 +74,11 @@ public class CaptureEndpointCreationBody {
     )
     protected List<CustomField> customConfig;
 
+    @Schema(
+            description = "Name of ID typ  supported by this endpoint",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    protected String idTypeName;
 
     // ==========================================
 
@@ -127,5 +132,13 @@ public class CaptureEndpointCreationBody {
 
     public void setForceWideOpen(boolean forceWideOpen) {
         this.forceWideOpen = forceWideOpen;
+    }
+
+    public String getIdTypeName() {
+        return idTypeName;
+    }
+
+    public void setIdTypeName(String idTypeName) {
+        this.idTypeName = idTypeName;
     }
 }

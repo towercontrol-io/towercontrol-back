@@ -72,6 +72,9 @@ public class CaptureEndpoint implements CloneableObject<CaptureEndpoint> {
     // to process the pivot object after protocol processing.
     protected String processingClassName;
 
+    // Identify the type of ID used for that capture endpoint ; can be null or empty when none
+    protected String idTypeName = "";
+
     // ----- STATS -------
 
     // Total frames received on the endpoint
@@ -159,6 +162,7 @@ public class CaptureEndpoint implements CloneableObject<CaptureEndpoint> {
                 p.getCustomConfig().add( cf.clone() );
             }
         }
+        p.setIdTypeName(this.idTypeName);
 
         p.setTotalFramesReceived(this.totalFramesReceived);
         p.setTotalFramesAcceptedToPivot(this.totalFramesAcceptedToPivot);
@@ -333,5 +337,13 @@ public class CaptureEndpoint implements CloneableObject<CaptureEndpoint> {
 
     public void setTotalBillingRefused(long totalBillingRefused) {
         this.totalBillingRefused = totalBillingRefused;
+    }
+
+    public String getIdTypeName() {
+        return idTypeName;
+    }
+
+    public void setIdTypeName(String idTypeName) {
+        this.idTypeName = idTypeName;
     }
 }

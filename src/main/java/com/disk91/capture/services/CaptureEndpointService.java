@@ -120,6 +120,33 @@ public class CaptureEndpointService {
         }
     }
 
+    public CaptureEndpointResponseItf getEndpoint(
+            String requestorId,
+            String endpointId
+    ) throws ITRightException {
+        if (requestorId == null || requestorId.isEmpty()) {
+            throw new ITRightException("user-profile-login-invalid");
+        }
+        try {
+            // get user considering API key
+            User _requestor = userCommon.getUser(requestorId);
+            try {
+                CaptureEndpoint e = captureEndpointCache.getCaptureEndpoint(endpointId);
+                if ( e.getOwner().compareTo(_requestor.getLogin()) == 0 || _requestor.isInRole(UsersRolesCache.StandardRoles.ROLE_GOD_ADMIN) ) {
+                    // authorized to return
+                    return CaptureEndpointResponseItf.fromCaptureEndpoint(e);
+                } else {
+                    throw new ITRightException("capture-endpoint-user-not-authorized");
+                }
+
+            } catch ( ITNotFoundException x ) {
+                throw new ITRightException("capture-endpoint-user-not-authorized");
+            }
+        } catch (ITNotFoundException x) {
+            throw new ITRightException("user-profile-user-not-found");
+        }
+    }
+
     // =====================================================================================================
     // FRONT-END API / Endpoint Delete
     // =====================================================================================================

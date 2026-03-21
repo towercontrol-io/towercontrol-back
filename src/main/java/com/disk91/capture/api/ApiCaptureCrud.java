@@ -67,7 +67,7 @@ public class ApiCaptureCrud {
             description = "This endpoint allows to get the list of capture endpoint created by the user. If the user is platform admin, all the endpoints are returned." +
                     "No specific role required to list the endpoint but creation requires ROLE_BACKEND_CAPTURE.",
             responses = {
-                    @ApiResponse(responseCode = "200", description = "Protocols definitions",
+                    @ApiResponse(responseCode = "200", description = "List of endpoints",
                             content = @Content(array = @ArraySchema(schema = @Schema( implementation = CaptureEndpointResponseItf.class)))),
                     @ApiResponse(responseCode = "400", description = "Failed to list endpoints", content = @Content(schema = @Schema(implementation = ActionResult.class)))
             }
@@ -92,6 +92,45 @@ public class ApiCaptureCrud {
             return new ResponseEntity<>(ActionResult.BADREQUEST(e.getMessage()), HttpStatus.BAD_REQUEST);
         }
     }
+
+    /**
+     * Get on single endpoint details created by this user, or all the users when you are platform admin.
+     * @param request
+     * @return
+     */
+    @Operation(
+            summary = "Get one single endpoints details",
+            description = "This endpoint allows to get one capture endpoint created by the user or if admin." +
+                    "No specific role required to get the endpoint.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Endpoint definition", content = @Content(schema = @Schema(implementation = CaptureEndpointResponseItf.class))),
+                    @ApiResponse(responseCode = "400", description = "Failed to list endpoints", content = @Content(schema = @Schema(implementation = ActionResult.class)))
+            }
+    )
+    @RequestMapping(
+            value = "/{keyId}/",
+            produces = "application/json",
+            method = RequestMethod.GET
+    )
+    @PreAuthorize("hasRole('ROLE_LOGIN_COMPLETE')")
+    // ----------------------------------------------------------------------
+    public ResponseEntity<?> getCaptureEndpoint(
+            HttpServletRequest request,
+            @Parameter(required = true, name = "keyId", description = "key identifier to get")
+            @PathVariable String keyId
+    ) {
+        try {
+            CaptureEndpointResponseItf endpoint =
+                    captureEndpointService.getEndpoint(
+                            request.getUserPrincipal().getName(),
+                            keyId
+                    );
+            return new ResponseEntity<>(endpoint, HttpStatus.OK);
+        } catch (ITRightException e) {
+            return new ResponseEntity<>(ActionResult.BADREQUEST(e.getMessage()), HttpStatus.BAD_REQUEST);
+        }
+    }
+
 
     /**
      * Delete One of the Capture Endpoint for a given user

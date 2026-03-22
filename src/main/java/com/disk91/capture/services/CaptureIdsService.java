@@ -252,7 +252,7 @@ public class CaptureIdsService {
                         }
                         ret.setInserted(inserted);
                         ret.setStatus(INSERTED);
-                    }
+                    } else ret.setErrorCount(errorCount);
                 } else {
                     throw new ITRightException("capture-endpoint-user-not-authorized");
                 }

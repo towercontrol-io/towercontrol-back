@@ -76,35 +76,35 @@ public class CaptureProtocolsCache {
           "'protocolFamily':'protocol-lorawan', 'protocolType':'protocol-helium', 'protocolVersion':'protocol-version-legacy', 'description':'lorawan-helium-legacy','enDescription':'Helium legacy', " +
           "'processingClassName':'com.disk91.capture.drivers.standard.LoraWanHeliumChirpstackV4Driver', 'creationBy':'system', 'creationMs':0, 'defaultWideOpen':false, " +
           "'mandatoryFields':[ " +
-            "{ 'name':'protocol-server-api-endpoint', 'valueType':'string,^https?://', 'description':'protocol-lorawan-helium-chirp-v4-api-endpoint', 'enDescription': 'Helium Chirpstack Api Endpoint'}," +
-            "{ 'name':'protocol-param-bool', 'valueType':'boolean', 'description':'protocol-lorawan-helium-chirp-v4-bool', 'enDescription': 'Helium Boolean Api Endpoint'}," +
-            "{ 'name':'protocol-param-enum', 'valueType':'enum[v1|v2|v3|v4]', 'description':'protocol-lorawan-helium-chirp-v4-apienum', 'enDescription': 'Enum single'}," +
-            "{ 'name':'protocol-param-enum-mul', 'valueType':'enum[v1|v2|v3|v4],multiple', 'description':'protocol-lorawan-helium-chirp-v4-enum-multt', 'enDescription': 'Enum multiple'}," +
-            "{ 'name':'protocol-param-number', 'valueType':'number', 'description':'protocol-lorawan-helium-chirp-v4-number', 'enDescription': 'Helium Chirpstack Number'}," +
-            "{ 'name':'protocol-param-number-limit', 'valueType':'number,5,20', 'description':'protocol-lorawan-helium-chirp-v4-number-limit', 'enDescription': 'Helium Chirpstack Number Limit'}," +
-            "{ 'name':'protocol-param-number-decimal', 'valueType':'decimal,-5.1,20.4', 'description':'protocol-lorawan-helium-chirp-v4-decimal-limit', 'enDescription': 'Helium Chirpstack Decimal Limit'}," +
-            "{ 'name':'protocol-param-number-date', 'valueType':'date', 'description':'protocol-lorawan-helium-chirp-v4-date', 'enDescription': 'Helium Chirpstack Date'}" +
+            "{ 'name':'protocol-server-api-endpoint', 'unique': false, 'encrypted' : false, 'valueType':'string,^https?://', 'description':'protocol-lorawan-helium-chirp-v4-api-endpoint', 'enDescription': 'Helium Chirpstack Api Endpoint'}," +
+            "{ 'name':'protocol-param-bool', 'unique': false, 'encrypted' : false, 'valueType':'boolean', 'description':'protocol-lorawan-helium-chirp-v4-bool', 'enDescription': 'Helium Boolean Api Endpoint'}," +
+            "{ 'name':'protocol-param-enum', 'unique': false, 'encrypted' : false, 'valueType':'enum[v1|v2|v3|v4]', 'description':'protocol-lorawan-helium-chirp-v4-apienum', 'enDescription': 'Enum single'}," +
+            "{ 'name':'protocol-param-enum-mul', 'unique': false, 'encrypted' : false, 'valueType':'enum[v1|v2|v3|v4],multiple', 'description':'protocol-lorawan-helium-chirp-v4-enum-multt', 'enDescription': 'Enum multiple'}," +
+            "{ 'name':'protocol-param-number', 'unique': false, 'encrypted' : false, 'valueType':'number', 'description':'protocol-lorawan-helium-chirp-v4-number', 'enDescription': 'Helium Chirpstack Number'}," +
+            "{ 'name':'protocol-param-number-limit', 'unique': false, 'encrypted' : false, 'valueType':'number,5,20', 'description':'protocol-lorawan-helium-chirp-v4-number-limit', 'enDescription': 'Helium Chirpstack Number Limit'}," +
+            "{ 'name':'protocol-param-number-decimal', 'unique': false, 'encrypted' : false, 'valueType':'decimal,-5.1,20.4', 'description':'protocol-lorawan-helium-chirp-v4-decimal-limit', 'enDescription': 'Helium Chirpstack Decimal Limit'}," +
+            "{ 'name':'protocol-param-number-date', 'unique': false, 'encrypted' : false, 'valueType':'date', 'description':'protocol-lorawan-helium-chirp-v4-date', 'enDescription': 'Helium Chirpstack Date'}" +
           "]," +
           "'protocolIds':[ " +
             "{ 'name':'protocol-id1', 'description':'protocol-lorawan-helium-chirp-v4-id1', 'enDescription': 'Helium Chirpstack Id1', 'mandatoryFields':[ " +
-                "{ 'name':'protocol-server-api-endpoint', 'valueType':'string,^https?://', 'description':'protocol-lorawan-helium-chirp-v4-api-endpoint', 'enDescription': 'Helium Chirpstack Api Endpoint'}," +
-                "{ 'name':'protocol-param-bool', 'valueType':'boolean', 'description':'protocol-lorawan-helium-chirp-v4-bool', 'enDescription': 'Helium Boolean Api Endpoint'}," +
-                "{ 'name':'protocol-param-enum', 'valueType':'enum[v1|v2|v3|v4]', 'description':'protocol-lorawan-helium-chirp-v4-apienum', 'enDescription': 'Enum single'}," +
-                "{ 'name':'protocol-param-enum-mul', 'valueType':'enum[v1|v2|v3|v4],multiple', 'description':'protocol-lorawan-helium-chirp-v4-enum-multt', 'enDescription': 'Enum multiple'}," +
-                "{ 'name':'protocol-param-number', 'valueType':'number', 'description':'protocol-lorawan-helium-chirp-v4-number', 'enDescription': 'Helium Chirpstack Number'}," +
-                "{ 'name':'protocol-param-number-limit', 'valueType':'number,5,20', 'description':'protocol-lorawan-helium-chirp-v4-number-limit', 'enDescription': 'Helium Chirpstack Number Limit'}," +
-                "{ 'name':'protocol-param-number-decimal', 'valueType':'decimal,-5.1,20.4', 'description':'protocol-lorawan-helium-chirp-v4-decimal-limit', 'enDescription': 'Helium Chirpstack Decimal Limit'}," +
-                "{ 'name':'protocol-param-number-date', 'valueType':'date', 'description':'protocol-lorawan-helium-chirp-v4-date', 'enDescription': 'Helium Chirpstack Date'}" +
+                "{ 'name':'protocol-server-api-endpoint', 'unique': false, 'encrypted' : false, 'valueType':'string,^https?://', 'description':'protocol-lorawan-helium-chirp-v4-api-endpoint', 'enDescription': 'Helium Chirpstack Api Endpoint'}," +
+                "{ 'name':'protocol-param-bool', 'unique': false, 'encrypted' : false, 'valueType':'boolean', 'description':'protocol-lorawan-helium-chirp-v4-bool', 'enDescription': 'Helium Boolean Api Endpoint'}," +
+                "{ 'name':'protocol-param-enum', 'unique': false, 'encrypted' : false, 'valueType':'enum[v1|v2|v3|v4]', 'description':'protocol-lorawan-helium-chirp-v4-apienum', 'enDescription': 'Enum single'}," +
+                "{ 'name':'protocol-param-enum-mul', 'unique': false, 'encrypted' : false, 'valueType':'enum[v1|v2|v3|v4],multiple', 'description':'protocol-lorawan-helium-chirp-v4-enum-multt', 'enDescription': 'Enum multiple'}," +
+                "{ 'name':'protocol-param-number', 'unique': false, 'encrypted' : false, 'valueType':'number', 'description':'protocol-lorawan-helium-chirp-v4-number', 'enDescription': 'Helium Chirpstack Number'}," +
+                "{ 'name':'protocol-param-number-limit', 'unique': false, 'encrypted' : false, 'valueType':'number,5,20', 'description':'protocol-lorawan-helium-chirp-v4-number-limit', 'enDescription': 'Helium Chirpstack Number Limit'}," +
+                "{ 'name':'protocol-param-number-decimal', 'unique': false, 'encrypted' : false, 'valueType':'decimal,-5.1,20.4', 'description':'protocol-lorawan-helium-chirp-v4-decimal-limit', 'enDescription': 'Helium Chirpstack Decimal Limit'}," +
+                "{ 'name':'protocol-param-number-date', 'unique': false, 'encrypted' : false, 'valueType':'date', 'description':'protocol-lorawan-helium-chirp-v4-date', 'enDescription': 'Helium Chirpstack Date'}" +
             "] }," +
             "{ 'name':'protocol-id2', 'description':'protocol-lorawan-helium-chirp-v4-id2', 'enDescription': 'Helium Chirpstack Id2', 'mandatoryFields':[ " +
-                "{ 'name':'protocol-server-api-endpoint', 'valueType':'string,^https?://', 'description':'protocol-lorawan-helium-chirp-v4-api-endpoint', 'enDescription': 'Helium Chirpstack Api Endpoint'}," +
-                "{ 'name':'protocol-param-bool', 'valueType':'boolean', 'description':'protocol-lorawan-helium-chirp-v4-bool', 'enDescription': 'Helium Boolean Api Endpoint'}," +
-                "{ 'name':'protocol-param-enum', 'valueType':'enum[v1|v2|v3|v4]', 'description':'protocol-lorawan-helium-chirp-v4-apienum', 'enDescription': 'Enum single'}," +
-                "{ 'name':'protocol-param-enum-mul', 'valueType':'enum[v1|v2|v3|v4],multiple', 'description':'protocol-lorawan-helium-chirp-v4-enum-multt', 'enDescription': 'Enum multiple'}," +
-                "{ 'name':'protocol-param-number', 'valueType':'number', 'description':'protocol-lorawan-helium-chirp-v4-number', 'enDescription': 'Helium Chirpstack Number'}," +
-                "{ 'name':'protocol-param-number-limit', 'valueType':'number,5,20', 'description':'protocol-lorawan-helium-chirp-v4-number-limit', 'enDescription': 'Helium Chirpstack Number Limit'}," +
-                "{ 'name':'protocol-param-number-decimal', 'valueType':'decimal,-5.1,20.4', 'description':'protocol-lorawan-helium-chirp-v4-decimal-limit', 'enDescription': 'Helium Chirpstack Decimal Limit'}," +
-                "{ 'name':'protocol-param-number-date', 'valueType':'date', 'description':'protocol-lorawan-helium-chirp-v4-date', 'enDescription': 'Helium Chirpstack Date'}" +
+                "{ 'name':'protocol-server-api-endpoint', 'unique': false, 'encrypted' : false, 'valueType':'string,^https?://', 'description':'protocol-lorawan-helium-chirp-v4-api-endpoint', 'enDescription': 'Helium Chirpstack Api Endpoint'}," +
+                "{ 'name':'protocol-param-bool', 'unique': false, 'encrypted' : false, 'valueType':'boolean', 'description':'protocol-lorawan-helium-chirp-v4-bool', 'enDescription': 'Helium Boolean Api Endpoint'}," +
+                "{ 'name':'protocol-param-enum', 'unique': false, 'encrypted' : false, 'valueType':'enum[v1|v2|v3|v4]', 'description':'protocol-lorawan-helium-chirp-v4-apienum', 'enDescription': 'Enum single'}," +
+                "{ 'name':'protocol-param-enum-mul', 'unique': false, 'encrypted' : false, 'valueType':'enum[v1|v2|v3|v4],multiple', 'description':'protocol-lorawan-helium-chirp-v4-enum-multt', 'enDescription': 'Enum multiple'}," +
+                "{ 'name':'protocol-param-number', 'unique': false, 'encrypted' : false, 'valueType':'number', 'description':'protocol-lorawan-helium-chirp-v4-number', 'enDescription': 'Helium Chirpstack Number'}," +
+                "{ 'name':'protocol-param-number-limit', 'unique': false, 'encrypted' : false, 'valueType':'number,5,20', 'description':'protocol-lorawan-helium-chirp-v4-number-limit', 'enDescription': 'Helium Chirpstack Number Limit'}," +
+                "{ 'name':'protocol-param-number-decimal', 'unique': false, 'encrypted' : false, 'valueType':'decimal,-5.1,20.4', 'description':'protocol-lorawan-helium-chirp-v4-decimal-limit', 'enDescription': 'Helium Chirpstack Decimal Limit'}," +
+                "{ 'name':'protocol-param-number-date', 'unique': false, 'encrypted' : false, 'valueType':'date', 'description':'protocol-lorawan-helium-chirp-v4-date', 'enDescription': 'Helium Chirpstack Date'}" +
             "] }," +
           "]" +
         "}",
@@ -117,16 +117,16 @@ public class CaptureProtocolsCache {
                 "'protocolFamily':'protocol-lorawan', 'protocolType':'protocol-helium', 'protocolVersion':'protocol-version-chirpstack-v4', 'description':'lorawan-helium-chirpstack-v4','enDescription':'Helium running Chirpstack V4', " +
                 "'processingClassName':'com.disk91.capture.drivers.standard.LoraWanHeliumChirpstackV4Driver', 'creationBy':'system', 'creationMs':0, 'defaultWideOpen':false, " +
                 "'mandatoryFields':[ " +
-                  "{ 'name':'protocol-server-api-endpoint', 'valueType':'string,^https?://', 'description':'protocol-lorawan-helium-chirp-v4-api-endpoint', 'enDescription': 'Helium Chirpstack Api Endpoint'}" + "," +
-                  "{ 'name':'protocol-server-api-key', 'valueType':'string,^.*', 'description':'protocol-lorawan-helium-chirp-v4-api-apikey', 'enDescription': 'Helium Chirpstack Api Key'}" +
+                  "{ 'name':'protocol-server-api-endpoint', 'unique': false, 'encrypted' : false, 'valueType':'string,^https?://', 'description':'protocol-lorawan-helium-chirp-v4-api-endpoint', 'enDescription': 'Helium Chirpstack Api Endpoint'}" + "," +
+                  "{ 'name':'protocol-server-api-key', 'unique': false, 'encrypted' : true, 'valueType':'string', 'description':'protocol-lorawan-helium-chirp-v4-api-apikey', 'enDescription': 'Helium Chirpstack Api Key, stored encrypted'}" +
                 "]," +
                 "'protocolIds':[ " +
                     "{ 'name':'lorawan-dynamic-ids', 'description':'protocol-lorawan-dynamic-ids', 'enDescription': 'LoRa Network Server provided device identifiers', 'mandatoryFields':[ " +
                     "] }," +
                     "{ 'name':'lorawan-static-ids', 'description':'protocol-lorawan-static-ids', 'enDescription': 'LoRaWAN OTAA static Ids', 'mandatoryFields':[ " +
-                        "{ 'name':'lorawan-dev', 'valueType':'string,^[0123456789ABCDEF]{16}', 'description':'protocol-lorawan-id-deveui', 'enDescription': 'Device EUI64'}" + "," +
-                        "{ 'name':'lorawan-join', 'valueType':'string,^[0123456789ABCDEF]{32}', 'description':'protocol-lorawan-id-joineui', 'enDescription': 'Join EUI, 128 bits hex format'}" + "," +
-                        "{ 'name':'lorawan-key', 'valueType':'string,^[0123456789ABCDEF]{32}', 'description':'protocol-lorawan-id-appkey', 'enDescription': 'App Key, 128 bits hex format, stored encrypted'} " +
+                        "{ 'name':'lorawan-dev', 'unique': true, 'encrypted' : false, 'valueType':'string,^[0123456789ABCDEFabcdef]{16}$', 'description':'protocol-lorawan-id-deveui', 'enDescription': 'Device EUI64'}" + "," +
+                        "{ 'name':'lorawan-join', 'unique': false, 'encrypted' : false, 'valueType':'string,^[0123456789ABCDEFabcdef]{16}$', 'description':'protocol-lorawan-id-joineui', 'enDescription': 'Join EUI, 128 bits hex format'}" + "," +
+                        "{ 'name':'lorawan-key', 'unique': false, 'encrypted' : true, 'valueType':'string,^[0123456789ABCDEFabcdef]{32}$', 'description':'protocol-lorawan-id-appkey', 'enDescription': 'App Key, 128 bits hex format, stored encrypted'} " +
                     "] }" +
                 " ]" +
         "}",
@@ -134,23 +134,23 @@ public class CaptureProtocolsCache {
                 "'protocolFamily':'protocol-sigfox', 'protocolType':'protocol-sigfox', 'protocolVersion':'protocol-version-sigfox-v2', 'description':'protocol-sigfox-v2','enDescription':'Sigfox V2', " +
                 "'processingClassName':'com.disk91.capture.drivers.standard.SigfoxV2Driver', 'creationBy':'system', 'creationMs':0, 'defaultWideOpen':false, " +
                 "'mandatoryFields':[ " +
-                   "{ 'name':'protocol-sigfox-api-endpoint', 'valueType':'string,^https?://', 'description':'protocol-sigfox-api-endpoint-desc', 'enDescription': 'Sigfox API Endpoint'}" + "," +
-                   "{ 'name':'protocol-sigfox-api-user', 'valueType':'string,^.*', 'description':'protocol-sigfox-api-user-desc', 'enDescription': 'Sigfox API User'}" + "," +
-                   "{ 'name':'protocol-sigfox-api-password', 'valueType':'string,^.*', 'description':'protocol-sigfox-api-password-desc', 'enDescription': 'Sigfox API Password'}" +  "," +
-                   "{ 'name':'protocol-sigfox-create-callback', 'valueType':'boolean', 'description':'protocol-sigfox-create-callback-desc', 'enDescription': 'Create the callback when true'}" + "," +
-                   "{ 'name':'protocol-sigfox-device-type', 'valueType':'string,^.*', 'description':'protocol-sigfox-device-type-desc', 'enDescription': 'Device Type name or Id for devices'}" + "," +
-                   "{ 'name':'protocol-sigfox-group', 'valueType':'string,^.*', 'description':'protocol-sigfox-group-desc', 'enDescription': 'Group name or Id for devices'}" + "," +
-                   "{ 'name':'protocol-sigfox-id-reassignment', 'valueType':'enum[no-reuse|reuse-last|reuse-first]', 'description':'protocol-sigfox-id-reassignment-desc', 'enDescription': 'ID reassignment strategy'}" +
+                   "{ 'name':'protocol-sigfox-api-endpoint', 'unique': false, 'encrypted' : false, 'valueType':'string,^https?://', 'description':'protocol-sigfox-api-endpoint-desc', 'enDescription': 'Sigfox API Endpoint'}" + "," +
+                   "{ 'name':'protocol-sigfox-api-user', 'unique': false, 'encrypted' : false, 'valueType':'string', 'description':'protocol-sigfox-api-user-desc', 'enDescription': 'Sigfox API User'}" + "," +
+                   "{ 'name':'protocol-sigfox-api-password', 'unique': false, 'encrypted' : true, 'valueType':'string', 'description':'protocol-sigfox-api-password-desc', 'enDescription': 'Sigfox API Password, stored encrypted'}" +  "," +
+                   "{ 'name':'protocol-sigfox-create-callback', 'unique': false, 'encrypted' : false, 'valueType':'boolean', 'description':'protocol-sigfox-create-callback-desc', 'enDescription': 'Create the callback when true'}" + "," +
+                   "{ 'name':'protocol-sigfox-device-type', 'unique': false, 'encrypted' : false, 'valueType':'string', 'description':'protocol-sigfox-device-type-desc', 'enDescription': 'Device Type name or Id for devices'}" + "," +
+                   "{ 'name':'protocol-sigfox-group', 'unique': false, 'encrypted' : false, 'valueType':'string', 'description':'protocol-sigfox-group-desc', 'enDescription': 'Group name or Id for devices'}" + "," +
+                   "{ 'name':'protocol-sigfox-id-reassignment', 'unique': false, 'encrypted' : false, 'valueType':'enum[no-reuse|reuse-last|reuse-first]', 'description':'protocol-sigfox-id-reassignment-desc', 'enDescription': 'ID reassignment strategy'}" +
                 "]," +
                 "'protocolIds':[ " +
                    "{ 'name':'sigfox-id-pac', 'description':'protocol-sigfox-idpac', 'enDescription': 'Sigfox ID & PAC Credentials', 'mandatoryFields':[ " +
-                        "{ 'name':'sigfox-id', 'valueType':'string,^[0123456789ABCDEF]{8}', 'description':'protocol-sigfox-id-id', 'enDescription': 'Sigfox ID, 32 bits hex format'}" + "," +
-                        "{ 'name':'sigfox-pac', 'valueType':'string,^[0123456789ABCDEF]{16}', 'description':'protocol-sigfox-id-pac', 'enDescription': 'Sigfox PAC, 128 bits hex format'}" +
+                        "{ 'name':'sigfox-id', 'unique': true, 'encrypted' : false, 'valueType':'string,^[0123456789ABCDEFabcdef]{1,8}$', 'description':'protocol-sigfox-id-id', 'enDescription': 'Sigfox ID, 32 bits hex format'}" + "," +
+                        "{ 'name':'sigfox-pac', 'unique': false, 'encrypted' : true, 'valueType':'string,^[0123456789ABCDEFabcdef]{16}$', 'description':'protocol-sigfox-id-pac', 'enDescription': 'Sigfox PAC, 128 bits hex format, stored encrypted'}" +
                    "] }," +
                    "{ 'name':'sigfox-id-pac-psk', 'description':'protocol-sigfox-id-pac-psk', 'enDescription': 'Sigfox ID,PAC with PSK Credentials', 'mandatoryFields':[ " +
-                        "{ 'name':'sigfox-id', 'valueType':'string,^[0123456789ABCDEF]{8}', 'description':'protocol-sigfox-id-id', 'enDescription': 'Sigfox ID, 32 bits hex format'}" + "," +
-                        "{ 'name':'sigfox-pac', 'valueType':'string,^[0123456789ABCDEF]{16}', 'description':'protocol-sigfox-id-pac', 'enDescription': 'Sigfox PAC, 128 bits hex format'}" + "," +
-                        "{ 'name':'sigfox-psk', 'valueType':'string,^[0123456789ABCDEF]{32}', 'description':'protocol-sigfox-id-psk', 'enDescription': 'Sigfox PSK, 128 bits hex format, stored encrypted'}" +
+                        "{ 'name':'sigfox-id', 'unique': true, 'encrypted' : false, 'valueType':'string,^[0123456789ABCDEFabcdef]{1,8}$', 'description':'protocol-sigfox-id-id', 'enDescription': 'Sigfox ID, 32 bits hex format'}" + "," +
+                        "{ 'name':'sigfox-pac', 'unique': false, 'encrypted' : true, 'valueType':'string,^[0123456789ABCDEFabcdef]{16}$', 'description':'protocol-sigfox-id-pac', 'enDescription': 'Sigfox PAC, 128 bits hex format, stored encrypted'}" + "," +
+                        "{ 'name':'sigfox-psk', 'unique': false, 'encrypted' : true, 'valueType':'string,^[0123456789ABCDEFabcdef]{32}$', 'description':'protocol-sigfox-id-psk', 'enDescription': 'Sigfox PSK, 128 bits hex format, stored encrypted'}" +
                    "] }" +
                 "]" +
             "}",

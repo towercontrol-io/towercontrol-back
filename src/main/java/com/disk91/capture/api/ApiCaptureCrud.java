@@ -19,10 +19,10 @@
  */
 package com.disk91.capture.api;
 
-import com.disk91.capture.api.interfaces.CaptureEndpointCreationBody;
-import com.disk91.capture.api.interfaces.CaptureEndpointResponseItf;
-import com.disk91.capture.api.interfaces.CaptureProtocolResponseItf;
+import com.disk91.capture.api.interfaces.*;
+import com.disk91.capture.api.interfaces.sub.InsertIDsStatus;
 import com.disk91.capture.services.CaptureEndpointService;
+import com.disk91.capture.services.CaptureIdsService;
 import com.disk91.common.api.interfaces.ActionResult;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
@@ -56,6 +56,9 @@ public class ApiCaptureCrud {
 
     @Autowired
     protected CaptureEndpointService captureEndpointService;
+
+    @Autowired
+    protected CaptureIdsService captureIdsService;
 
     /**
      * List the existing endpoints created by this user, or all the users when you are platform admin.
@@ -204,7 +207,7 @@ public class ApiCaptureCrud {
     )
     @PreAuthorize("hasRole('ROLE_LOGIN_COMPLETE') and hasRole('ROLE_BACKEND_CAPTURE')")
     // ----------------------------------------------------------------------
-    public ResponseEntity<?> putUserApiKeyCreation(
+    public ResponseEntity<?> postCaptureEndpointCreation(
             HttpServletRequest request,
             @RequestBody(required = true) CaptureEndpointCreationBody body
     ) {
@@ -221,5 +224,52 @@ public class ApiCaptureCrud {
         }
     }
 
+    /**
+     * Create Ids attached to a capture endpoint
+     * You can add credentials used by telecom operators to an endpoint. This approach makes it possible to store
+     * the characteristic elements required by the telecom operator, which can be associated with the endpoint.
+     * The IDs are added as a string list; even if only one is added manually, this still enables batch additions.
+     * The lists are CSV string values, allowing quick input.
+     * This endpoint requires to have a completed signup process and the right to create the IDs ( ROLE_BACKEND_CAPTURE )
+     * and to own the endpoint.
+     */
+    @Operation(
+            summary = "Create IDs to existing capture endpoint ",
+            description = "This endpoint allows a user with ROLE_BACKEND_CAPTURE and owning the endpoint to add credentials used by telecom operators to an endpoint. " +
+                    " This approach makes it possible to store the characteristic elements required by the telecom operator, which can be " +
+                    "associated with the endpoint. The IDs are added as a string list; even if only one is added manually, this still enables " +
+                    "batch additions. The lists are CSV string values, allowing quick input.",
+            responses = {
+                    @ApiResponse(responseCode = "201", description = "Ids inserted in DB", content = @Content(schema = @Schema(implementation = CaptureInsertIdsResponseItf.class))),
+                    @ApiResponse(responseCode = "200", description = "Ids insertion failed", content = @Content(schema = @Schema(implementation = CaptureInsertIdsResponseItf.class))),
+                    @ApiResponse(responseCode = "403", description = "Not authorized", content = @Content(schema = @Schema(implementation = ActionResult.class)))
+            }
+    )
+    @RequestMapping(
+            value = "/ids",
+            produces = "application/json",
+            method = RequestMethod.POST
+    )
+    @PreAuthorize("hasRole('ROLE_LOGIN_COMPLETE') and hasRole('ROLE_BACKEND_CAPTURE')")
+    // ----------------------------------------------------------------------
+    public ResponseEntity<?> postEndpointIdsInsertion(
+            HttpServletRequest request,
+            @RequestBody(required = true) CaptureInsertIdsBody body
+    ) {
+        try {
+            CaptureInsertIdsResponseItf r = captureIdsService.insertIds(
+                    request.getUserPrincipal().getName(),
+                    body,
+                    request
+            );
+            if (r.getStatus() == InsertIDsStatus.INSERTED ) {
+                return new ResponseEntity<>(r, HttpStatus.CREATED);
+            } else {
+                return new ResponseEntity<>(r, HttpStatus.OK);
+            }
+        } catch (ITRightException e){
+            return new ResponseEntity<>(ActionResult.FORBIDDEN(e.getMessage()), HttpStatus.FORBIDDEN);
+        }
+    }
 
 }

@@ -38,6 +38,7 @@ import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Component;
 
@@ -71,6 +72,8 @@ public class Capture {
 
     @Autowired
     protected CaptureEndpointCache captureEndpointCache;
+
+    public static final String __iv = "24e326f2869b3665b416767a263f7ee4";
 
     @PostConstruct
     void initCaptureModule() {

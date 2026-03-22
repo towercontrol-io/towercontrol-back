@@ -20,6 +20,7 @@
 package com.disk91.capture.services;
 
 import com.disk91.audit.integration.AuditIntegration;
+import com.disk91.capture.Capture;
 import com.disk91.capture.api.interfaces.CaptureEndpointCreationBody;
 import com.disk91.capture.api.interfaces.CaptureEndpointResponseItf;
 import com.disk91.capture.api.interfaces.CaptureProtocolResponseItf;
@@ -30,11 +31,9 @@ import com.disk91.capture.mdb.entities.Protocols;
 import com.disk91.capture.mdb.entities.sub.MandatoryField;
 import com.disk91.capture.mdb.entities.sub.ProtocolId;
 import com.disk91.capture.mdb.repositories.CaptureEndpointRepository;
+import com.disk91.common.config.CommonConfig;
 import com.disk91.common.config.ModuleCatalog;
-import com.disk91.common.tools.CustomField;
-import com.disk91.common.tools.Now;
-import com.disk91.common.tools.RandomString;
-import com.disk91.common.tools.Tools;
+import com.disk91.common.tools.*;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITRightException;
@@ -49,6 +48,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 @Service
@@ -70,6 +70,9 @@ public class CaptureEndpointService {
 
     @Autowired
     protected CaptureEndpointRepository captureEndpointRepository;
+
+    @Autowired
+    protected CommonConfig commonConfig;
 
     @Autowired
     protected CaptureConfig captureConfig;
@@ -261,10 +264,16 @@ public class CaptureEndpointService {
             if ( ! p.getMandatoryFields().isEmpty() && ( body.getCustomConfig() == null || body.getCustomConfig().isEmpty() ) ) {
                 throw new ITParseException("capture-endpoint-mandatory-fields-missing");
             }
+            HashMap<String, MandatoryField> mandatoryFieldsMap = new HashMap<>();
             for (MandatoryField m : p.getMandatoryFields()) {
                 boolean found = false;
+                mandatoryFieldsMap.put(m.getName(), m);
                 for ( CustomField cf : body.getCustomConfig() ) {
                     if ( cf.getName().equals(m.getName()) && cf.getValue() != null ) {
+                        // check format
+                        if ( ! m.isValueValid( cf.getValue() ) ) {
+                            throw new ITParseException("capture-endpoint-custom-field-invalid");
+                        }
                         found = true;
                         break;
                     }
@@ -275,6 +284,14 @@ public class CaptureEndpointService {
             }
             endp.setCustomConfig(new ArrayList<>());
             for ( CustomField cf : body.getCustomConfig() ) {
+                // check if encrypted
+                MandatoryField mf = mandatoryFieldsMap.get(cf.getName());
+                if ( mf != null ) {
+                   if ( mf.isEncrypted() ) {
+                        String encryptedValue = "enc_"+EncryptionHelper.encrypt(cf.getValue(), Capture.__iv, commonConfig.getEncryptionKey());
+                        cf.setValue(encryptedValue);
+                   }
+                }
                 endp.getCustomConfig().add( cf.clone() );
             }
 

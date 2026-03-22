@@ -73,6 +73,9 @@ public class ProtocolIds {
     // creation date in MS since epoch
     protected long updateMs;
 
+    // Last date in MS the IDs has been scanned by background tasks
+    protected long lastScanMs;
+
     // assignment date in MS since epoch
     protected long assignedMs;
 
@@ -202,5 +205,13 @@ public class ProtocolIds {
 
     public void setRemovalMs(long removalMs) {
         this.removalMs = removalMs;
+    }
+
+    public long getLastScanMs() {
+        return lastScanMs;
+    }
+
+    public void setLastScanMs(long lastScanMs) {
+        this.lastScanMs = lastScanMs;
     }
 }

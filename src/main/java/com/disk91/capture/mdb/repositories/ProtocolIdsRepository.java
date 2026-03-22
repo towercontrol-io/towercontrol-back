@@ -17,45 +17,26 @@
  *    WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
  *    IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package com.disk91.common.tools;
+package com.disk91.capture.mdb.repositories;
 
-public class CustomField implements CloneableObject<CustomField> {
+import com.disk91.capture.mdb.entities.ProtocolIds;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
+import org.springframework.stereotype.Repository;
 
-        private String name;
-        private String value;
+import java.util.Optional;
 
-        public CustomField() {
-        }
+@Repository
+public interface ProtocolIdsRepository extends MongoRepository<ProtocolIds,String> {
 
-        public CustomField(String name, String value) {
-            this.name = name;
-            this.value = value;
-        }
+    /**
+     * Find a ProtocolIds by captureId and a specific customConfig entry matching both name and value
+     * @param captureId - the capture endpoint identifier
+     * @param name - the custom config field name to match
+     * @param value - the expected value for the given custom config field name
+     * @return an Optional containing the matching ProtocolIds if found
+     */
+    @Query("{ 'captureId': ?0, 'customConfig': { $elemMatch: { 'name': ?1, 'value': ?2 } } }")
+    Optional<ProtocolIds> findByCaptureIdAndCustomConfigNameAndValue(String captureId, String name, String value);
 
-        public static CustomField of(String name, String value) {
-            return new CustomField(name, value);
-        }
-
-        @Override
-        public CustomField clone() {
-            return new CustomField(this.name, this.value);
-        }
-
-        // === GETTER / SETTER ===
-
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        public String getValue() {
-            return value;
-        }
-
-        public void setValue(String value) {
-            this.value = value;
-        }
 }

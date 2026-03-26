@@ -36,13 +36,16 @@ public class DeviceWrapper {
 
     protected String apiLogin;
     protected String apiPassword;
+    protected String apiBackend;
 
     public DeviceWrapper(
+            String apiBackend,
             String _apiLogin,
             String _apiPassword
     ) {
         this.apiLogin = _apiLogin;
         this.apiPassword = _apiPassword;
+        this.apiBackend = apiBackend;
     }
 
 
@@ -68,6 +71,7 @@ public class DeviceWrapper {
         try {
 
             ITSigfoxConnection<SigfoxApiv2DeviceCreation, SigfoxApiv2GenericId> request = new ITSigfoxConnection<>(
+                    this.apiBackend,
                     this.apiLogin,
                     this.apiPassword
             );
@@ -121,6 +125,7 @@ public class DeviceWrapper {
     ) {
         try {
             ITSigfoxConnection<String, SigfoxApiv2Device> request = new ITSigfoxConnection<>(
+                    this.apiBackend,
                     this.apiLogin,
                     this.apiPassword
             );
@@ -145,6 +150,7 @@ public class DeviceWrapper {
     ) {
         try {
             ITSigfoxConnection<String, SigfoxApiv2DevicesList> request = new ITSigfoxConnection<>(
+                    this.apiBackend,
                     this.apiLogin,
                     this.apiPassword
             );
@@ -220,6 +226,7 @@ public class DeviceWrapper {
             try {
 
                 ITSigfoxConnection<SigfoxApiv2DeviceUpdateName, String> request = new ITSigfoxConnection<>(
+                        this.apiBackend,
                         this.apiLogin,
                         this.apiPassword
                 );
@@ -246,6 +253,7 @@ public class DeviceWrapper {
             try {
 
                 ITSigfoxConnection<SigfoxApiv2DeviceBulkTransferRequest, SigfoxApiv2JobResponse> request = new ITSigfoxConnection<>(
+                        this.apiBackend,
                         this.apiLogin,
                         this.apiPassword
                 );

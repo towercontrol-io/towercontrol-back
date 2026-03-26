@@ -35,13 +35,16 @@ public class DeviceTypeWrapper {
 
     protected String apiLogin;
     protected String apiPassword;
+    protected String apiBackend;
 
     public DeviceTypeWrapper(
+            String apiBackend,
             String _apiLogin,
             String _apiPassword
     ) {
         this.apiLogin = _apiLogin;
         this.apiPassword = _apiPassword;
+        this.apiBackend = apiBackend;
     }
 
     /**
@@ -62,6 +65,7 @@ public class DeviceTypeWrapper {
         try {
 
             ITSigfoxConnection<String, SigfoxApiv2DeviceTypeListResponse> request = new ITSigfoxConnection<>(
+                    this.apiBackend,
                     this.apiLogin,
                     this.apiPassword
             );
@@ -103,6 +107,7 @@ public class DeviceTypeWrapper {
         try {
 
             ITSigfoxConnection<String, SigfoxApiv2DeviceTypeGlobal> request = new ITSigfoxConnection<>(
+                    this.apiBackend,
                     this.apiLogin,
                     this.apiPassword
             );
@@ -127,6 +132,7 @@ public class DeviceTypeWrapper {
         try {
 
             ITSigfoxConnection<String, SigfoxApiv2DeviceTypeListResponse> request = new ITSigfoxConnection<>(
+                    this.apiBackend,
                     this.apiLogin,
                     this.apiPassword
             );
@@ -160,6 +166,7 @@ public class DeviceTypeWrapper {
 
         try {
             ITSigfoxConnection<SigfoxApiv2DeviceTypeCreate, SigfoxApiv2DeviceTypeId> request = new ITSigfoxConnection<>(
+                    this.apiBackend,
                     this.apiLogin,
                     this.apiPassword
             );
@@ -180,6 +187,7 @@ public class DeviceTypeWrapper {
                 for (DeviceTypeCreationCallback callback : dtc.getCallbacks()) {
 
                     ITSigfoxConnection<SigfoxApiv2CallbackCreation, SigfoxApiv2CallbackId> reqCb = new ITSigfoxConnection<>(
+                            this.apiBackend,
                             this.apiLogin,
                             this.apiPassword
                     );
@@ -197,6 +205,7 @@ public class DeviceTypeWrapper {
                     // Assign for downlink
                     if ( callback.isDownlinkCallback() ) {
                         ITSigfoxConnection<String, String> dwn = new ITSigfoxConnection<>(
+                                this.apiBackend,
                                 this.apiLogin,
                                 this.apiPassword
                         );
@@ -218,6 +227,7 @@ public class DeviceTypeWrapper {
                 for (DeviceTypeCreationCallback callback : dtc.getCallbacks()) {
                     if (callback.getCallBackId() != null && !callback.getCallBackId().isEmpty()) {
                         ITSigfoxConnection<String, String> reqCb = new ITSigfoxConnection<>(
+                                this.apiBackend,
                                 this.apiLogin,
                                 this.apiPassword
                         );
@@ -233,6 +243,7 @@ public class DeviceTypeWrapper {
                 }
                 // Need to cancel the device type
                 ITSigfoxConnection<String, String> reqCb = new ITSigfoxConnection<>(
+                        this.apiBackend,
                         this.apiLogin,
                         this.apiPassword
                 );
@@ -257,6 +268,7 @@ public class DeviceTypeWrapper {
 
         try {
             ITSigfoxConnection<String, String> request = new ITSigfoxConnection<>(
+                    this.apiBackend,
                     this.apiLogin,
                     this.apiPassword
             );

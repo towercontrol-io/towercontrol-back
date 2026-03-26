@@ -194,7 +194,11 @@ public class CaptureEndpointResponseItf {
         ArrayList<CustomField> cf = new ArrayList<>();
         if ( ce.getCustomConfig() != null ) { // clone them
             for ( CustomField c : ce.getCustomConfig() ) {
-                cf.add( c.clone() );
+                CustomField _c = c.clone();
+                if (_c.getValue().startsWith("enc_")) {
+                    _c.setValue("********");
+                }
+                cf.add( _c );
             }
         }
         res.setCustomConfig(cf);

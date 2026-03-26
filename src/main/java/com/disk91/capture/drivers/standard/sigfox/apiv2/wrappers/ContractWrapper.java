@@ -45,12 +45,14 @@ public class ContractWrapper {
      * @throws ITSigfoxConnectionException
      */
     public static SigfoxApiv2ContractListResponse getAllAssociatedContracts(
+            String apiBackend,
             String login,
             String password
     ) throws ITSigfoxConnectionException {
 
         try {
             ITSigfoxConnection<String, SigfoxApiv2ContractListResponse> contractListRequest = new ITSigfoxConnection<>(
+                    apiBackend,
                     login,
                     password
             );
@@ -78,11 +80,12 @@ public class ContractWrapper {
      * @throws ITSigfoxConnectionException
      */
     public static SigfoxApiv2ContractListResponse getAllAssociatedValidContracts(
+            String apiBackend,
             String login,
             String password
     ) throws ITSigfoxConnectionException {
 
-        return getAllAssociatedContracts(login,password);
+        return getAllAssociatedContracts(apiBackend,login,password);
 
     }
 
@@ -95,6 +98,7 @@ public class ContractWrapper {
      * @throws ITSigfoxConnectionException
      */
     public static SigfoxApiv2ContractInfo getOneContract(
+            String apiBackend,
             String login,
             String password,
             String contractId
@@ -103,6 +107,7 @@ public class ContractWrapper {
         try {
 
             ITSigfoxConnection<String, SigfoxApiv2ContractInfo> contractListRequest = new ITSigfoxConnection<>(
+                    apiBackend,
                     login,
                     password
             );

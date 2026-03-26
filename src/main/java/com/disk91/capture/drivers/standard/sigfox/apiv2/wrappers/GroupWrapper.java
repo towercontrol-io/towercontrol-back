@@ -49,6 +49,7 @@ public class GroupWrapper {
      * @throws ITSigfoxConnectionException
      */
     public static  List<SigfoxApiv2Group> getGroupDetailAndSub(
+            String apiBackend,
             String login,
             String password,
             String groupId
@@ -58,6 +59,7 @@ public class GroupWrapper {
         try {
 
             ITSigfoxConnection<String, SigfoxApiv2Group> groupRequest = new ITSigfoxConnection<>(
+                    apiBackend,
                     login,
                     password
             );
@@ -74,6 +76,7 @@ public class GroupWrapper {
             groupsList.add(group);
 
             ITSigfoxConnection<String, SigfoxApiv2GroupListResponse> groupListRequest = new ITSigfoxConnection<>(
+                    apiBackend,
                     login,
                     password
             );

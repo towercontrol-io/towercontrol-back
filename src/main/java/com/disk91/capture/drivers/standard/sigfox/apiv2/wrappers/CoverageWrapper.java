@@ -49,13 +49,16 @@ public class CoverageWrapper {
 
     protected String apiLogin;
     protected String apiPassword;
+    protected String apiBackend;
 
     public CoverageWrapper(
+            String apiBackend,
             String _apiLogin,
             String _apiPassword
     ) {
         this.apiLogin = _apiLogin;
         this.apiPassword = _apiPassword;
+        this.apiBackend = apiBackend;
     }
 
     // ========================================================================
@@ -64,6 +67,7 @@ public class CoverageWrapper {
         try {
 
             ITSigfoxConnection<String, SigfoxApiv2CoverageGlobalResponse> request = new ITSigfoxConnection<>(
+                    this.apiBackend,
                     this.apiLogin,
                     this.apiPassword
             );
@@ -99,6 +103,7 @@ public class CoverageWrapper {
         try {
 
             ITSigfoxConnection<String, SigfoxApiv2CoverageGlobalResponse> request = new ITSigfoxConnection<>(
+                    this.apiBackend,
                     this.apiLogin,
                     this.apiPassword
             );

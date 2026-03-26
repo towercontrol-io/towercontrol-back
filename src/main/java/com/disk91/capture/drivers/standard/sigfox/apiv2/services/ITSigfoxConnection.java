@@ -44,23 +44,25 @@ public class ITSigfoxConnection<S,T> {
 
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
-    private static final String SIGFOX_BACKEND = "https://backend.sigfox.com";
+    //private static final String SIGFOX_BACKEND = "https://backend.sigfox.com";
 
     private static final String[] authorizedHeader = {
             "user-agent", "accept", "origin", "referer"
     };
 
     private final String sigfoxBasicString;
+    private final String apiBackend;
 
     /**
      * Create a Connection to Sigfox API with a given Login / Password combination
      * @param apiLogin
      * @param apiPassword
      */
-    public ITSigfoxConnection(String apiLogin, String apiPassword) {
+    public ITSigfoxConnection(String apiBackend, String apiLogin, String apiPassword) {
         String plainCreds = apiLogin+":"+apiPassword;
         byte[] base64CredsBytes = java.util.Base64.getEncoder().encode(plainCreds.getBytes(StandardCharsets.US_ASCII));
         this.sigfoxBasicString = "Basic " + new String(base64CredsBytes);
+        this.apiBackend = apiBackend;
     }
 
 
@@ -116,7 +118,7 @@ public class ITSigfoxConnection<S,T> {
 
         T response = null;
 
-        String url = SIGFOX_BACKEND+apiPath;
+        String url = apiBackend+apiPath;
         if ( queryString != null && !queryString.isEmpty())
             url +='?'+queryString;
 

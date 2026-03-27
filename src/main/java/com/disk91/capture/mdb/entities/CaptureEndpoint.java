@@ -21,6 +21,7 @@ package com.disk91.capture.mdb.entities;
 
 import com.disk91.common.tools.CloneableObject;
 import com.disk91.common.tools.CustomField;
+import com.disk91.common.tools.exceptions.ITNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.annotation.Id;
@@ -141,6 +142,7 @@ public class CaptureEndpoint implements CloneableObject<CaptureEndpoint> {
     public synchronized void incTotalQueuedToProcess() {this.totalQueuedToProcess++;}
 
     public synchronized void incTotalBillingRefused() {this.totalBillingRefused++;}
+
     // --------------------------------
 
     @Override
@@ -174,6 +176,19 @@ public class CaptureEndpoint implements CloneableObject<CaptureEndpoint> {
         p.setTotalQueuedToProcess(this.totalQueuedToProcess);
         p.setTotalBillingRefused(this.totalBillingRefused);
         return p;
+    }
+
+    // --------------------------------
+
+    public String getOneField(String name) throws ITNotFoundException {
+        if ( this.customConfig != null ) {
+            for ( CustomField cf : this.customConfig ) {
+                if ( cf.getName().equals(name) ) {
+                    return cf.getValue();
+                }
+            }
+        }
+        throw new ITNotFoundException("capture-endpoint-mandatory-field-missing");
     }
 
     // --------------------------------

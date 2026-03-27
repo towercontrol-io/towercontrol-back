@@ -20,10 +20,12 @@
 package com.disk91.capture.mdb.repositories;
 
 import com.disk91.capture.mdb.entities.ProtocolIds;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -38,5 +40,15 @@ public interface ProtocolIdsRepository extends MongoRepository<ProtocolIds,Strin
      */
     @Query("{ 'captureId': ?0, 'customConfig': { $elemMatch: { 'name': ?1, 'value': ?2 } } }")
     Optional<ProtocolIds> findByCaptureIdAndCustomConfigNameAndValue(String captureId, String name, String value);
+
+    /**
+     * Find a limited number of ProtocolIds for a given captureId where lastScanMs is below a threshold and removalMs is 0
+     * @param captureId  - the capture endpoint identifier to filter on
+     * @param lastScanMs - upper bound (exclusive) for the lastScanMs field
+     * @param pageable   - pagination to limit the number of returned results
+     * @return list of matching ProtocolIds
+     */
+    @Query("{ 'captureId': ?0, 'lastScanMs': { $lt: ?1 }, 'removalMs': 0 }")
+    List<ProtocolIds> findByCaptureIdAndLastScanMsBeforeAndNotRemoved(String captureId, long lastScanMs, Pageable pageable);
 
 }

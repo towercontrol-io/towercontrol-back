@@ -124,4 +124,20 @@ public class CaptureConfig {
         return captureEndpointCacheLogPeriod;
     }
 
+    // -----------------------------------------
+    // ProtocolIds
+    // -----------------------------------------
+
+    @Value("${capture.protocol.ids.resync.max.rate:50}")
+    protected int captureProtocolIdsResyncMaxRate;
+    public int getCaptureProtocolIdsResyncMaxRate() {
+        return captureProtocolIdsResyncMaxRate;
+    }
+
+    @Value("${capture.protocol.ids.recheck.rate.days:15}")
+    protected int captureProtocolIdsRecheckRateDays;
+    public int getCaptureProtocolIdsRecheckRateDays() {
+        return captureProtocolIdsRecheckRateDays;
+    }
+
 }

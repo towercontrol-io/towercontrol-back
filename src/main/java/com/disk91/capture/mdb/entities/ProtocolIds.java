@@ -21,6 +21,7 @@ package com.disk91.capture.mdb.entities;
 
 import com.disk91.capture.mdb.entities.sub.IdStateEnum;
 import com.disk91.common.tools.CustomField;
+import com.disk91.common.tools.exceptions.ITNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.annotation.Id;
@@ -90,6 +91,20 @@ public class ProtocolIds {
 
     // assignment date in MS since epoch
     protected long removalMs;
+
+
+    // --------------------------------
+
+    public String getOneField(String name) throws ITNotFoundException {
+        if ( this.customConfig != null ) {
+            for ( CustomField cf : this.customConfig ) {
+                if ( cf.getName().equals(name) ) {
+                    return cf.getValue();
+                }
+            }
+        }
+        throw new ITNotFoundException("capture-endpoint-id-field-missing");
+    }
 
 
     // --------------------------------

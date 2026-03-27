@@ -122,25 +122,20 @@ public class DeviceWrapper {
 
     public SigfoxApiv2Device getRegisteredDeviceDetails(
             String deviceId
-    ) {
-        try {
-            ITSigfoxConnection<String, SigfoxApiv2Device> request = new ITSigfoxConnection<>(
-                    this.apiBackend,
-                    this.apiLogin,
-                    this.apiPassword
-            );
-            return request.execute(
-                    "GET",
-                    "/api/v2/devices/"+deviceId,
-                    null,
-                    null,
-                    null,
-                    SigfoxApiv2Device.class
-            );
-        } catch (ITSigfoxConnectionException x) {
-            log.error("[capture][sigfox] Problem accessing sigfox device list {}", x.errorMessage);
-            return null;
-        }
+    ) throws ITSigfoxConnectionException {
+        ITSigfoxConnection<String, SigfoxApiv2Device> request = new ITSigfoxConnection<>(
+                this.apiBackend,
+                this.apiLogin,
+                this.apiPassword
+        );
+        return request.execute(
+                "GET",
+                "/api/v2/devices/"+deviceId,
+                null,
+                null,
+                null,
+                SigfoxApiv2Device.class
+        );
     }
 
 

@@ -190,6 +190,19 @@ public class CaptureEndpointCache {
 
     }
 
+
+    /**
+     * Iterate over all capture endpoints ordered by creation date descending and apply the given consumer to each one
+     * @param consumer - function to be called for each CaptureEndpoint
+     */
+    public void forEachCaptureEndpoint(java.util.function.Consumer<CaptureEndpoint> consumer) {
+        List<CaptureEndpoint> all = repository.findAllCaptureEndpointByOrderByCreationMsDesc();
+        log.debug("[capture] forEachCaptureEndpoint - iterating over {} endpoints", all.size());
+        // Apply the consumer to each endpoint
+        all.forEach(consumer);
+    }
+
+
     /**
      * On regular basis (5 minutes), save the stats of all cached endpoints
      * Print the stats on logs at least until the front-end have the feature to display them
@@ -216,5 +229,9 @@ public class CaptureEndpointCache {
             }
         }
     }
+
+
+
+
 
 }

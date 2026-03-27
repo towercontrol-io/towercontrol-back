@@ -21,6 +21,7 @@ package com.disk91.capture.interfaces;
 
 import com.disk91.capture.api.interfaces.CaptureResponseItf;
 import com.disk91.capture.mdb.entities.CaptureEndpoint;
+import com.disk91.capture.mdb.entities.ProtocolIds;
 import com.disk91.capture.mdb.entities.Protocols;
 import com.disk91.common.tools.exceptions.*;
 import com.disk91.users.mdb.entities.User;
@@ -108,5 +109,29 @@ public abstract class AbstractProtocol {
             CaptureIngestResponse ingestResponse
     ) throws
             ITNotFoundException;
+
+    /**
+     * This function will be called to review the IDs associated with Endpoint and, therefore, with the protocol.
+     * IDs are reviewed regularly to ensure that expirations and other parameters have not passed or changed.
+     * The review frequency is not managed in the driver; it is managed at a higher level, regardless of the protocol.
+     *
+     * At the driver level, an `ITOverQuotaException` will be thrown to indicate that processing must stop on this
+     * connector. This can also be an implementation choice for the function when there is no need to review IDs.
+     * In that case, processing on this connector will stop after this exception is received.
+     *
+     * This exception may also be raised simply because the backend does not accept any further communication.
+     * `checkId` will modify the provided ID and return it, or null when no change.
+     * It is up to the upper layer to decide whether to persist it in order to apply the changes.
+     *
+     * @param _id to review
+     * @return the reviewed ID, or null if no change
+     * @throws ITOverQuotaException - to stop the processing for this connector
+     */
+
+    public abstract ProtocolIds checkId(
+            CaptureEndpoint endpoint,           // Corresponding endpoint
+            ProtocolIds _id
+    ) throws
+            ITOverQuotaException;
 
 }

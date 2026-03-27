@@ -20,21 +20,23 @@
 package com.disk91.capture.drivers.standard;
 
 import com.disk91.capture.api.interfaces.CaptureResponseItf;
+import com.disk91.capture.drivers.standard.sigfox.apiv2.models.SigfoxApiv2Device;
+import com.disk91.capture.drivers.standard.sigfox.apiv2.services.ITSigfoxConnectionException;
+import com.disk91.capture.drivers.standard.sigfox.apiv2.wrappers.DeviceWrapper;
 import com.disk91.capture.interfaces.AbstractProtocol;
 import com.disk91.capture.interfaces.CaptureDataPivot;
 import com.disk91.capture.interfaces.CaptureIngestResponse;
 import com.disk91.capture.interfaces.sub.*;
 import com.disk91.capture.mdb.entities.CaptureEndpoint;
+import com.disk91.capture.mdb.entities.ProtocolIds;
 import com.disk91.capture.mdb.entities.Protocols;
+import com.disk91.capture.services.CaptureIdsService;
 import com.disk91.common.config.CommonConfig;
 import com.disk91.common.interfaces.chirpstack.ChirpstackV4HeliumPayload;
 import com.disk91.common.tools.*;
 import com.disk91.common.tools.computeLocation.ComputeLocation;
 import com.disk91.common.tools.computeLocation.Location;
-import com.disk91.common.tools.exceptions.ITHackerException;
-import com.disk91.common.tools.exceptions.ITNotFoundException;
-import com.disk91.common.tools.exceptions.ITParseException;
-import com.disk91.common.tools.exceptions.ITRightException;
+import com.disk91.common.tools.exceptions.*;
 import com.disk91.devices.mdb.entities.Device;
 import com.disk91.devices.mdb.entities.sub.DevGroupAssociated;
 import com.disk91.devices.services.DevicesNwkCache;
@@ -86,6 +88,9 @@ public class SigfoxV2Driver extends AbstractProtocol {
     @Autowired
     protected GroupsServices groupsServices;
 
+    @Autowired
+    protected CaptureIdsService captureIdsService;
+
     @PostConstruct
     private void initSigfoxV2Driver() {
         log.info("[SigfoxV2Driver] Initializing Sigfox V2 Protocol Driver");
@@ -102,6 +107,10 @@ public class SigfoxV2Driver extends AbstractProtocol {
         }
 
     }
+
+    // =================================================================================================================
+    // toPivot
+    // =================================================================================================================
 
     public CaptureIngestResponse toPivot(
             String jwtUser,                     // User in the Jwt token (may be an api key)
@@ -391,4 +400,65 @@ public class SigfoxV2Driver extends AbstractProtocol {
         return new CaptureResponseItf();
 
     }
+
+    // =================================================================================================================
+    // ID management
+    // =================================================================================================================
+
+    public ProtocolIds checkId(
+            CaptureEndpoint endpoint,           // Corresponding endpoint
+            ProtocolIds _id
+    ) throws
+            ITOverQuotaException {
+
+        try {
+            String api = endpoint.getOneField("protocol-sigfox-api-endpoint");
+            String user = endpoint.getOneField("protocol-sigfox-api-user");
+            String pass = endpoint.getOneField("protocol-sigfox-api-password");
+
+            DeviceWrapper deviceWrapper = new DeviceWrapper(api, user, pass);
+            String sigfoxId = _id.getOneField("sigfox-id");
+
+            try {
+                SigfoxApiv2Device dev = deviceWrapper.getRegisteredDeviceDetails(sigfoxId);
+                // dev exists
+                boolean modified = false;
+                String pac = captureIdsService.decrypteField(_id.getOneField("sigfox-pac"));
+                // decrypt pac
+                if (!dev.getPac().equals(pac)) {
+                    _id.getCustomConfig().removeIf(cf -> cf.getName().equals("sigfox-pac"));
+                    CustomField cf = new CustomField();
+                    cf.setName("sigfox-pac");
+                    cf.setValue(captureIdsService.encrypteField(dev.getPac()));
+                    _id.getCustomConfig().add(cf);
+                    modified = true;
+                }
+
+                if (dev.getActivationTime() < Now.NowUtcMs() && dev.getState() == 0) {
+                    // active device
+                    log.info("Device " + sigfoxId + " unsubscription date " + dev.getUnsubscriptionTime());
+                }
+
+                if (modified) return _id;
+                return null;
+            } catch (ITNotFoundException x) {
+                // One of the field is not existing on ID, this is not a normal situation
+                log.warn("[capture][sigfoxv2] Missing mandatory field for sigfox id {}, stopping processing", sigfoxId);
+                return null;
+            } catch (ITSigfoxConnectionException e) {
+                // @TODO : analyser les reponse possible via le code erreur pour decider ...
+                // par exemple la gestion de l'overquota
+
+            }
+
+
+
+        } catch ( ITNotFoundException x) {
+            log.warn("[capture][sigfoxv2] Missing mandatory field for endpoint {}, stopping processing", endpoint.getRef());
+        }
+        throw new ITOverQuotaException("capture-driver-not-implemented");
+    }
+
+
+
 }

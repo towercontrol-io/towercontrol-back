@@ -25,16 +25,14 @@ import com.disk91.capture.interfaces.CaptureDataPivot;
 import com.disk91.capture.interfaces.CaptureIngestResponse;
 import com.disk91.capture.interfaces.sub.*;
 import com.disk91.capture.mdb.entities.CaptureEndpoint;
+import com.disk91.capture.mdb.entities.ProtocolIds;
 import com.disk91.capture.mdb.entities.Protocols;
 import com.disk91.common.config.CommonConfig;
 import com.disk91.common.interfaces.chirpstack.ChirpstackV4HeliumPayload;
 import com.disk91.common.tools.*;
 import com.disk91.common.tools.computeLocation.ComputeLocation;
 import com.disk91.common.tools.computeLocation.Location;
-import com.disk91.common.tools.exceptions.ITHackerException;
-import com.disk91.common.tools.exceptions.ITNotFoundException;
-import com.disk91.common.tools.exceptions.ITParseException;
-import com.disk91.common.tools.exceptions.ITRightException;
+import com.disk91.common.tools.exceptions.*;
 import com.disk91.devices.mdb.entities.Device;
 import com.disk91.devices.mdb.entities.sub.DevGroupAssociated;
 import com.disk91.devices.services.DevicesNwkCache;
@@ -389,4 +387,13 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
         return new CaptureResponseItf();
 
     }
+
+    public ProtocolIds checkId(
+            CaptureEndpoint endpoint,           // Corresponding endpoint
+            ProtocolIds _id
+    ) throws
+            ITOverQuotaException {
+        throw new ITOverQuotaException("capture-driver-not-implemented");
+    }
+
 }

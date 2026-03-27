@@ -22,7 +22,10 @@ package com.disk91.capture.services;
 import com.disk91.audit.integration.AuditIntegration;
 import com.disk91.capture.Capture;
 import com.disk91.capture.api.interfaces.*;
+import com.disk91.capture.config.ActionCatalog;
 import com.disk91.capture.config.CaptureConfig;
+import com.disk91.capture.interfaces.AbstractProtocol;
+import com.disk91.capture.interfaces.CaptureIngestResponse;
 import com.disk91.capture.mdb.entities.CaptureEndpoint;
 import com.disk91.capture.mdb.entities.ProtocolIds;
 import com.disk91.capture.mdb.entities.Protocols;
@@ -30,11 +33,12 @@ import com.disk91.capture.mdb.entities.sub.MandatoryField;
 import com.disk91.capture.mdb.entities.sub.ProtocolId;
 import com.disk91.capture.mdb.repositories.ProtocolIdsRepository;
 import com.disk91.common.config.CommonConfig;
+import com.disk91.common.config.ModuleCatalog;
 import com.disk91.common.tools.CustomField;
 import com.disk91.common.tools.EncryptionHelper;
 import com.disk91.common.tools.Now;
-import com.disk91.common.tools.exceptions.ITNotFoundException;
-import com.disk91.common.tools.exceptions.ITRightException;
+import com.disk91.common.tools.Tools;
+import com.disk91.common.tools.exceptions.*;
 import com.disk91.users.mdb.entities.User;
 import com.disk91.users.services.UserCommon;
 import com.disk91.users.services.UsersRolesCache;
@@ -42,8 +46,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -82,6 +90,15 @@ public class CaptureIdsService {
     // FRONT-END API / Insert New IDs
     // =====================================================================================================
 
+    public String encrypteField(String value) {
+        return "enc_"+ EncryptionHelper.encrypt(value, Capture.__iv, commonConfig.getEncryptionKey());
+    }
+
+    public String decrypteField(String value) {
+        if ( value != null && value.startsWith("enc_") ) {
+            return EncryptionHelper.decrypt(value.substring(4), Capture.__iv, commonConfig.getEncryptionKey());
+        } else return value;
+    }
 
     /**
      * `insertIDs` lets you add IDs to the ID database.
@@ -208,7 +225,7 @@ public class CaptureIdsService {
                                 if ( mf != null ) {
                                     if ( mf.isValueValid( values[i] ) ) {
                                         if ( mf.isEncrypted() ) {
-                                            String encryptedValue = "enc_"+ EncryptionHelper.encrypt(values[i], Capture.__iv, commonConfig.getEncryptionKey());
+                                            String encryptedValue = encrypteField( values[i] );
                                             values[i] = encryptedValue;
                                         }
                                         _id.getCustomConfig().add(CustomField.of(mf.getName(), values[i]));
@@ -264,6 +281,109 @@ public class CaptureIdsService {
         }
         return ret;
     }
+
+    // =====================================================================================================
+    // Background scan for IDs
+    // =====================================================================================================
+
+    /* ***
+     * We will go through the IDs, starting with those that have not been processed for the longest time. The goal is
+     * to regularly re-check the validity of these elements as part of monitoring. However, since the data typically
+     * has no reason to change at a very high frequency, it is usually sufficient to check it about once a year.
+     * It is more relevant to run this process roughly once a month and to limit the rate in order to avoid saturating
+     * the APIs on partners’ backends. We will therefore cap it, for example, at one processing per second. This will
+     * be a configuration variable, and it will run only if there are items that have not been re-checked for a period
+     * of time, which is also configurable.
+     */
+
+    // Cache the protocols class to avoid recreation each time
+    protected final HashMap<String, AbstractProtocol> protocolCache = new HashMap<>();
+
+    @Autowired(required = false)
+    private AutowireCapableBeanFactory beanFactory;
+
+
+    @Scheduled(fixedRate = 60_000, initialDelay = 10_000)
+    public void refreshIds() {
+
+        // process endpoint per endpoint to break on overQuota (quota or unsupported)
+        captureEndpointCache.forEachCaptureEndpoint((endpoint) -> {
+
+            // get the associated IDs to review job run every 1 minute, and we have a max rate per endpoint per minute as
+            // a parameter so this fixes the max number of IDs to review
+            List<ProtocolIds> ids = protocolIdsRepository.findByCaptureIdAndLastScanMsBeforeAndNotRemoved(
+                    endpoint.getRef(),
+                    Now.NowUtcMs() - (captureConfig.getCaptureProtocolIdsRecheckRateDays()*Now.ONE_FULL_DAY),
+                    PageRequest.of(0,captureConfig.getCaptureProtocolIdsResyncMaxRate())
+            );
+
+            for ( ProtocolIds _id : ids ) {
+                try {
+                    Protocols p = captureProtocolsCache.getProtocol(endpoint.getProtocolId());
+                    // Invoke the protocol ingestion
+                    AbstractProtocol ap = protocolCache.get(p.getProcessingClassName());
+                    if (ap == null) {
+                        synchronized (protocolCache) {
+                            // Manage async call, block on cache and when released make sure another thread did not create it in the meantime
+                            ap = protocolCache.get(p.getProcessingClassName());
+                            if (ap == null) {
+                                try {
+                                    Class<?> clazz = Class.forName(p.getProcessingClassName());
+                                    ap = (AbstractProtocol) beanFactory.createBean(clazz);
+                                    protocolCache.put(p.getProcessingClassName(), ap);
+                                } catch (Exception ex) {
+                                    log.error("[capture] Id Check failed, protocol class instantiation error for protocolId {}", endpoint.getProtocolId());
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    try {
+                        Object result = ap.getClass()
+                                .getMethod("checkId",
+                                        CaptureEndpoint.class,
+                                        ProtocolIds.class
+                                )
+                                .invoke(ap,
+                                        endpoint,
+                                        _id
+                                );
+                        if (result != null) {
+                            // Id has been updated
+                            ProtocolIds reviewedId = (ProtocolIds) result;
+                            log.info("[capture] Id Check updated {}", reviewedId.getOneField("sigfox-id"));
+                            reviewedId.setLastScanMs(Now.NowUtcMs());
+                            reviewedId.setUpdateMs(Now.NowUtcMs());
+                            // @TODO : save
+                            //protocolIdsRepository.save(reviewedId);
+                        } else {
+                            // no change, just update the scan date
+                            _id.setLastScanMs(Now.NowUtcMs());
+                            //@TODO : save
+                            //protocolIdsRepository.save(_id);
+                        }
+
+                    } catch (NoSuchMethodException | IllegalAccessException x) {
+                        log.error("[capture] Id Check failed, protocol class checkId method missing for protocolId {}", endpoint.getProtocolId());
+                        break;
+                    } catch (InvocationTargetException x) {
+                        Throwable _expect = x.getCause();
+                        // Re-throw known business exceptions
+                        if (_expect instanceof ITOverQuotaException) {
+                            // skip the execution of the other IDs
+                            log.info("[capture] Id Check stopped, protocol class checkId method over quota for protocolId {}", endpoint.getProtocolId());
+                            break;
+                        }
+                    }
+                } catch (ITNotFoundException e) {
+                    // protocol not found
+                    log.warn("[capture] Id Check failed, protocol not found for protocolId {}", endpoint.getProtocolId());
+                }
+            }
+        });
+
+    }
+
 
 
 }

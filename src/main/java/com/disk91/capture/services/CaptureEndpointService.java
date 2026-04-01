@@ -81,6 +81,22 @@ public class CaptureEndpointService {
     // FRONT-END API / Protocol List
     // =====================================================================================================
 
+
+    public String encrypteField(String value) {
+        return "enc_"+ EncryptionHelper.encrypt(value, Capture.__iv, commonConfig.getEncryptionKey());
+    }
+
+    public String decrypteField(String value) {
+        if ( value != null && value.startsWith("enc_") ) {
+            return EncryptionHelper.decrypt(value.substring(4), Capture.__iv, commonConfig.getEncryptionKey());
+        } else return value;
+    }
+
+
+    // =====================================================================================================
+    // FRONT-END API / Protocol List
+    // =====================================================================================================
+
     public List<CaptureProtocolResponseItf> listProtocols() {
 
         ArrayList<CaptureProtocolResponseItf> ret = new ArrayList<>();
@@ -288,7 +304,7 @@ public class CaptureEndpointService {
                 MandatoryField mf = mandatoryFieldsMap.get(cf.getName());
                 if ( mf != null ) {
                    if ( mf.isEncrypted() ) {
-                        String encryptedValue = "enc_"+EncryptionHelper.encrypt(cf.getValue(), Capture.__iv, commonConfig.getEncryptionKey());
+                        String encryptedValue = encrypteField(cf.getValue());
                         cf.setValue(encryptedValue);
                    }
                 }

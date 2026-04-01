@@ -30,6 +30,7 @@ import com.disk91.capture.interfaces.sub.*;
 import com.disk91.capture.mdb.entities.CaptureEndpoint;
 import com.disk91.capture.mdb.entities.ProtocolIds;
 import com.disk91.capture.mdb.entities.Protocols;
+import com.disk91.capture.services.CaptureEndpointService;
 import com.disk91.capture.services.CaptureIdsService;
 import com.disk91.common.config.CommonConfig;
 import com.disk91.common.interfaces.chirpstack.ChirpstackV4HeliumPayload;
@@ -54,6 +55,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -90,6 +92,9 @@ public class SigfoxV2Driver extends AbstractProtocol {
 
     @Autowired
     protected CaptureIdsService captureIdsService;
+
+    @Autowired
+    protected CaptureEndpointService captureEndpointService;
 
     @PostConstruct
     private void initSigfoxV2Driver() {
@@ -411,10 +416,12 @@ public class SigfoxV2Driver extends AbstractProtocol {
     ) throws
             ITOverQuotaException {
 
+//        if ( _id != null ) throw new ITOverQuotaException();
+
         try {
             String api = endpoint.getOneField("protocol-sigfox-api-endpoint");
             String user = endpoint.getOneField("protocol-sigfox-api-user");
-            String pass = endpoint.getOneField("protocol-sigfox-api-password");
+            String pass = captureEndpointService.decrypteField(endpoint.getOneField("protocol-sigfox-api-password"));
 
             DeviceWrapper deviceWrapper = new DeviceWrapper(api, user, pass);
             String sigfoxId = _id.getOneField("sigfox-id");
@@ -435,8 +442,13 @@ public class SigfoxV2Driver extends AbstractProtocol {
                 }
 
                 if (dev.getActivationTime() < Now.NowUtcMs() && dev.getState() == 0) {
+                    // @TODO
                     // active device
+                    // On peut considérer la fin de vie à date anniv l'an prochain si pas deja
+                    // si on a le renew automatique en soit pas de soucis... donc on peut bouger d'un an de plus par exemple mais sinon on doit revenir à la date d'anniv de fin
                     log.info("Device " + sigfoxId + " unsubscription date " + dev.getUnsubscriptionTime());
+                } else if ( dev.getState() > 0 ) {
+                    // device is deactivated, end of subscription is now...
                 }
 
                 if (modified) return _id;
@@ -446,9 +458,17 @@ public class SigfoxV2Driver extends AbstractProtocol {
                 log.warn("[capture][sigfoxv2] Missing mandatory field for sigfox id {}, stopping processing", sigfoxId);
                 return null;
             } catch (ITSigfoxConnectionException e) {
-                // @TODO : analyser les reponse possible via le code erreur pour decider ...
-                // par exemple la gestion de l'overquota
+                if ( e.status == HttpStatus.FORBIDDEN )  {
+                    // The resource is not authorized, either because it has not yet been created in the backend system, or because it belongs to another user.
+                    // Not blocking, process the next one
 
+                    // @TODO : si l device existe et ets actif, il faut sans doute le mettre en erreur quelque part ... mais attention, ca peut aussi être un problème de droits...
+                    // peut etre tester les droits de l'api avec autre chose
+
+
+                    return null;
+                }
+                // @TODO traiter spécifiquement le cas du overquota.
             }
 
 

@@ -22,10 +22,8 @@ package com.disk91.capture.services;
 import com.disk91.audit.integration.AuditIntegration;
 import com.disk91.capture.Capture;
 import com.disk91.capture.api.interfaces.*;
-import com.disk91.capture.config.ActionCatalog;
 import com.disk91.capture.config.CaptureConfig;
 import com.disk91.capture.interfaces.AbstractProtocol;
-import com.disk91.capture.interfaces.CaptureIngestResponse;
 import com.disk91.capture.mdb.entities.CaptureEndpoint;
 import com.disk91.capture.mdb.entities.ProtocolIds;
 import com.disk91.capture.mdb.entities.Protocols;
@@ -33,11 +31,9 @@ import com.disk91.capture.mdb.entities.sub.MandatoryField;
 import com.disk91.capture.mdb.entities.sub.ProtocolId;
 import com.disk91.capture.mdb.repositories.ProtocolIdsRepository;
 import com.disk91.common.config.CommonConfig;
-import com.disk91.common.config.ModuleCatalog;
 import com.disk91.common.tools.CustomField;
 import com.disk91.common.tools.EncryptionHelper;
 import com.disk91.common.tools.Now;
-import com.disk91.common.tools.Tools;
 import com.disk91.common.tools.exceptions.*;
 import com.disk91.users.mdb.entities.User;
 import com.disk91.users.services.UserCommon;
@@ -303,18 +299,36 @@ public class CaptureIdsService {
     private AutowireCapableBeanFactory beanFactory;
 
 
+    private long loops = 0;
     @Scheduled(fixedRate = 60_000, initialDelay = 10_000)
     public void refreshIds() {
+        loops++;
 
         // process endpoint per endpoint to break on overQuota (quota or unsupported)
         captureEndpointCache.forEachCaptureEndpoint((endpoint) -> {
+            // The number of devices to process depends on the rate, which can be greater than 1. In that case, we take
+            // the integer value. However, if it is less than 1, we need to accumulate it over successive runs until we reach a positive value.
+            int toProcess = 0;
+            log.info("Trace : loops {}, rate {}, loop-1 {} vs loop-0 {}", loops, captureConfig.getCaptureProtocolIdsResyncMaxRate(), (int)((loops-1) * captureConfig.getCaptureProtocolIdsResyncMaxRate()), (int)(loops * captureConfig.getCaptureProtocolIdsResyncMaxRate()));
+
+            if ( captureConfig.getCaptureProtocolIdsResyncMaxRate() > 1.0 ) {
+                toProcess = (int) captureConfig.getCaptureProtocolIdsResyncMaxRate();
+            } else {
+                if ( (int)((loops-1) * captureConfig.getCaptureProtocolIdsResyncMaxRate()) < (int)(loops * captureConfig.getCaptureProtocolIdsResyncMaxRate()) ) {
+                    toProcess = 1;
+                }
+            }
+            if ( toProcess == 0 ) {
+                // no processing to do at this run
+                return;
+            }
 
             // get the associated IDs to review job run every 1 minute, and we have a max rate per endpoint per minute as
             // a parameter so this fixes the max number of IDs to review
             List<ProtocolIds> ids = protocolIdsRepository.findByCaptureIdAndLastScanMsBeforeAndNotRemoved(
                     endpoint.getRef(),
                     Now.NowUtcMs() - (captureConfig.getCaptureProtocolIdsRecheckRateDays()*Now.ONE_FULL_DAY),
-                    PageRequest.of(0,captureConfig.getCaptureProtocolIdsResyncMaxRate())
+                    PageRequest.of(0,toProcess)
             );
 
             for ( ProtocolIds _id : ids ) {

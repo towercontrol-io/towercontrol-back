@@ -74,31 +74,31 @@ public class SigfoxApiv2Device {
             description ="Defines a device type entity",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED
     )
-    protected SigfoxApiv2DeviceTypeMinimal deviceType;
+    protected SigfoxApiv2DeviceTypeId deviceType;
 
     @Schema(
             description ="Defines a minimum contract info entity",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED
     )
-    protected SigfoxApiv2ContractInfoMin contract;
+    protected SigfoxApiv2ContractId contract;
 
     @Schema(
             description ="Defines a group entity",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED
     )
-    protected SigfoxApiv2GroupMinimal group;
+    protected SigfoxApiv2GroupId group;
 
     @Schema(
             description ="Modem certificate",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED
     )
-    protected SigfoxApiv2Certificate modemCertificate;
+    protected SigfoxApiv2CertificateId modemCertificate;
 
     @Schema(
             description ="Product certificate",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED
     )
-    protected SigfoxApiv2Certificate productCertificate;
+    protected SigfoxApiv2CertificateId productCertificate;
 
     @Schema(
             description ="Contains the position of the device",
@@ -158,24 +158,6 @@ public class SigfoxApiv2Device {
     )
     protected int lqi;
 
-/*
-Link Quality Indicator 0 -> LIMIT 1 -> AVERAGE 2 -> GOOD 3 -> EXCELLENT 4 -> NA
-
-    @Schema(
-            description ="The average device’s SNR (Signal Noise Ratio) in dB. " +
-                    "This average is done from the last 25 received messages.",
-            requiredMode = Schema.RequiredMode.NOT_REQUIRED
-    )
-    protected double averageSnr;
-
-    @Schema(
-            description ="The average device’s RSSI (Received Signal Strength Indicator) in dBm. " +
-                    "This average is done from the last 25 received messages.",
-            requiredMode = Schema.RequiredMode.NOT_REQUIRED
-    )
-    protected double averageRssi;
-*/
-
     @Schema(
             description ="The device’s activation time (in milliseconds since the Unix Epoch)",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED
@@ -183,7 +165,7 @@ Link Quality Indicator 0 -> LIMIT 1 -> AVERAGE 2 -> GOOD 3 -> EXCELLENT 4 -> NA
     protected long activationTime;
 
     @Schema(
-            description ="The device’s provisionning time (in milliseconds since the Unix Epoch)",
+            description ="The device’s provisioning time (in milliseconds since the Unix Epoch)",
             requiredMode = Schema.RequiredMode.REQUIRED
     )
     protected long creationTime;
@@ -285,6 +267,19 @@ Link Quality Indicator 0 -> LIMIT 1 -> AVERAGE 2 -> GOOD 3 -> EXCELLENT 4 -> NA
     )
     protected boolean satelliteCapable;
 
+    @Schema(
+            description ="Is device a repeater",
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED
+    )
+    protected boolean repeater;
+
+    @Schema(
+            description ="The sequence number modulo",
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED
+    )
+    protected int messageModulo;
+
+
     // ============================================================
     // Generated Getters & Setters
     // ============================================================
@@ -314,44 +309,12 @@ Link Quality Indicator 0 -> LIMIT 1 -> AVERAGE 2 -> GOOD 3 -> EXCELLENT 4 -> NA
         this.name = name;
     }
 
-    public SigfoxApiv2DeviceTypeMinimal getDeviceType() {
-        return deviceType;
-    }
-
-    public void setDeviceType(SigfoxApiv2DeviceTypeMinimal deviceType) {
-        this.deviceType = deviceType;
-    }
-
-    public SigfoxApiv2ContractInfoMin getContract() {
-        return contract;
-    }
-
-    public void setContract(SigfoxApiv2ContractInfoMin contract) {
-        this.contract = contract;
-    }
-
-    public SigfoxApiv2GroupMinimal getGroup() {
-        return group;
-    }
-
-    public void setGroup(SigfoxApiv2GroupMinimal group) {
-        this.group = group;
-    }
-
-    public SigfoxApiv2Certificate getModemCertificate() {
+    public SigfoxApiv2CertificateId getModemCertificate() {
         return modemCertificate;
     }
 
-    public void setModemCertificate(SigfoxApiv2Certificate modemCertificate) {
+    public void setModemCertificate(SigfoxApiv2CertificateId modemCertificate) {
         this.modemCertificate = modemCertificate;
-    }
-
-    public SigfoxApiv2Certificate getProductCertificate() {
-        return productCertificate;
-    }
-
-    public void setProductCertificate(SigfoxApiv2Certificate productCertificate) {
-        this.productCertificate = productCertificate;
     }
 
     public SigfoxApiv2LatLng getLocation() {
@@ -401,23 +364,7 @@ Link Quality Indicator 0 -> LIMIT 1 -> AVERAGE 2 -> GOOD 3 -> EXCELLENT 4 -> NA
     public void setLastCom(long lastCom) {
         this.lastCom = lastCom;
     }
-/*
-    public double getAverageSnr() {
-        return averageSnr;
-    }
 
-    public void setAverageSnr(double averageSnr) {
-        this.averageSnr = averageSnr;
-    }
-
-    public double getAverageRssi() {
-        return averageRssi;
-    }
-
-    public void setAverageRssi(double averageRssi) {
-        this.averageRssi = averageRssi;
-    }
-*/
     public long getActivationTime() {
         return activationTime;
     }
@@ -536,5 +483,53 @@ Link Quality Indicator 0 -> LIMIT 1 -> AVERAGE 2 -> GOOD 3 -> EXCELLENT 4 -> NA
 
     public void setSatelliteCapable(boolean satelliteCapable) {
         this.satelliteCapable = satelliteCapable;
+    }
+
+    public void setDeviceType(SigfoxApiv2DeviceTypeId deviceType) {
+        this.deviceType = deviceType;
+    }
+
+    public void setContract(SigfoxApiv2ContractId contract) {
+        this.contract = contract;
+    }
+
+    public boolean isRepeater() {
+        return repeater;
+    }
+
+    public void setRepeater(boolean repeater) {
+        this.repeater = repeater;
+    }
+
+    public SigfoxApiv2DeviceTypeId getDeviceType() {
+        return deviceType;
+    }
+
+    public SigfoxApiv2ContractId getContract() {
+        return contract;
+    }
+
+    public SigfoxApiv2GroupId getGroup() {
+        return group;
+    }
+
+    public void setGroup(SigfoxApiv2GroupId group) {
+        this.group = group;
+    }
+
+    public SigfoxApiv2CertificateId getProductCertificate() {
+        return productCertificate;
+    }
+
+    public void setProductCertificate(SigfoxApiv2CertificateId productCertificate) {
+        this.productCertificate = productCertificate;
+    }
+
+    public int getMessageModulo() {
+        return messageModulo;
+    }
+
+    public void setMessageModulo(int messageModulo) {
+        this.messageModulo = messageModulo;
     }
 }

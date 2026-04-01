@@ -128,9 +128,9 @@ public class CaptureConfig {
     // ProtocolIds
     // -----------------------------------------
 
-    @Value("${capture.protocol.ids.resync.max.rate:50}")
-    protected int captureProtocolIdsResyncMaxRate;
-    public int getCaptureProtocolIdsResyncMaxRate() {
+    @Value("${capture.protocol.ids.resync.max.rate:0.16}")
+    protected float captureProtocolIdsResyncMaxRate;
+    public float getCaptureProtocolIdsResyncMaxRate() {
         return captureProtocolIdsResyncMaxRate;
     }
 

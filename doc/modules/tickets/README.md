@@ -147,5 +147,10 @@ Allow anonymous users to view and respond to tickets they created using a ticket
 ### [skill_private_faq](skills/skill_private_faq/SKILL.md)
 Display FAQ entries for authenticated users only. Requires login to access.
 
+### [skill_private_ticket_creation](skills/skill_private_ticket_creation/SKILL.md)
+Create a support ticket as an authenticated user. Includes form validation and submission workflow.
+
+### [skill_private_ticket_management](skills/skill_private_ticket_management/SKILL.md)
+List user tickets, view ticket content with exchange history, and reply to open tickets. Requires authentication. Covers the `TicketList` and `TicketContent` components.
 
 

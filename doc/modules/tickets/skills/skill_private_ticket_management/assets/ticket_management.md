@@ -146,6 +146,9 @@ export interface PrivTicketUserDetailResponseItf {
     /** Original ticket content in Markdown */
     content: string;
 
+    /** Moment of creation in milliseconds since epoch */
+    creationMs: number;
+
     /** List of replies in chronological order */
     responses: PrivMessageContent[];
 }

@@ -55,6 +55,9 @@ export interface PrivTicketUserDetailResponseItf {
     /** Ticket content in Markdown */
     content: string;
 
+    /** Moment of creation in milliseconds since epoch */
+    creationMs: number;
+    
     /** List of responses & replies to the ticket */
     responses: PrivMessageContent[];
 }

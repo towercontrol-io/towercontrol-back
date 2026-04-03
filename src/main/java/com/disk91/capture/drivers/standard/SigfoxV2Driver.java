@@ -442,7 +442,7 @@ public class SigfoxV2Driver extends AbstractProtocol {
                 }
 
                 if ( _id.getState() == IdStateEnum.UNKNOWN && dev.getState() == 0 /* OK */ ) {
-                    if ( dev.getToken() == null || dev.getToken().getState() != 2 /* NOT SEEN */ ) {
+                    if ( dev.getToken() == null || dev.getToken().getState() == 2 /* NOT SEEN */ ) {
                         _id.setState(IdStateEnum.ASSIGNED);
                         modified = true;
                     } else {
@@ -450,6 +450,9 @@ public class SigfoxV2Driver extends AbstractProtocol {
                         _id.setState(IdStateEnum.IN_USE);
                         modified = true;
                     }
+                } else if ( _id.getState() == IdStateEnum.ASSIGNED && dev.getToken() != null && dev.getToken().getState() != 2  ) {
+                    _id.setState(IdStateEnum.IN_USE);
+                    modified = true;
                 } else if ( _id.getState() == IdStateEnum.IN_USE && dev.getState() != 0 ) {
                     _id.setState(IdStateEnum.EXPIRED_IN_USE);
                     modified = true;

@@ -467,6 +467,8 @@ public class SigfoxV2Driver extends AbstractProtocol {
 
 
                     return null;
+                } else if (e.status == HttpStatus.TOO_MANY_REQUESTS) {
+                    throw new ITOverQuotaException("capture-driver-backend-rate-limitation");
                 }
                 // @TODO traiter spécifiquement le cas du overquota.
             }

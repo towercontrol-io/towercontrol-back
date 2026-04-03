@@ -137,8 +137,7 @@ public class ITSigfoxConnection<S,T> {
                 ObjectMapper mapper = new ObjectMapper();
                 mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
                 he = new HttpEntity<String>(mapper.writeValueAsString(body), headers);
-                log.info("body : "+mapper.writeValueAsString(body));
-
+                //log.info("body : "+mapper.writeValueAsString(body));
             } catch (JsonProcessingException e) {
                 throw new ITSigfoxConnectionException(HttpStatus.BAD_REQUEST,"Body format is invalid - can't be serialized");
             }
@@ -157,28 +156,27 @@ public class ITSigfoxConnection<S,T> {
                     && responseEntity.getStatusCode() != HttpStatus.NO_CONTENT
                     && responseEntity.getStatusCode() != HttpStatus.CREATED
                     ) {
-                log.info("Received an error code from Sigfox's backend : " + responseEntity.getStatusCode());
+                log.info("[capture][sigfox] Received unexpected response ({}) from Sigfox backend : ",responseEntity.getStatusCode());
                 throw new ITSigfoxConnectionException(
                         HttpStatus.valueOf(responseEntity.getStatusCode().value()),
                         responseEntity.getBody()
                 );
             } else {
-//  log.info(responseEntity.getBody());
                 ObjectMapper mapper = new ObjectMapper();
                 try {
                     if ( responseEntity.getBody() != null ) {
                         response = mapper.readValue(responseEntity.getBody(), typeRetrunedClass);
                     } else response = null;
-                    log.info("Sigfox Response : "+responseEntity.getStatusCode());
+                    log.debug("[capture][sigfox] Sigfox Response : "+responseEntity.getStatusCode());
                 } catch (IOException e) {
                     log.error(responseEntity.getBody());
-                    log.error("Impossible to deserialize Sigfox's backend response");
+                    log.error("[capture][sigfox] Impossible to deserialize Sigfox's backend response");
                     e.printStackTrace();
                     response = null;
                 }
             }
         } catch (HttpClientErrorException | HttpServerErrorException e ) {
-            log.error("Sigfox's backend communication exception :"+e.getStatusCode()+"["+e.getMessage()+"]");
+            log.warn("[capture][sigfox] Backend response ({}) - {}",e.getStatusCode(),e.getMessage());
             throw new ITSigfoxConnectionException(
                     HttpStatus.valueOf(e.getStatusCode().value()),
                     e.getResponseBodyAsString()

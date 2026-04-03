@@ -153,9 +153,23 @@ public class Now {
         } catch ( InterruptedException x ) {};
     }
 
+    /**
+     * Add one year to a given timestamp
+     * @param timeMs - The input timestamp in milliseconds (UTC)
+     * @return The timestamp in milliseconds one year later
+     */
+    public static long addOneYear(long timeMs) {
+        return Instant.ofEpochMilli(timeMs)
+                .atZone(ZoneId.of("UTC"))
+                .plusYears(1)
+                .toInstant()
+                .toEpochMilli();
+    }
+
     public static long ONE_FULL_DAY = 24*3600*1000;
     public static long ONE_HOUR = 3600 * 1000;
-
     public static long ONE_MINUTE = 60*1000;
+
+
 
 }

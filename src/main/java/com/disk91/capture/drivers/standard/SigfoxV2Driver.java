@@ -30,6 +30,7 @@ import com.disk91.capture.interfaces.sub.*;
 import com.disk91.capture.mdb.entities.CaptureEndpoint;
 import com.disk91.capture.mdb.entities.ProtocolIds;
 import com.disk91.capture.mdb.entities.Protocols;
+import com.disk91.capture.mdb.entities.sub.IdStateEnum;
 import com.disk91.capture.services.CaptureEndpointService;
 import com.disk91.capture.services.CaptureIdsService;
 import com.disk91.common.config.CommonConfig;
@@ -413,8 +414,7 @@ public class SigfoxV2Driver extends AbstractProtocol {
     public ProtocolIds checkId(
             CaptureEndpoint endpoint,           // Corresponding endpoint
             ProtocolIds _id
-    ) throws
-            ITOverQuotaException {
+    ) throws ITOverQuotaException {
 
 //        if ( _id != null ) throw new ITOverQuotaException();
 
@@ -441,14 +441,44 @@ public class SigfoxV2Driver extends AbstractProtocol {
                     modified = true;
                 }
 
-                if (dev.getActivationTime() < Now.NowUtcMs() && dev.getState() == 0) {
-                    // @TODO
-                    // active device
-                    // On peut considérer la fin de vie à date anniv l'an prochain si pas deja
-                    // si on a le renew automatique en soit pas de soucis... donc on peut bouger d'un an de plus par exemple mais sinon on doit revenir à la date d'anniv de fin
-                    log.info("Device " + sigfoxId + " unsubscription date " + dev.getUnsubscriptionTime());
-                } else if ( dev.getState() > 0 ) {
-                    // device is deactivated, end of subscription is now...
+                if ( _id.getState() == IdStateEnum.UNKNOWN && dev.getState() == 0 /* OK */ ) {
+                    if ( dev.getToken() == null || dev.getToken().getState() != 2 /* NOT SEEN */ ) {
+                        _id.setState(IdStateEnum.ASSIGNED);
+                        modified = true;
+                    } else {
+                        // Other cases, the device State may be Not OK
+                        _id.setState(IdStateEnum.IN_USE);
+                        modified = true;
+                    }
+                } else if ( _id.getState() == IdStateEnum.IN_USE && dev.getState() != 0 ) {
+                    _id.setState(IdStateEnum.EXPIRED_IN_USE);
+                    modified = true;
+                } else if ( _id.getState() == IdStateEnum.RETURNED && dev.getState() != 0 ) {
+                    _id.setState(IdStateEnum.EXPIRED_RETURNED);
+                    modified = true;
+                }
+
+                // Assignment time
+                long subscriptionStart = dev.getActivationTime(); // 0 (absent) when not activated
+                long subscriptionEnd = 0;
+                if ( dev.getUnsubscriptionTime() > 0 /* expired */) subscriptionEnd = dev.getUnsubscriptionTime();
+                else {
+                    if ( dev.getActivationTime() > 0 /* activated */) subscriptionEnd = Now.addOneYear(dev.getActivationTime());
+                    else subscriptionEnd = Now.addOneYear(dev.getCreationTime());
+                }
+                // In case we are In_USE and subscription END is in the past, the subscription may have been renewed
+                // Not sure it works that way ... to be verifier
+                while ( subscriptionEnd < Now.NowUtcMs() && dev.getState() == 0 /* OK */) {
+                    subscriptionEnd = Now.addOneYear(subscriptionEnd);
+                }
+
+                if ( _id.getSubscriptionStartMs() != subscriptionStart ) {
+                    _id.setSubscriptionStartMs(subscriptionStart);
+                    modified = true;
+                }
+                if ( _id.getSubscriptionEndMs() != subscriptionEnd ) {
+                    _id.setSubscriptionEndMs(subscriptionEnd);
+                    modified = true;
                 }
 
                 if (modified) return _id;
@@ -459,22 +489,31 @@ public class SigfoxV2Driver extends AbstractProtocol {
                 return null;
             } catch (ITSigfoxConnectionException e) {
                 if ( e.status == HttpStatus.FORBIDDEN )  {
-                    // The resource is not authorized, either because it has not yet been created in the backend system, or because it belongs to another user.
-                    // Not blocking, process the next one
-
-                    // @TODO : si l device existe et ets actif, il faut sans doute le mettre en erreur quelque part ... mais attention, ca peut aussi être un problème de droits...
-                    // peut etre tester les droits de l'api avec autre chose
-
-
-                    return null;
+                    if ( _id.getState() != IdStateEnum.NOT_ASSIGNED && _id.getState() != IdStateEnum.REMOVED ) {
+                        // The resource is not authorized, either because it has not yet been created in the backend system,
+                        // or because it belongs to another user. Not blocking, process the next one. But to update the status
+                        // it's important to check it's not the apikey that has been expired
+                        if (!deviceWrapper.getFullListOfDevices(null, null, 1).isEmpty()) {
+                            // The device is not in the backend
+                            if (_id.getState() == IdStateEnum.UNKNOWN ) {
+                                _id.setState(IdStateEnum.NOT_ASSIGNED);
+                            } else {
+                                _id.setState(IdStateEnum.REMOVED);
+                            }
+                            return _id;
+                        } else {
+                            // The apikey seems to not be valid, stop
+                            throw new ITOverQuotaException("capture-driver-backend-rate-limitation");
+                        }
+                    }
                 } else if (e.status == HttpStatus.TOO_MANY_REQUESTS) {
                     throw new ITOverQuotaException("capture-driver-backend-rate-limitation");
+                } else {
+                    // Other error, we can retry later, but log it
+                    log.error("[capture][sigfoxv2] Error from Sigfox API: {}", e.getMessage());
+                    return null;
                 }
-                // @TODO traiter spécifiquement le cas du overquota.
             }
-
-
-
         } catch ( ITNotFoundException x) {
             log.warn("[capture][sigfoxv2] Missing mandatory field for endpoint {}, stopping processing", endpoint.getRef());
         }

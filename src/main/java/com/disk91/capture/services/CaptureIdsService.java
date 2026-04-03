@@ -303,13 +303,13 @@ public class CaptureIdsService {
     @Scheduled(fixedRate = 60_000, initialDelay = 10_000)
     public void refreshIds() {
         loops++;
+        //log.info("Trace : loops {}, rate {}, loop-1 {} vs loop-0 {}", loops, captureConfig.getCaptureProtocolIdsResyncMaxRate(), (int)((loops-1) * captureConfig.getCaptureProtocolIdsResyncMaxRate()), (int)(loops * captureConfig.getCaptureProtocolIdsResyncMaxRate()));
 
         // process endpoint per endpoint to break on overQuota (quota or unsupported)
         captureEndpointCache.forEachCaptureEndpoint((endpoint) -> {
             // The number of devices to process depends on the rate, which can be greater than 1. In that case, we take
             // the integer value. However, if it is less than 1, we need to accumulate it over successive runs until we reach a positive value.
             int toProcess = 0;
-            log.info("Trace : loops {}, rate {}, loop-1 {} vs loop-0 {}", loops, captureConfig.getCaptureProtocolIdsResyncMaxRate(), (int)((loops-1) * captureConfig.getCaptureProtocolIdsResyncMaxRate()), (int)(loops * captureConfig.getCaptureProtocolIdsResyncMaxRate()));
 
             if ( captureConfig.getCaptureProtocolIdsResyncMaxRate() > 1.0 ) {
                 toProcess = (int) captureConfig.getCaptureProtocolIdsResyncMaxRate();
@@ -365,16 +365,14 @@ public class CaptureIdsService {
                         if (result != null) {
                             // Id has been updated
                             ProtocolIds reviewedId = (ProtocolIds) result;
-                            log.info("[capture] Id Check updated {}", reviewedId.getOneField("sigfox-id"));
+                            log.info("[capture] Id Check updated {}, new state {}, subscriptionStart {}, subscriptionEnd {}", reviewedId.getOneField("sigfox-id"), reviewedId.getState(), reviewedId.getSubscriptionStartMs(), reviewedId.getSubscriptionEndMs());
                             reviewedId.setLastScanMs(Now.NowUtcMs());
                             reviewedId.setUpdateMs(Now.NowUtcMs());
-                            // @TODO : save
-                            //protocolIdsRepository.save(reviewedId);
+                            protocolIdsRepository.save(reviewedId);
                         } else {
                             // no change, just update the scan date
                             _id.setLastScanMs(Now.NowUtcMs());
-                            //@TODO : save
-                            //protocolIdsRepository.save(_id);
+                            protocolIdsRepository.save(_id);
                         }
 
                     } catch (NoSuchMethodException | IllegalAccessException x) {
@@ -385,7 +383,7 @@ public class CaptureIdsService {
                         // Re-throw known business exceptions
                         if (_expect instanceof ITOverQuotaException) {
                             // skip the execution of the other IDs
-                            log.info("[capture] Id Check stopped, protocol class checkId method over quota for protocolId {}", endpoint.getProtocolId());
+                            log.debug("[capture] Id Check stopped, protocol class checkId method over quota for protocolId {}", endpoint.getProtocolId());
                             break;
                         }
                     }

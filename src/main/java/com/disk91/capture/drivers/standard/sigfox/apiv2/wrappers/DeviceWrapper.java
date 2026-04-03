@@ -141,16 +141,22 @@ public class DeviceWrapper {
 
     public  List<SigfoxApiv2Device> getFullListOfDevices(
             String deviceId,        // Null to get all
-            String deviceTypeId     // Null to get all
+            String deviceTypeId,    // Null to get all
+            int limit               // Max number of devices to return, 0 for no limit
     ) {
+        int counter = 0;
         try {
             ITSigfoxConnection<String, SigfoxApiv2DevicesList> request = new ITSigfoxConnection<>(
                     this.apiBackend,
                     this.apiLogin,
                     this.apiPassword
             );
-
-            String qstring = "limit=100";
+            String qstring = "";
+            if ( limit > 0 ) {
+                qstring = "limit="+limit;
+            } else {
+                qstring = "limit=100"; // max
+            }
             if ( deviceId != null ) {
                 qstring += "&id="+deviceId;
             }
@@ -175,7 +181,7 @@ public class DeviceWrapper {
                     return devices;
                 }
 
-                if (deviceList.getPaging().getNext() != null) {
+                if (deviceList.getPaging().getNext() != null && ( limit == 0 || devices.size() < limit)) {
                     String url = deviceList.getPaging().getNext().split("[?]")[0];
                     url = url.substring(url.indexOf("/api/v2"));
                     String param = deviceList.getPaging().getNext().split("[?]")[1];
@@ -285,7 +291,7 @@ public class DeviceWrapper {
      */
     public List<SigfoxApiv2Device> getSigfoxDevicesForDeviceType(String dtid) {
 
-        return getFullListOfDevices( null, dtid );
+        return getFullListOfDevices( null, dtid, 0 );
 
     }
 

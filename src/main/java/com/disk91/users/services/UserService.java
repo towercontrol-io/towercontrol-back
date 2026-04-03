@@ -471,6 +471,32 @@ public class UserService {
 
 
     /**
+     * Generate a full JWT token for an already authenticated user without requiring password.
+     * Builds the role list from the user profile and adds ROLE_LOGIN_COMPLETE.
+     * Intended for flows where authentication has been verified by an external mechanism (e.g. legacy token refresh).
+     *
+     * @param u - The authenticated user
+     * @param refresh - When true, we want a refresh token
+     * @return A signed JWT token string
+     */
+    public String generateTokenForUser(User u, boolean refresh) throws ITRightException {
+        if ( u.isLocked() || !u.isActive() || u.getDeletionDate() > 0 ) {
+            log.info("[users][service] Inactive user {} attempted to refresh a token", u.getLogin());
+            this.incLoginFailed();
+            throw new ITRightException("user-not-authorized");
+        }
+        // Build the role list from user profile
+        ArrayList<String> roles = new ArrayList<>();
+        roles.add(UsersRolesCache.StandardRoles.ROLE_LOGIN_1FA.getRoleName());
+        roles.add(UsersRolesCache.StandardRoles.ROLE_LOGIN_COMPLETE.getRoleName());
+        roles.add(UsersRolesCache.StandardRoles.ROLE_REGISTERED_USER.getRoleName());
+        if ( u.getRoles() != null && !refresh) {
+            roles.addAll(u.getRoles());
+        }
+        return this.generateJWTForUser(u, roles, false, refresh);
+    }
+
+    /**
      * Create a JWT token for the user with the given list of roles
      * The role list must be created according to the user roles outside this function
      *

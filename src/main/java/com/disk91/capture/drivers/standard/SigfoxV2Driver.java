@@ -470,7 +470,7 @@ public class SigfoxV2Driver extends AbstractProtocol {
                     else subscriptionEnd = Now.addOneYear(dev.getCreationTime());
                 }
                 // In case we are In_USE and subscription END is in the past, the subscription may have been renewed
-                // Not sure it works that way ... to be verifier
+                // Not sure if it works that way ... to be verifier
                 while ( subscriptionEnd < Now.NowUtcMs() && dev.getState() == 0 /* OK */) {
                     subscriptionEnd = Now.addOneYear(subscriptionEnd);
                 }
@@ -506,9 +506,10 @@ public class SigfoxV2Driver extends AbstractProtocol {
                             return _id;
                         } else {
                             // The apikey seems to not be valid, stop
+                            log.warn("[capture][sigfoxv2] Sigfox Backed not responding, check credentials");
                             throw new ITOverQuotaException("capture-driver-backend-rate-limitation");
                         }
-                    }
+                    } else return null;
                 } else if (e.status == HttpStatus.TOO_MANY_REQUESTS) {
                     throw new ITOverQuotaException("capture-driver-backend-rate-limitation");
                 } else {

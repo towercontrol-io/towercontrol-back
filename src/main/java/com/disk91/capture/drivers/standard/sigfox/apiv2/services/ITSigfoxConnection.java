@@ -176,7 +176,7 @@ public class ITSigfoxConnection<S,T> {
                 }
             }
         } catch (HttpClientErrorException | HttpServerErrorException e ) {
-            log.warn("[capture][sigfox] Backend response ({}) - {}",e.getStatusCode(),e.getMessage());
+            log.debug("[capture][sigfox] Backend response ({}) - {}",e.getStatusCode(),e.getMessage());
             throw new ITSigfoxConnectionException(
                     HttpStatus.valueOf(e.getStatusCode().value()),
                     e.getResponseBodyAsString()

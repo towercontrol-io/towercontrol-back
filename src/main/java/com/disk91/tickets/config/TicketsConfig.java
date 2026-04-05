@@ -101,6 +101,14 @@ public class TicketsConfig {
         _ticketAnonymousResponseLink = _ticketAnonymousResponseLink.replace("!1!", authKey);
         return _ticketAnonymousResponseLink;
     }
+    // Param !0! ticket ID
+    @Value("${ticket.support.response.link:/front/private/support/ticket/!0!/}")
+    protected String ticketSupportResponseLink;
+    public String getTicketSupportResponseLink(String ticketId) {
+        String _ticketSupportResponseLink = this.ticketSupportResponseLink;
+        _ticketSupportResponseLink = _ticketSupportResponseLink.replace("!0!", ticketId);
+        return _ticketSupportResponseLink;
+    }
 
     @Value("${tickets.discord.webhook.url:}")
     protected String ticketsDiscordWebhookUrl;

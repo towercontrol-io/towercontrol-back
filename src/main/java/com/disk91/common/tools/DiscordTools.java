@@ -29,6 +29,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Component
@@ -36,24 +37,88 @@ public class DiscordTools {
 
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
+   /**
+    *    Discord formatting :
+    *
+    *    {
+    *      "embeds": [
+    *        {
+    *          "title": "🆘 Message title",
+    *          "description": "```Description with md formatting \nMutliple lines.```",
+    *          "color": 15548997,
+    *          "fields": [
+    *            {
+    *              "name": "🔗 access the refering page",
+    *              "value": "[page title](https://foo.bar)",
+    *              "inline": false
+    *            }
+    *          ],
+    *          "footer": {
+    *            "text": "footer text"
+    *          }
+    *        }
+    *      ]
+    *    }
+    */
+
+
     /**
      * Send a message on discord using a webhook
      *
      * @param to - discord webhook url
      * @param text - body of the message
      * @param subject - title of the message
-     * @param from - custom string, don't use an email
+     * @param icon - icon string (UTF-8) used for message identification like 🎧
+     * @param color - message box color ex 0xRRGGBB  3447003
+     * @param link - action link to be used, null for no link
+     * @param linkText - text associated to the link, when null, link displayed
+     * @param linkTitle - test above the link session
+     * @param footerText - footer text, null for no text
      */
     @Async
-    public void send(String to, String text, String subject, String from) {
+    public void send(String icon, int color, String linkTitle, String link, String linkText, String to, String text, String subject, String footerText) {
         text = text.replace("\\n","\n");
 
         try {
+            // Prepare embbed form
+            Map<String, Object> embed = new HashMap<>();
+            embed.put("title", icon+" " + subject);
+            // Body
+            embed.put("description", text);
+
+            // color value)
+            embed.put("color", color);
+
+            // Add the link
+            if ( link != null ) {
+                Map<String, Object> field = new HashMap<>();
+                field.put("name", linkTitle);
+                if (linkText != null) {
+                    field.put("value", "[" + linkText + "](" + link + ")");
+                } else {
+                    field.put("value", "[" + link + "](" + link + ")");
+                }
+                field.put("inline", false);
+                embed.put("fields", List.of(field));
+            }
+
+            // Add Footer
+            if ( footerText != null ) {
+                Map<String, Object> footer = new HashMap<>();
+                footer.put("text", footerText);
+                embed.put("footer", footer);
+            }
+
+            // Payload final
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("embeds", List.of(embed));
+
+            /*
             // Prepare JSON payload expected by Discord webhook API
             Map<String, Object> payload = new HashMap<>();
             String content = (subject + "\n\n" + text);
             payload.put("content", content.substring(0, Math.min(content.length(), 1800)) );
-
+*/
             // Send HTTP POST request to Discord webhook
             WebClient webClient = WebClient.builder()
                     .defaultHeader(HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8")

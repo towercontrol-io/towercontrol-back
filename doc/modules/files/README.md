@@ -13,6 +13,9 @@ This module is responsible for managing file uploads and downloads. It provides 
 - Access statistics (read count per file)
 - 3-level directory tree storage for filesystem scalability
 
+Recently used files are managed in a cache to limit database access, especially for files that are part of items such 
+as documentation or as backgrounds on dashboards that could be displayed very frequently.
+
 ## File access rights
 
 Each uploaded file is assigned an access type that controls who can retrieve it:
@@ -42,8 +45,12 @@ Each file is represented as a database record with the following structure:
   "createdAt": "date",             // upload timestamp in MS since epoch
   "updatedAt": "date",             // last metadata update timestamp in MS since epoch
   "signature": "string",           // SHA-256 hex digest of the file content, computed at upload
+  "noSignatureCheck": "boolean",   // when true, integrity verification is skipped on download; only an administrator can set this flag
   "thumbnailUniqueName": "string", // unique filename of the generated thumbnail (images only, null otherwise)
-  "thumbnailSignature": "string"   // SHA-256 hex digest of the thumbnail content (images only, null otherwise)
+  "thumbnailSignature": "string",  // SHA-256 hex digest of the thumbnail content (images only, null otherwise)
+
+  // --- in-memory only, never persisted ---
+  "lastSignatureCheck": "long"     // timestamp (MS since epoch) of the last successful signature verification; held in the server-side file cache only
 }
 ```
 
@@ -138,6 +145,23 @@ an error is logged, as this indicates the file has been tampered with on disk.
 The same mechanism applies independently to thumbnails through the `thumbnailSignature` field.
 The key used for signing is defined in the configuration file  `files.signature.key`.
 
+### Signature check interval
+
+To avoid unnecessary CPU consumption for files that are accessed very frequently, the signature is not
+re-verified on every single download. Instead, a minimum interval is enforced between two consecutive
+verifications of the same file. This interval is defined by the `files.signature.check.interval.ms`
+configuration parameter. The timestamp of the last successful verification is kept in memory (in the
+server-side file cache) through the `lastSignatureCheck` field. This value is never persisted to the
+database; it is reset to zero whenever the application restarts, which causes the first access after
+a restart to always trigger a verification.
+
+### Disabling signature verification
+
+The `noSignatureCheck` flag can be set on a file to entirely skip integrity verification on download.
+This is intended for low-risk files that are accessed at very high frequency, where the CPU cost of
+repeated verification is not acceptable. Only an administrator (`ROLE_FILE_ADMIN`) is allowed to set
+or clear this flag. Setting it on a file is recorded in the audit log.
+
 ## Quota management
 
 Quotas are enforced at upload time before writing anything to disk:
@@ -170,6 +194,10 @@ directory at the root of the Java execution.
 - `files.quota.max.file.bytes` : maximum size in bytes for a single uploaded file; 0 means no limit
 
 - `files.signature.secret` : secret key used for computing file integrity signatures; should be a long random string
+
+- `files.signature.check.interval.ms` : minimum time in milliseconds between two consecutive signature verifications
+  for the same file; once a file has been verified, it will not be re-verified until this interval has elapsed;
+  a value of 0 disables the interval and enforces verification on every download
 
 
 ## API overview

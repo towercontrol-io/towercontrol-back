@@ -87,7 +87,7 @@ public class DeviceCache {
             this.devicesCache = new ObjectCache<String, Device>(
                     "DevicesROCache",
                     deviceConfig.getDevicesCacheMaxSize(),
-                    deviceConfig.getDevicesCacheExpiration()*1000
+                    deviceConfig.getDevicesCacheExpiration()*1000L
             ) {
                 @Override
                 synchronized public void onCacheRemoval(String key, Device obj, boolean batch, boolean last) {

@@ -28,6 +28,7 @@ public class ModuleCatalog {
         CAPTURE,
         BILLING,
         TICKETS,
+        FILES,
         CUSTOM
     }
 
@@ -46,6 +47,8 @@ public class ModuleCatalog {
             return "billing";
         } else if (service == ModuleCatalog.Modules.TICKETS) {
             return "tickets";
+        } else if (service == ModuleCatalog.Modules.FILES) {
+            return "files";
         } else if (service == ModuleCatalog.Modules.CUSTOM) {
             return "custom";
         }

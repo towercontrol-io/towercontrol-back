@@ -20,10 +20,12 @@
 package com.disk91.files.pdb.repositories;
 
 import com.disk91.files.pdb.entities.FileStored;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -63,6 +65,31 @@ public interface FileStoredRepository extends CrudRepository<FileStored, String>
      * @return matching FileStored record if it exists
      */
     Optional<FileStored> findByUniqueName(String uniqueName);
+
+    /**
+     * Find a file by its short name alias.
+     * @param shortName - 6-character short name alias
+     * @return matching FileStored record if it exists
+     */
+    Optional<FileStored> findByShortName(String shortName);
+
+    /**
+     * Check whether a given short name is already taken.
+     * Used during short name generation to guarantee uniqueness before persisting.
+     * @param shortName - candidate 6-character short name
+     * @return true when a file with that short name already exists
+     */
+    boolean existsByShortName(String shortName);
+
+    /**
+     * Atomically increment the access counter of a file by 1.
+     * Called on every successful download without reloading the whole entity.
+     * @param fileId - UUID of the file
+     */
+    @Modifying
+    @Transactional
+    @Query("UPDATE FileStored f SET f.accessCount = f.accessCount + 1 WHERE f.id = :fileId")
+    void incrementAccessCount(@Param("fileId") String fileId);
 
 }
 

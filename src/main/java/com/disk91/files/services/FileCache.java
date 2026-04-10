@@ -37,7 +37,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class FileCache {
@@ -57,8 +59,11 @@ public class FileCache {
     // FILE CACHE SERVICE
     // ================================================================================================================
 
-    // In-memory cache keyed by file id (UUID String)
+    // In-memory cache keyed by file uniqueName
     private ObjectCache<String, FileStored> fileCache;
+
+    // In-memory index mapping shortName (6 chars) to uniqueName, used to fast-resolve short names to cache keys
+    private final ConcurrentHashMap<String, String> shortNameIndex = new ConcurrentHashMap<>();
 
     protected boolean serviceEnable = false;
 
@@ -109,6 +114,8 @@ public class FileCache {
         if (filesConfig.getFileCacheMaxSize() > 0) {
             fileCache.deleteCache();
         }
+        // Clear the short name index on shutdown
+        shortNameIndex.clear();
         log.info("[files] FileCache stopped");
     }
 
@@ -134,6 +141,7 @@ public class FileCache {
      * Retrieve a FileStored by its uniqueName, using the cache when enabled.
      * Always returns a clone to prevent callers from mutating the cached instance.
      * The in-memory lastSignatureCheck field is preserved in the cached copy.
+     * When the loaded record has a shortName, the shortName→uniqueName index is populated.
      * @param uniqueName - physical unique filename of the file
      * @return a clone of the matching FileStored
      * @throws ITNotFoundException when no file with that uniqueName exists
@@ -153,16 +161,71 @@ public class FileCache {
             if (opt.isEmpty()) throw new ITNotFoundException("files-file-not-found");
             f = opt.get();
             this.fileCache.put(f, f.getUniqueName());
+            // Register short name in the index if present
+            if (f.getShortName() != null && !f.getShortName().isEmpty()) {
+                shortNameIndex.put(f.getShortName(), f.getUniqueName());
+            }
+        }
+        return f.clone();
+    }
+
+    /**
+     * Retrieve a FileStored by its short name alias (6-character string).
+     * Resolves the short name to a uniqueName via the in-memory index, then delegates to getFile.
+     * Falls back to a direct database lookup when the index has no entry.
+     * @param shortName - 6-character short name alias
+     * @return a clone of the matching FileStored
+     * @throws ITNotFoundException when no file with that short name exists
+     */
+    public FileStored getFileByShortName(String shortName) throws ITNotFoundException {
+        // Try to resolve via in-memory index first
+        String uniqueName = shortNameIndex.get(shortName);
+        if (uniqueName != null) {
+            try {
+                return getFile(uniqueName);
+            } catch (ITNotFoundException e) {
+                // Stale index entry (file deleted without cache flush): clean up and fall through
+                shortNameIndex.remove(shortName);
+            }
+        }
+
+        // Index miss: load from database directly
+        Optional<FileStored> opt = fileStoredRepository.findByShortName(shortName);
+        if (opt.isEmpty()) throw new ITNotFoundException("files-file-not-found");
+        FileStored f = opt.get();
+
+        // Populate the cache and index for future lookups
+        if (this.serviceEnable && filesConfig.getFileCacheMaxSize() > 0) {
+            this.fileCache.put(f, f.getUniqueName());
+            shortNameIndex.put(shortName, f.getUniqueName());
         }
         return f.clone();
     }
 
     /**
      * Remove a FileStored entry from the local cache (e.g. after an update or deletion).
+     * Also removes the corresponding shortName→uniqueName index entry when present.
      * @param uniqueName - physical unique filename of the file to evict
      */
     public void flushFile(String uniqueName) {
         if (this.serviceEnable && filesConfig.getFileCacheMaxSize() > 0) {
+            // Before evicting, capture short name from the cached object to clean the index
+            FileStored cached = this.fileCache.get(uniqueName);
+            if (cached != null && cached.getShortName() != null) {
+                shortNameIndex.remove(cached.getShortName());
+            } else {
+                // check in shortName cache Value
+                String shortName = null;
+                for ( Map.Entry<String, String> e : shortNameIndex.entrySet() ){
+                    if ( e.getValue().equals(uniqueName) ){
+                        shortName = e.getKey();
+                        break;
+                    }
+                }
+                if ( shortName != null ) {
+                    shortNameIndex.remove(shortName);
+                }
+            }
             this.fileCache.remove(uniqueName, false);
             log.debug("[files] Cache flushed for file {}", uniqueName);
         }

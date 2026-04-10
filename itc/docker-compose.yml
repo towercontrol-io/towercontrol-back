@@ -13,6 +13,8 @@ services:
     volumes:
       - ./configuration:/configuration
       - ./data:/data
+      - ./audit:/audit
+      - ./files:/files
     environment:
       - COMMON_INSTANCE_ID=aZgtj01LkPqzXvWm
       - COMMON_LANG_DEFAULT=${ITC_LANG_DEFAULT}

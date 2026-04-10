@@ -36,7 +36,8 @@ import jakarta.persistence.*;
         indexes = {
                 @Index(name = "idx_file_owner_id", columnList = "owner_id", unique = false),
                 @Index(name = "idx_file_created_at", columnList = "created_at", unique = false),
-                @Index(name = "idx_file_unique_name", columnList = "unique_name", unique = true)
+                @Index(name = "idx_file_unique_name", columnList = "unique_name", unique = true),
+                @Index(name = "idx_file_short_name", columnList = "short_name", unique = true)
         }
 )
 public class FileStored implements CloneableObject<FileStored> {
@@ -108,6 +109,10 @@ public class FileStored implements CloneableObject<FileStored> {
     @Column(name = "thumbnail_signature", nullable = true, length = 64)
     protected String thumbnailSignature;
 
+    // Optional 6-character short alias (a-z, A-Z, 0-9) assigned on demand; null when not requested
+    @Column(name = "short_name", nullable = true, unique = true, length = 6)
+    protected String shortName;
+
     // In-memory only: timestamp (ms) of the last successful signature verification; never persisted
     @jakarta.persistence.Transient
     protected long lastSignatureCheck = 0;
@@ -140,6 +145,7 @@ public class FileStored implements CloneableObject<FileStored> {
         f.setNoSignatureCheck(this.noSignatureCheck);
         f.setThumbnailUniqueName(this.thumbnailUniqueName);
         f.setThumbnailSignature(this.thumbnailSignature);
+        f.setShortName(this.shortName);
         // Copy in-memory-only field
         f.setLastSignatureCheck(this.lastSignatureCheck);
         return f;
@@ -274,6 +280,14 @@ public class FileStored implements CloneableObject<FileStored> {
 
     public void setThumbnailSignature(String thumbnailSignature) {
         this.thumbnailSignature = thumbnailSignature;
+    }
+
+    public String getShortName() {
+        return shortName;
+    }
+
+    public void setShortName(String shortName) {
+        this.shortName = shortName;
     }
 
     public long getLastSignatureCheck() {

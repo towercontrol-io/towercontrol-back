@@ -48,11 +48,54 @@ Each file is represented as a database record with the following structure:
   "noSignatureCheck": "boolean",   // when true, integrity verification is skipped on download; only an administrator can set this flag
   "thumbnailUniqueName": "string", // unique filename of the generated thumbnail (images only, null otherwise)
   "thumbnailSignature": "string",  // SHA-256 hex digest of the thumbnail content (images only, null otherwise)
+  "shortName": "string",           // optional 6-character short alias ([a-zA-Z0-9]), null when not assigned
 
   // --- in-memory only, never persisted ---
   "lastSignatureCheck": "long"     // timestamp (MS since epoch) of the last successful signature verification; held in the server-side file cache only
 }
 ```
+
+## Short name
+
+By default each file is identified by its `uniqueName`, a long generated filename such as
+`550e8400-e29b-41d4-a716-446655440000-1712345678901.jpg`. For use cases where a compact, human-friendly
+identifier is needed (e.g. embedded in a URL, a QR code or a dashboard background), a **short name** can be
+requested instead.
+
+### Characteristics
+
+- The short name is a **6-character** string drawn from the alphabet `[a-zA-Z0-9]` (62 characters), giving
+  approximately 56 billion unique combinations.
+- It is generated with a random generator.
+- Uniqueness is verified in the database before the candidate is retained; up to 20 attempts are made before
+  the operation is rejected with an error.
+- A short name is **never assigned automatically**; it must be explicitly requested by the caller.
+- A short name can be assigned at upload time (via the `withShortName=true` upload parameter) or at any later
+  point through the update endpoint (via `withShortName: true` in the request body).
+- A short name can be removed by passing `withShortName: false` in an update body.
+- Once a short name is assigned it remains until it is explicitly removed; no expiry applies.
+
+### Using a short name in API requests
+
+Any API endpoint that accepts a `fileId` path variable (download, thumbnail, info, update, delete) performs
+automatic detection:
+
+- When the value is **exactly 6 characters** long it is treated as a **short name**.
+- When it is longer it is treated as a **uniqueName**.
+
+### Short name index in cache
+
+The file cache maintains an in-memory `ConcurrentHashMap<String, String>` that maps each known short name to its
+corresponding `uniqueName`. This index allows short-name lookups to be resolved to a cache key without a database
+round-trip. The index is:
+
+- populated lazily when a file with a short name is first loaded into the cache;
+- cleaned up atomically when a file is flushed from the cache (e.g. on update or deletion);
+- fully transparent to callers – the `getFileByShortName` method resolves via the index and falls back to the
+  database on a miss.
+
+On application restart the index is empty; the first short-name access after restart always triggers a database
+lookup, after which the entry is registered in the index for subsequent requests.
 
 ## Unique filename generation
 
@@ -206,32 +249,51 @@ directory at the root of the Java execution.
 
 ```
 POST /files/1.0/upload
+Content-Type: multipart/form-data
 ```
 
-Accepts a multipart/form-data request containing:
-- the binary file part
-- optional `description` field
-- mandatory `accessType` field (`PUBLIC`, `CONNECTED`, `PRIVATE`)
+Accepts a `multipart/form-data` request with binary file and metadata as separate form fields:
 
-Returns the created file record on success (HTTP 201). Returns HTTP 400 on format or quota violation,
-HTTP 429 when user quota is exceeded.
+| Field           | Type    | Required | Description                                                                  |
+|-----------------|---------|----------|------------------------------------------------------------------------------|
+| `file`          | binary  | yes      | The file to upload (sent as a `@RequestPart`)                                |
+| `accessType`    | string  | yes      | Access control: `PUBLIC`, `CONNECTED` or `PRIVATE`                           |
+| `description`   | string  | no       | Optional human-readable description of the file                              |
+| `fileName`      | string  | no       | Optional original file name                                                  |
+| `withShortName` | boolean | no       | When `true`, a unique 6-character short name is generated (default: `false`) |
 
-First, we will verify that the user has not reached their quotas in terms of maximum file size or the 
-number of stored files. When adding a file, you need to identify the file type. If it is an image, you 
-must check its size and resize it if necessary. You also need to create the corresponding channel. 
-An ID will be generated for the file so it can be saved, and the structure that will be stored in the 
-database will be completed. The signature is, of course, calculated at that point to validate the file’s 
+Example (curl):
+```bash
+curl -X POST https://host/files/1.0/upload \
+  -H "Authorization: Bearer <token>" \
+  -F "file=@/path/to/photo.jpg" \
+  -F "accessType=PRIVATE" \
+  -F "description=My profile picture" \
+  -F "fileName=photo.jpg" \
+  -F "withShortName=true"
+```
+
+Returns the created file metadata record on success (HTTP 201), including the `shortName` field when generated.
+Returns HTTP 400 on format or quota violation, HTTP 403 when the role is insufficient, HTTP 429 when user quota
+is exceeded.
+
+First, we will verify that the user has not reached their quotas in terms of maximum file size or the
+number of stored files. When adding a file, you need to identify the file type. If it is an image, you
+must check its size and resize it if necessary. You also need to create the corresponding channel.
+An ID will be generated for the file so it can be saved, and the structure that will be stored in the
+database will be completed. The signature is, of course, calculated at that point to validate the file’s
 integrity later.
 
 ### Download a file
 
 ```
-GET /files/1.0/{fileId}
+GET /files/1.0/{fileId}/full
 ```
 
 Returns the binary content of the file with the appropriate Content-Type header and the original filename
-in the Content-Disposition header. The access check is performed against the caller's authentication state
-and the file's `accessType`. Returns HTTP 403 when the file does not exist, HTTP 403 when access is denied.
+in the Content-Disposition header. The `{fileId}` path variable accepts either the `uniqueName` or a
+6-character short name. The access check is performed against the caller's authentication state
+and the file's `accessType`. Returns HTTP 403 when the file does not exist or access is denied.
 The `accessCount` counter is incremented on every successful download.
 
 
@@ -241,10 +303,9 @@ The `accessCount` counter is incremented on every successful download.
 GET /files/1.0/{fileId}/thumbnail
 ```
 
-Returns the thumbnail image for the given file. Returns HTTP 403 when the file has no thumbnail (not an image) or does 
-not exist. As with the original file, permissions are checked to ensure that access is allowed. A 403 response will be 
-returned if the permissions are not valid. The `accessCount` counter of the original file is not incremented when 
-downloading the thumbnail.
+Returns the thumbnail image for the given file. The `{fileId}` path variable accepts either the `uniqueName`
+or a 6-character short name. Returns HTTP 403 when the file has no thumbnail (not an image) or does not exist.
+The `accessCount` counter of the original file is not incremented when downloading the thumbnail.
 
 ### Get file metadata
 
@@ -252,7 +313,9 @@ downloading the thumbnail.
 GET /files/1.0/{fileId}/info
 ```
 
-Returns the file metadata record without serving the binary content. Access check is the same as for the download.
+Returns the file metadata record (including `shortName` when assigned) without serving the binary content.
+The `{fileId}` path variable accepts either the `uniqueName` or a 6-character short name.
+Access check is the same as for the download.
 
 ### Update file metadata
 
@@ -260,7 +323,16 @@ Returns the file metadata record without serving the binary content. Access chec
 PUT /files/1.0/{fileId}
 ```
 
-Allows the owner or an administrator to update the `description` and `accessType` fields.
+Allows the owner or an administrator to update the `description`, `accessType` and short name assignment.
+The `{fileId}` path variable accepts either the `uniqueName` or a 6-character short name.
+
+Request body fields:
+
+| Field           | Type    | Required | Description                                                                                     |
+|-----------------|---------|----------|-------------------------------------------------------------------------------------------------|
+| `accessType`    | string  | yes      | New access type: `PUBLIC`, `CONNECTED` or `PRIVATE`                                             |
+| `description`   | string  | no       | New description; pass null or empty to clear it                                                 |
+| `withShortName` | boolean | no       | `true` = generate a short name if none exists; `false` = remove the current short name; `null`/omit = no change |
 
 ### Delete a file
 
@@ -269,6 +341,7 @@ DELETE /files/1.0/{fileId}
 ```
 
 Deletes the file record from the database and the physical file (and its thumbnail if any) from disk.
+The `{fileId}` path variable accepts either the `uniqueName` or a 6-character short name.
 Only the owner or an administrator can delete a file.
 
 ### List owned files

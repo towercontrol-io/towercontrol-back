@@ -113,6 +113,10 @@ public class FileStored implements CloneableObject<FileStored> {
     @Column(name = "short_name", nullable = true, unique = true, length = 6)
     protected String shortName;
 
+    // Optional 16-character key ([a-z0-9]) that grants unauthenticated access to CONNECTED/PRIVATE files; null when disabled
+    @Column(name = "access_key", nullable = true, unique = true, length = 16)
+    protected String accessKey;
+
     // In-memory only: timestamp (ms) of the last successful signature verification; never persisted
     @jakarta.persistence.Transient
     protected long lastSignatureCheck = 0;
@@ -146,6 +150,7 @@ public class FileStored implements CloneableObject<FileStored> {
         f.setThumbnailUniqueName(this.thumbnailUniqueName);
         f.setThumbnailSignature(this.thumbnailSignature);
         f.setShortName(this.shortName);
+        f.setAccessKey(this.accessKey);
         // Copy in-memory-only field
         f.setLastSignatureCheck(this.lastSignatureCheck);
         return f;
@@ -288,6 +293,14 @@ public class FileStored implements CloneableObject<FileStored> {
 
     public void setShortName(String shortName) {
         this.shortName = shortName;
+    }
+
+    public String getAccessKey() {
+        return accessKey;
+    }
+
+    public void setAccessKey(String accessKey) {
+        this.accessKey = accessKey;
     }
 
     public long getLastSignatureCheck() {

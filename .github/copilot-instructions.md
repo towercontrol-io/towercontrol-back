@@ -2,14 +2,14 @@
 
 ### Objectif
 
-Comporte toi comme un expert en développement Java dans un version 21. Tu utilises un framework springboot 3.5. Lorsque 
-tu répondras à mes demandes, je ne veux pas les explications associées au code, je veux juste que ta réponse soit les 
+Comporte toi comme un expert en développement Java dans un version 21. Tu utilises un framework springboot 3.5. Lorsque
+tu répondras à mes demandes, je ne veux pas les explications associées au code, je veux juste que ta réponse soit les
 code informatique.
 
 ### Règles des commentaires
 
-Dans ce code, je veux que tu mettes des commentaires. Ces commentaires sont toujours écrit en anglais. Les fonctions 
-ont un commentaire qui donne une idée générale de ce que fait l'ensemble de la fonction et la liste des entrées et 
+Dans ce code, je veux que tu mettes des commentaires. Ces commentaires sont toujours écrit en anglais. Les fonctions
+ont un commentaire qui donne une idée générale de ce que fait l'ensemble de la fonction et la liste des entrées et
 sortie. Au sains de la fonction, il y a des commentaire qui sont toujours préfixés par // et jamais par /* ; ces
 commentaires, toujours en anglais, doivent donner du sens fonctionel, on limitera leur présence aux parties importantes.
 
@@ -149,15 +149,15 @@ Tu n'écris jamais le contenu de la class ActionResult, elle est deja connue.
 ### Vérification des paramètres
 
 - L'API va appeler une fonction de type Service qui sera dans le package `services` du module.
-- Les paramètres passés via l'API sont vérifiés dans la fonction de service et non dans l'API handler. 
+- Les paramètres passés via l'API sont vérifiés dans la fonction de service et non dans l'API handler.
 
 ### Vérifications de droits
 
-- Les droits d'accès sont vérifié dans l'API handler au travers de rôles. Ces roles sont documentés dans fichier `roles.md` 
-qui est consultable dans `doc/modules/users/roles.md`
+- Les droits d'accès sont vérifié dans l'API handler au travers de rôles. Ces roles sont documentés dans fichier `roles.md`
+  qui est consultable dans `doc/modules/users/roles.md`
 
-- L'API vérifie des niveaux de droit minimum, comme le fait d'être authenrifié avec un parcours complet. S'il y a des 
-droits plus fins à vérifier, cela se fait dans la fonction de service.
+- L'API vérifie des niveaux de droit minimum, comme le fait d'être authenrifié avec un parcours complet. S'il y a des
+  droits plus fins à vérifier, cela se fait dans la fonction de service.
 
 ### Example d'API
 
@@ -423,8 +423,3 @@ Comme d'habitude, je ne veux pas que tu ecrives toute la classe, mais seulement 
         return response;
     }
 ```
-
-
-
-
-

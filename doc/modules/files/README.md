@@ -49,6 +49,7 @@ Each file is represented as a database record with the following structure:
   "thumbnailUniqueName": "string", // unique filename of the generated thumbnail (images only, null otherwise)
   "thumbnailSignature": "string",  // SHA-256 hex digest of the thumbnail content (images only, null otherwise)
   "shortName": "string",           // optional 6-character short alias ([a-zA-Z0-9]), null when not assigned
+  "accessKey": "string",           // optional 16-character key ([a-z0-9]) enabling unauthenticated access to CONNECTED/PRIVATE files; null when disabled
 
   // --- in-memory only, never persisted ---
   "lastSignatureCheck": "long"     // timestamp (MS since epoch) of the last successful signature verification; held in the server-side file cache only
@@ -96,6 +97,46 @@ round-trip. The index is:
 
 On application restart the index is empty; the first short-name access after restart always triggers a database
 lookup, after which the entry is registered in the index for subsequent requests.
+
+## Access key
+
+The **access key** is an optional mechanism that enables unauthenticated (or non-owner) access to `CONNECTED`
+and `PRIVATE` files without requiring a login session. It is designed for use cases such as embedded previews,
+shared links, QR codes or any context where the recipient may not have an account.
+
+### Characteristics
+
+- The access key is a **16-character** string drawn from the alphabet `[a-z0-9]` (36 characters), giving
+  approximately 7.96 × 10²⁴ unique combinations (~82 bits of security).
+- It is generated with a cryptographically secure random generator.
+- An access key is **never assigned automatically**; it must be explicitly requested by the caller.
+- An access key can be assigned at upload time (via the `withAccessKey=true` upload parameter) or later
+  through the update endpoint (via `withAccessKey: true` in the request body).
+- Passing `withAccessKey: true` in an update body **generates or regenerates** the key (existing key is replaced).
+- An access key can be removed by passing `withAccessKey: false` in an update body.
+- Once a key is assigned it remains active until explicitly removed or regenerated.
+
+### Using an access key in API requests
+
+The key is passed as a query parameter named `key` on the following endpoints:
+
+```
+GET /files/1.0/{fileId}/full?key=<accessKey>
+GET /files/1.0/{fileId}/thumbnail?key=<accessKey>
+```
+
+When a valid key is provided, the normal authentication and ownership checks are bypassed:
+- A `CONNECTED` file becomes accessible to unauthenticated callers.
+- A `PRIVATE` file becomes accessible to any caller (authenticated or not) who holds the key.
+
+`PUBLIC` files do not need a key (they are already freely accessible).
+
+### Security considerations
+
+- The access key is returned in the API response **only to the file owner or a ROLE_FILE_ADMIN**.
+  Other callers (e.g. CONNECTED users accessing the info endpoint) will not see the key value.
+- If a key is compromised, the owner can regenerate it (old key immediately becomes invalid) or remove it.
+- The key should be treated as a shared secret and transmitted only over HTTPS.
 
 ## Unique filename generation
 
@@ -261,6 +302,7 @@ Accepts a `multipart/form-data` request with binary file and metadata as separat
 | `description`   | string  | no       | Optional human-readable description of the file                              |
 | `fileName`      | string  | no       | Optional original file name                                                  |
 | `withShortName` | boolean | no       | When `true`, a unique 6-character short name is generated (default: `false`) |
+| `withAccessKey` | boolean | no       | When `true`, a 16-character access key is generated enabling unauthenticated access (default: `false`) |
 
 Example (curl):
 ```bash
@@ -293,8 +335,9 @@ GET /files/1.0/{fileId}/full
 Returns the binary content of the file with the appropriate Content-Type header and the original filename
 in the Content-Disposition header. The `{fileId}` path variable accepts either the `uniqueName` or a
 6-character short name. The access check is performed against the caller's authentication state
-and the file's `accessType`. Returns HTTP 403 when the file does not exist or access is denied.
-The `accessCount` counter is incremented on every successful download.
+and the file's `accessType`. When the file has an `accessKey` configured, appending `?key=<accessKey>` to
+the URL grants access without authentication (CONNECTED and PRIVATE files). Returns HTTP 403 when the file
+does not exist or access is denied. The `accessCount` counter is incremented on every successful download.
 
 
 ### Download a thumbnail
@@ -304,7 +347,8 @@ GET /files/1.0/{fileId}/thumbnail
 ```
 
 Returns the thumbnail image for the given file. The `{fileId}` path variable accepts either the `uniqueName`
-or a 6-character short name. Returns HTTP 403 when the file has no thumbnail (not an image) or does not exist.
+or a 6-character short name. When the file has an `accessKey` configured, appending `?key=<accessKey>` grants
+unauthenticated access. Returns HTTP 403 when the file has no thumbnail (not an image) or does not exist.
 The `accessCount` counter of the original file is not incremented when downloading the thumbnail.
 
 ### Get file metadata
@@ -333,6 +377,7 @@ Request body fields:
 | `accessType`    | string  | yes      | New access type: `PUBLIC`, `CONNECTED` or `PRIVATE`                                             |
 | `description`   | string  | no       | New description; pass null or empty to clear it                                                 |
 | `withShortName` | boolean | no       | `true` = generate a short name if none exists; `false` = remove the current short name; `null`/omit = no change |
+| `withAccessKey` | boolean | no       | `true` = generate/regenerate the access key; `false` = remove the access key; `null`/omit = no change |
 
 ### Delete a file
 

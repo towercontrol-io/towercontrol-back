@@ -42,12 +42,22 @@ The access type is chosen at upload time and can be changed later via the update
 | `description`   | string  | no       | Optional human-readable label displayed alongside the file                                |
 | `filename`      | string  | no       | Optional original filename                                                                |
 | `withShortName` | boolean | no       | When `true`, the backend generates a unique 6-character short name for the file (default: `false`) |
+| `withAccessKey` | boolean | no       | When `true`, the backend generates a 16-character access key enabling unauthenticated access (default: `false`) |
 
 ### Short name
 The `shortName` is an optional 6-character alias (`[a-zA-Z0-9]`) that can be used in place of the
 `uniqueName` in any file API URL. It is useful when embedding file links in QR codes, dashboards or
 short URLs. Pass `withShortName=true` at upload time to have one generated automatically.
 The short name is returned in the `shortName` field of the response (null when not requested).
+
+### Access key
+The `accessKey` is an optional 16-character token (`[a-z0-9]`) that can be appended as a `?key=` query
+parameter to any file URL (download, thumbnail, info). When provided:
+- `CONNECTED` files become accessible without logging in.
+- `PRIVATE` files become accessible to anyone who holds the key.
+
+Pass `withAccessKey=true` at upload time to have one generated. The key is returned in the `accessKey`
+field of the response **only to the file owner or an administrator**; keep it as a shared secret.
 
 ### Quota limits
 Uploads are rejected before any disk write when:

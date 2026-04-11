@@ -16,6 +16,7 @@ formData.append('accessType', 'PRIVATE');         // or 'CONNECTED' / 'PUBLIC'
 formData.append('description', 'My document');   // optional
 formData.append('filename', 'mydocument.pdf');   // optional
 formData.append('withShortName', 'true');         // optional — request a 6-char short name
+formData.append('withAccessKey', 'true');         // optional — request a 16-char unauthenticated access key
 ```
 
 ### Step 2 — Submit the upload to the backend
@@ -83,6 +84,13 @@ export interface FileUploadResponseItf {
      * Can be used in place of uniqueName in any file API URL.
      */
     shortName?: string;
+
+    /**
+     * Optional 16-character access key ([a-z0-9]).
+     * Only returned to the file owner or an administrator.
+     * Append as ?key=<value> to any file URL to grant unauthenticated access to CONNECTED/PRIVATE files.
+     */
+    accessKey?: string;
 }
 
 export interface ActionResult {
@@ -108,12 +116,14 @@ const filesModuleUploadPost: string = '/files/1.0/upload';
  * @param accessType    - Access level: PUBLIC, CONNECTED or PRIVATE
  * @param description   - Optional description
  * @param withShortName - When true, a 6-character short name is generated
+ * @param withAccessKey - When true, a 16-character access key is generated
  */
 filesModuleUpload: async (
     file: File,
     accessType: FileAccessType,
     description?: string,
-    withShortName?: boolean
+    withShortName?: boolean,
+    withAccessKey?: boolean
 ): Promise<{ success?: FileUploadResponseItf; error?: ActionResult | { message: string } }> => {
     try {
         const formData = new FormData();
@@ -121,6 +131,7 @@ filesModuleUpload: async (
         formData.append('accessType', accessType);
         if (description) formData.append('description', description);
         if (withShortName) formData.append('withShortName', 'true');
+        if (withAccessKey) formData.append('withAccessKey', 'true');
 
         const response = await apiCallMultipartWithTimeout<FileUploadResponseItf>(
             'POST',
@@ -164,6 +175,11 @@ const downloadUrl  = `${base}/files/1.0/${fileRef}/full`;
 const thumbnailUrl = uploadedFile.thumbnailUniqueName
     ? `${base}/files/1.0/${fileRef}/thumbnail`
     : null;
+
+// When an accessKey was generated, append it to enable unauthenticated sharing
+const sharedDownloadUrl = uploadedFile.accessKey
+    ? `${base}/files/1.0/${fileRef}/full?key=${uploadedFile.accessKey}`
+    : downloadUrl;
 ```
 
 For `PUBLIC` files, these URLs can be embedded directly in `<img>`, `<a>` or other HTML elements

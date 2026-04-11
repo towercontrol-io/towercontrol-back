@@ -50,6 +50,14 @@ public class FileUpdateBody {
     )
     protected boolean withShortName;
 
+    @Schema(
+            description = "Access key management: true = generate (or regenerate) a 16-character access key, " +
+                    "false = remove the existing access key, null = leave unchanged",
+            example = "true",
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED
+    )
+    protected boolean withAccessKey;
+
     // ==========================
     // Getters & Setters
 
@@ -61,5 +69,8 @@ public class FileUpdateBody {
 
     public boolean getWithShortName() { return withShortName; }
     public void setWithShortName(boolean withShortName) { this.withShortName = withShortName; }
+
+    public boolean getWithAccessKey() { return withAccessKey; }
+    public void setWithAccessKey(boolean withAccessKey) { this.withAccessKey = withAccessKey; }
 }
 

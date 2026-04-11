@@ -23,6 +23,8 @@ public class ActionCatalog {
     public enum Actions {
         FILES_UPLOAD,
         FILES_INTEGRITY,
+        FILES_UPDATE,
+        FILES_DELETE,
 
         UNKNOWN
     }
@@ -33,6 +35,11 @@ public class ActionCatalog {
                 return "files-uploaded";
             case FILES_INTEGRITY:
                 return "files-integrity-failure";
+            case FILES_UPDATE:
+                return "files-updated";
+            case FILES_DELETE:
+                return "files-deleted";
+
             case UNKNOWN:
             default:
                 return "unknown";

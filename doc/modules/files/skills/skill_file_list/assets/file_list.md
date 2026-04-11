@@ -59,6 +59,14 @@ export interface FileUploadResponseItf {
      * Can be used in place of uniqueName in any file API URL.
      */
     shortName?: string;
+
+    /**
+     * Optional 16-character access key ([a-z0-9]).
+     * Only returned to the file owner or an administrator.
+     * Append as ?key=<value> to any file URL to grant unauthenticated access to CONNECTED/PRIVATE files.
+     */
+    accessKey?: string;
+
 }
 
 /** Body sent to PUT /files/1.0/{fileId} */
@@ -76,6 +84,13 @@ export interface FileUpdateBody {
      * - omit  = leave the short name unchanged
      */
     withShortName?: boolean;
+
+    /**
+     * Access key management: true = generate (or regenerate) a 16-character access key,
+     * false = remove the existing access key, null = leave unchanged
+     */
+    withAccessKey?: boolean;
+
 }
 
 export interface ActionResult {
@@ -201,15 +216,16 @@ filesModuleInfo: async (fileId: string): Promise<{
 ```typescript
 /**
  * Update the description and/or access type of a file
+ * Update the description and/or access type of a file
  */
 filesModuleUpdate: async (
-    fileId: string,
+    fileRef: string,
     body: FileUpdateBody
 ): Promise<{ success?: FileUploadResponseItf; error?: ActionResult | { message: string } }> => {
     try {
         const response = await apiCallwithTimeout<FileUploadResponseItf>(
             'PUT',
-            `/files/1.0/${fileId}`,
+            `/files/1.0/${fileRef}`,
             body,
             false
         );
@@ -234,19 +250,19 @@ filesModuleUpdate: async (
 
 ```typescript
 /**
- * Delete a file
+ * Delete a file and its thumbnail permanently.
  */
 filesModuleDelete: async (
-    fileId: string
-): Promise<{ success?: boolean; error?: ActionResult | { message: string } }> => {
+    fileRef: string
+): Promise<{ success?: ActionResult; error?: ActionResult | { message: string } }> => {
     try {
-        await apiCallwithTimeout<void>(
+        const response = await apiCallwithTimeout<ActionResult>(
             'DELETE',
-            `/files/1.0/${fileId}`,
+            `/files/1.0/${fileRef}`,
             null,
             false
         );
-        return { success: true };
+        return { success: response };
     } catch (error: any) {
         return { error };
     }

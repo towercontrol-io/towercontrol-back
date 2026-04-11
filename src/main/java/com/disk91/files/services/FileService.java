@@ -69,6 +69,9 @@ public class FileService {
     private static final int SHORT_NAME_LENGTH = 6;
     private static final int SHORT_NAME_MAX_ATTEMPTS = 20;
 
+    // Access key: 16-character random [a-z0-9] token granting unauthenticated access to CONNECTED/PRIVATE files
+    private static final int ACCESS_KEY_LENGTH = 16;
+
     private final SecureRandom secureRandom = new SecureRandom();
 
     @Autowired
@@ -91,15 +94,17 @@ public class FileService {
      * Upload a file: enforce quotas, detect MIME type, resize/thumbnail images,
      * compute HMAC-SHA256 signature, write to disk and persist the record in DB.
      * When withShortName is true, a unique 6-character short name is generated and attached.
+     * When withAccessKey is true, a 16-character access key is generated, enabling unauthenticated access.
      * @param requestorLogin - login hash of the authenticated user performing the upload
      * @param file           - multipart file received from the API
      * @param accessTypeStr  - requested access type (PUBLIC, CONNECTED, PRIVATE)
      * @param description    - optional human-readable description
      * @param filename       - optional override for the original filename
      * @param withShortName  - when true, generate and assign a unique 6-character short name
+     * @param withAccessKey  - when true, generate and assign a 16-character access key
      * @param req            - HTTP request (for role checking and IP tracing)
      * @return the persisted FileStored entity
-     * @throws ITParseException     - invalid input (empty file, bad accessType, unsupported format, short name exhausted)
+     * @throws ITParseException     - invalid input (empty file, bad accessType, unsupported format, key generation failed)
      * @throws ITRightException     - insufficient role to create public/connected files
      * @throws ITOverQuotaException - user has reached file count or storage quota
      */
@@ -110,6 +115,7 @@ public class FileService {
             String description,
             String filename,
             boolean withShortName,
+            boolean withAccessKey,
             HttpServletRequest req
     ) throws ITParseException, ITRightException, ITOverQuotaException {
 
@@ -281,18 +287,27 @@ public class FileService {
         if (withShortName) {
             String shortName = generateUniqueShortName();
             stored.setShortName(shortName);
-            log.debug("[files] Short name '{}' assigned to file id={}", shortName, id);
+            log.debug("[files] Short name '{}' assigned to file id={}", shortName, uniqueName);
+        }
+
+        // Generate a unique access key when explicitly requested
+        if (withAccessKey) {
+            String generatedKey = generateUniqueAccessKey();
+            stored.setAccessKey(generatedKey);
+            log.debug("[files] Access key assigned to file id={}", uniqueName);
         }
 
         fileCache.saveFile(stored);
 
         // Audit log
-        auditIntegration.auditLog(ModuleCatalog.Modules.FILES, ActionCatalog.getActionName(ActionCatalog.Actions.FILES_UPLOAD),
+        auditIntegration.auditLog(
+                ModuleCatalog.Modules.FILES,
+                ActionCatalog.getActionName(ActionCatalog.Actions.FILES_UPLOAD),
                 requestorLogin, "File uploaded: id={0} size={1} accessType={2}",
-                new String[]{id, String.valueOf(finalSize), accessType.name()});
+                new String[]{uniqueName, String.valueOf(finalSize), accessType.name()});
 
         log.debug("[files] File uploaded: id={} size={} type={} access={} owner={}",
-                id, finalSize, mimeType, accessType, requestorLogin);
+                uniqueName, finalSize, mimeType, accessType, requestorLogin);
 
         return stored;
     }
@@ -305,17 +320,19 @@ public class FileService {
      * Retrieve a file's bytes after verifying access rights and signature integrity.
      * Increments the access counter and updates the lastSignatureCheck timestamp in cache.
      * When fileIdOrShortName is exactly 6 characters it is treated as a short name alias.
+     * When accessKey is provided and matches the file's key, authentication is bypassed.
      * @param fileIdOrShortName - uniqueName or 6-character short name of the file to download
-     * @param req    - HTTP request for authentication state
+     * @param req       - HTTP request for authentication state
+     * @param accessKey - optional access key passed as query parameter (may be null)
      * @return FileDownloadData wrapping the FileStored metadata and raw content
      * @throws ITNotFoundException - file does not exist or physical file missing
      * @throws ITRightException    - caller is not allowed to access this file
      * @throws ITParseException    - file integrity check failed
      */
-    public FileDownloadData downloadFile(String fileIdOrShortName, HttpServletRequest req)
+    public FileDownloadData downloadFile(String fileIdOrShortName, HttpServletRequest req, String accessKey)
             throws ITNotFoundException, ITRightException, ITParseException {
         FileStored file = resolveFile(fileIdOrShortName);
-        checkFileAccess(file, req);
+        checkFileAccess(file, req, accessKey);
 
         byte[] content = readAndVerify(file);
 
@@ -332,24 +349,26 @@ public class FileService {
      * Retrieve a thumbnail's bytes after verifying access rights.
      * The original file's access counter is NOT incremented.
      * When fileIdOrShortName is exactly 6 characters it is treated as a short name alias.
+     * When accessKey is provided and matches the file's key, authentication is bypassed.
      * @param fileIdOrShortName - uniqueName or 6-character short name of the parent file
-     * @param req    - HTTP request for authentication state
+     * @param req       - HTTP request for authentication state
+     * @param accessKey - optional access key passed as query parameter (may be null)
      * @return FileDownloadData wrapping the FileStored metadata and thumbnail bytes
      * @throws ITNotFoundException - file has no thumbnail or does not exist
      * @throws ITRightException    - caller is not allowed to access this file
      * @throws ITParseException    - thumbnail integrity check failed
      */
-    public FileDownloadData downloadThumbnail(String fileIdOrShortName, HttpServletRequest req)
+    public FileDownloadData downloadThumbnail(String fileIdOrShortName, HttpServletRequest req, String accessKey)
             throws ITNotFoundException, ITRightException, ITParseException {
         FileStored file = resolveFile(fileIdOrShortName);
 
         // Thumbnails only exist for images
         if (file.getThumbnailUniqueName() == null) throw new ITNotFoundException("file-no-thumbnail");
-        checkFileAccess(file, req);
+        checkFileAccess(file, req, accessKey);
 
-        Path thumbPath = buildFilePath(file.getId(), file.getThumbnailUniqueName());
+        Path thumbPath = buildFilePath(file.getThumbnailUniqueName());
         if (!Files.exists(thumbPath)) {
-            log.error("[files] Physical thumbnail not found: {} for file {}", file.getThumbnailUniqueName(), file.getId());
+            log.error("[files] Physical thumbnail not found: {} for file {}", file.getThumbnailUniqueName(), file.getUniqueName());
             throw new ITNotFoundException("file-thumbnail-physical-missing");
         }
 
@@ -357,7 +376,7 @@ public class FileService {
         try {
             content = Files.readAllBytes(thumbPath);
         } catch (Exception e) {
-            log.error("[files] Failed to read thumbnail for file {}", file.getId(), e);
+            log.error("[files] Failed to read thumbnail for file {}", file.getUniqueName(), e);
             throw new ITNotFoundException("file-thumbnail-read-error");
         }
 
@@ -366,10 +385,12 @@ public class FileService {
             String computed = computeHmacSignatureSilent(content);
             if (!computed.equals(file.getThumbnailSignature())) {
                 log.error("[files] Thumbnail integrity failure for file {} - expected {} got {}",
-                        file.getId(), file.getThumbnailSignature(), computed);
-                auditIntegration.auditLog(ModuleCatalog.Modules.FILES, "file-thumbnail-integrity-failure",
+                        file.getUniqueName(), file.getThumbnailSignature(), computed);
+                auditIntegration.auditLog(
+                        ModuleCatalog.Modules.FILES,
+                        ActionCatalog.getActionName(ActionCatalog.Actions.FILES_INTEGRITY),
                         "system", "Thumbnail integrity check failed for file {0}",
-                        new String[]{file.getId()});
+                        new String[]{file.getUniqueName()});
                 throw new ITParseException("file-thumbnail-integrity-check-failed");
             }
         }
@@ -384,7 +405,7 @@ public class FileService {
      * Return the metadata of a file after verifying access rights. No binary content is served.
      * When fileIdOrShortName is exactly 6 characters it is treated as a short name alias.
      * @param fileIdOrShortName - uniqueName or 6-character short name of the file
-     * @param req    - HTTP request for authentication state
+     * @param req       - HTTP request for authentication state
      * @return the FileStored entity (clone)
      * @throws ITNotFoundException - file does not exist
      * @throws ITRightException    - caller is not allowed to access this file
@@ -392,7 +413,7 @@ public class FileService {
     public FileStored getFileInfo(String fileIdOrShortName, HttpServletRequest req)
             throws ITNotFoundException, ITRightException {
         FileStored file = resolveFile(fileIdOrShortName);
-        checkFileAccess(file, req);
+        checkFileAccess(file, req, null);
         return file;
     }
 
@@ -455,29 +476,45 @@ public class FileService {
         file.setDescription(body.getDescription());
 
         // Handle short name creation or removal when explicitly requested
-        Boolean withShortName = body.getWithShortName();
-        if (Boolean.TRUE.equals(withShortName) && file.getShortName() == null) {
+        boolean withShortName = body.getWithShortName();
+        if (withShortName && file.getShortName() == null) {
             // Generate a new short name only when none is already assigned
             String shortName = generateUniqueShortName();
             file.setShortName(shortName);
-            changedFields.append("shortName ");
-            log.debug("[files] Short name '{}' assigned to file {} by {}", shortName, file.getId(), requestorLogin);
-        } else if (Boolean.FALSE.equals(withShortName) && file.getShortName() != null) {
+            changedFields.append("shortName(added) ");
+            log.debug("[files] Short name '{}' assigned to file {} by {}", shortName, file.getUniqueName(), requestorLogin);
+        } else if (!withShortName && file.getShortName() != null) {
             // Remove existing short name
-            log.debug("[files] Short name '{}' removed from file {} by {}", file.getShortName(), file.getId(), requestorLogin);
+            log.debug("[files] Short name '{}' removed from file {} by {}", file.getShortName(), file.getUniqueName(), requestorLogin);
             file.setShortName(null);
-            changedFields.append("shortName ");
+            changedFields.append("shortName(removed) ");
+        }
+
+        // Handle access key creation/regeneration or removal when explicitly requested
+        if (body.getWithAccessKey() && file.getAccessKey() == null ) {
+            // Generate or regenerate the access key (always creates a new one)
+            String generatedKey = generateUniqueAccessKey();
+            changedFields.append("accessKey(added) ");
+            file.setAccessKey(generatedKey);
+            log.debug("[files] Access key generated/regenerated for file {} by {}", file.getUniqueName(), requestorLogin);
+        } else if ( !body.getWithAccessKey() && file.getAccessKey() != null) {
+            // Remove existing access key
+            log.debug("[files] Access key removed from file {} by {}", file.getUniqueName(), requestorLogin);
+            file.setAccessKey(null);
+            changedFields.append("accessKey(removed) ");
         }
 
         file.setUpdatedAt(Now.NowUtcMs());
 
         fileCache.saveFile(file);
 
-        auditIntegration.auditLog(ModuleCatalog.Modules.FILES, "file-updated",
+        auditIntegration.auditLog(
+                ModuleCatalog.Modules.FILES,
+                ActionCatalog.getActionName(ActionCatalog.Actions.FILES_UPDATE),
                 requestorLogin, "File metadata updated: id={0} fields={1}",
-                new String[]{file.getId(), changedFields.toString().trim()});
+                new String[]{file.getUniqueName(), changedFields.toString().trim()});
 
-        log.info("[files] File {} updated by {}", file.getId(), requestorLogin);
+        log.info("[files] File {} updated by {}", file.getUniqueName(), requestorLogin);
         return file;
     }
 
@@ -509,12 +546,12 @@ public class FileService {
 
         // Delete physical file from disk
         Path storageDir = Paths.get(filesConfig.getStorageRootPath())
-                .resolve(String.valueOf(file.getId().charAt(0)))
-                .resolve(String.valueOf(file.getId().charAt(1)));
+                .resolve(String.valueOf(file.getUniqueName().charAt(0)))
+                .resolve(String.valueOf(file.getUniqueName().charAt(1)));
         try {
             Files.deleteIfExists(storageDir.resolve(file.getUniqueName()));
         } catch (Exception e) {
-            log.warn("[files] Could not delete physical file {} for id {}", file.getUniqueName(), file.getId(), e);
+            log.warn("[files] Could not delete physical file {} for id {}", file.getUniqueName(), file.getUniqueName(), e);
         }
 
         // Delete thumbnail from disk if present
@@ -522,7 +559,7 @@ public class FileService {
             try {
                 Files.deleteIfExists(storageDir.resolve(file.getThumbnailUniqueName()));
             } catch (Exception e) {
-                log.warn("[files] Could not delete thumbnail {} for id {}", file.getThumbnailUniqueName(), file.getId(), e);
+                log.warn("[files] Could not delete thumbnail {} for id {}", file.getThumbnailUniqueName(), file.getUniqueName(), e);
             }
         }
 
@@ -530,11 +567,13 @@ public class FileService {
         fileStoredRepository.deleteById(file.getId());
         fileCache.flushFile(file.getUniqueName());
 
-        auditIntegration.auditLog(ModuleCatalog.Modules.FILES, "file-deleted",
+        auditIntegration.auditLog(
+                ModuleCatalog.Modules.FILES,
+                ActionCatalog.getActionName(ActionCatalog.Actions.FILES_DELETE),
                 requestorLogin, "File deleted: id={0}",
-                new String[]{file.getId()});
+                new String[]{file.getUniqueName()});
 
-        log.info("[files] File {} deleted by {}", file.getId(), requestorLogin);
+        log.info("[files] File {} deleted by {}", file.getUniqueName(), requestorLogin);
     }
 
     // ================================================================================================================
@@ -590,37 +629,62 @@ public class FileService {
     }
 
     /**
-     * Verify that the caller is allowed to access the given file.
-     * PUBLIC: everyone; CONNECTED: authenticated users; PRIVATE: owner or ROLE_FILE_ADMIN.
-     * @param file - file metadata
-     * @param req  - HTTP request
+     * Verify that the caller is allowed to access (READ) the given file.
+     * If a valid access key is provided, it bypasses authentication for CONNECTED and PRIVATE files.
+     * PUBLIC: everyone; CONNECTED: authenticated or valid key; PRIVATE: owner/admin or valid key.
+     * @param file      - file metadata
+     * @param req       - HTTP request
+     * @param accessKey - optional key from query parameter (may be null)
      * @throws ITRightException when access is denied
      */
-    private void checkFileAccess(FileStored file, HttpServletRequest req) throws ITRightException {
+    private void checkFileAccess(FileStored file, HttpServletRequest req, String accessKey) throws ITRightException {
+        if (isValidAccessKey(file, accessKey)) return;
         switch (file.getAccessType()) {
             case PUBLIC:
                 // No restriction
                 break;
             case CONNECTED:
                 if (req.getUserPrincipal() == null) {
-                    log.warn("[files] Unauthenticated access to CONNECTED file {}", file.getId());
+                    log.warn("[files] Unauthenticated access to CONNECTED file {}", file.getUniqueName());
                     throw new ITRightException("files-access-login-required");
                 }
                 break;
             case PRIVATE:
                 if (req.getUserPrincipal() == null) {
-                    log.warn("[files] Unauthenticated try to access to PRIVATE file {}", file.getId());
+                    log.warn("[files] Unauthenticated try to access to PRIVATE file {}", file.getUniqueName());
                     throw new ITRightException("files-access-login-required");
                 }
                 String callerLogin = req.getUserPrincipal().getName();
                 boolean isAdmin = req.isUserInRole("ROLE_FILE_ADMIN");
                 if (!file.getOwnerId().equals(callerLogin) && !isAdmin) {
                     log.warn("[files] User {} denied access to PRIVATE file {} owned by {}",
-                            callerLogin, file.getId(), file.getOwnerId());
+                            callerLogin, file.getUniqueName(), file.getOwnerId());
                     throw new ITRightException("files-access-private");
                 }
                 break;
         }
+    }
+
+    /**
+     * Return true when the provided access key is non-null, non-blank and matches the file's stored key.
+     * @param file      - file metadata holding the stored key (may be null)
+     * @param accessKey - key provided by the caller (may be null)
+     * @return true when access should be granted via the key
+     */
+    private boolean isValidAccessKey(FileStored file, String accessKey) {
+        return accessKey != null && !accessKey.isBlank()
+                && file.getAccessKey() != null
+                && file.getAccessKey().equals(accessKey);
+    }
+
+    /**
+     * Generate a cryptographically random 16-character access key that does not yet exist in DB.
+     * Iterates up to ACCESS_KEY_MAX_ATTEMPTS times before giving up.
+     * @return a unique 16-character string composed of [a-z0-9]
+     * @throws ITParseException when all attempts produce already-taken keys
+     */
+    private String generateUniqueAccessKey() throws ITParseException {
+        return RandomString.getRandomString(ACCESS_KEY_LENGTH);
     }
 
     /**
@@ -632,7 +696,7 @@ public class FileService {
      * @throws ITParseException    when signature verification fails
      */
     private byte[] readAndVerify(FileStored file) throws ITNotFoundException, ITParseException {
-        Path filePath = buildFilePath(file.getId(), file.getUniqueName());
+        Path filePath = buildFilePath(file.getUniqueName());
         if (!Files.exists(filePath)) {
             log.debug("[files] Physical file missing: {} id={}", file.getUniqueName(), file.getId());
             throw new ITNotFoundException("files-physical-missing");
@@ -655,10 +719,10 @@ public class FileService {
                 String computed = computeHmacSignatureSilent(content);
                 if (!computed.equals(file.getSignature())) {
                     log.error("[files] Integrity failure for file {} - expected={} computed={}",
-                            file.getId(), file.getSignature(), computed);
+                            file.getUniqueName(), file.getSignature(), computed);
                     auditIntegration.auditLog(ModuleCatalog.Modules.FILES, ActionCatalog.getActionName(ActionCatalog.Actions.FILES_INTEGRITY),
                             "system", "File integrity check failed: id={0} expected={1} got={2}",
-                            new String[]{file.getId(), file.getSignature(), computed});
+                            new String[]{file.getUniqueName(), file.getSignature(), computed});
                     throw new ITParseException("file-integrity-check-failed");
                 }
                 // Record the successful check timestamp in the cache (in-memory only)
@@ -671,14 +735,13 @@ public class FileService {
     /**
      * Build the absolute Path for a file stored on disk.
      * Structure: {root}/{id[0]}/{id[1]}/{uniqueName}
-     * @param fileId     - UUID of the file (used for directory sharding)
      * @param uniqueName - physical filename
      * @return absolute Path
      */
-    private Path buildFilePath(String fileId, String uniqueName) {
+    private Path buildFilePath(String uniqueName) {
         return Paths.get(filesConfig.getStorageRootPath())
-                .resolve(String.valueOf(fileId.charAt(0)))
-                .resolve(String.valueOf(fileId.charAt(1)))
+                .resolve(String.valueOf(uniqueName.charAt(0)))
+                .resolve(String.valueOf(uniqueName.charAt(1)))
                 .resolve(uniqueName);
     }
 

@@ -86,6 +86,12 @@ public class FileUploadResponseItf {
             requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     protected String shortName;
 
+    @Schema(description = "16-character access key granting unauthenticated access to CONNECTED/PRIVATE files (null when disabled). " +
+            "Only returned to the file owner or an administrator.",
+            example = "b4f2a8c1d7e3f9b5",
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    protected String accessKey;
+
     // ==========================
     // Builder
 
@@ -107,6 +113,7 @@ public class FileUploadResponseItf {
         this.updatedAt = f.getUpdatedAt();
         this.thumbnailUniqueName = f.getThumbnailUniqueName();
         this.shortName = f.getShortName();
+        this.accessKey = f.getAccessKey();
     }
 
     // ==========================
@@ -150,5 +157,8 @@ public class FileUploadResponseItf {
 
     public String getShortName() { return shortName; }
     public void setShortName(String shortName) { this.shortName = shortName; }
+
+    public String getAccessKey() { return accessKey; }
+    public void setAccessKey(String accessKey) { this.accessKey = accessKey; }
 }
 

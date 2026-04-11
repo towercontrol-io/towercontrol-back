@@ -82,7 +82,14 @@ public interface FileStoredRepository extends CrudRepository<FileStored, String>
     boolean existsByShortName(String shortName);
 
     /**
-     * Atomically increment the access counter of a file by 1.
+     * Check whether a given access key is already taken.
+     * Used during access key generation to guarantee uniqueness before persisting.
+     * @param accessKey - candidate 16-character access key
+     * @return true when a file with that access key already exists
+     */
+    boolean existsByAccessKey(String accessKey);
+
+    /**
      * Called on every successful download without reloading the whole entity.
      * @param fileId - UUID of the file
      */

@@ -41,8 +41,10 @@ When the user selects a file:
 - A direct download link is built as `{BACKEND_API_BASE}/files/1.0/{fileRef}/full`.
 - A thumbnail preview is built as `{BACKEND_API_BASE}/files/1.0/{fileRef}/thumbnail` when available.
 - `{fileRef}` is the file's `shortName` when present, otherwise its `uniqueName`.
-- For `PUBLIC` files these URLs can be embedded directly in HTML; for `CONNECTED` / `PRIVATE` files
-  the Bearer token must be included when fetching programmatically.
+- When the file has an `accessKey`, a shareable URL can be built by appending `?key=<accessKey>`:
+  this URL works without authentication for `CONNECTED` and `PRIVATE` files.
+- For `PUBLIC` files these URLs can be embedded directly in HTML; for `CONNECTED` / `PRIVATE` files without
+  an access key, the Bearer token must be included when fetching programmatically.
 
 ### Update metadata
 The owner can update the following fields of an existing file:
@@ -52,6 +54,10 @@ The owner can update the following fields of an existing file:
   - `true` = generate a 6-character short name if none is assigned yet.
   - `false` = remove the current short name.
   - omit = leave the short name unchanged.
+- `withAccessKey` — optional boolean:
+  - `true` = generate/regenerate a 16-character access key enabling unauthenticated access.
+  - `false` = remove the current access key (revokes unauthenticated access).
+  - omit = leave the access key unchanged.
 Upgrading to `PUBLIC` or `CONNECTED` requires the role `ROLE_FILE_WRITE`.
 
 ### Delete a file
@@ -75,8 +81,10 @@ structures and API call examples. The list of [i18n keys](assets/i18n.md) is als
   (in which case call `GET /files/1.0/{fileRef}/info`).
 
 ### Step 3 — Update metadata (optional)
-- The user changes the description, the access type or the short name assignment in the detail panel.
+- The user changes the description, the access type, the short name or the access key in the detail panel.
 - Send `withShortName: true` to generate a short name, `false` to remove it, or omit to leave it unchanged.
+- Send `withAccessKey: true` to generate/regenerate an access key, `false` to remove it, or omit to leave it unchanged.
+- The access key returned in the updated response can be used to build shareable URLs (`?key=<accessKey>`).
 - The front-end makes a `PUT` request to `/files/1.0/{fileRef}` with the update body.
 - The expected response is `200` with the updated `FileUploadResponseItf`.
 - The file list entry is refreshed in place.
@@ -121,11 +129,13 @@ Get the metadata of a single file without serving its binary content.
 - Full data structures are detailed in [file_list.md](assets/file_list.md).
 
 ### `PUT /files/1.0/{fileRef}`
-Update the `description`, `accessType` and/or `shortName` of an existing file.
+Update the `description`, `accessType`, `shortName` and/or `accessKey` of an existing file.
 - Requires authentication (Bearer token).
 - Only the owner or `ROLE_FILE_ADMIN` can call this endpoint.
 - Upgrading to `PUBLIC` or `CONNECTED` additionally requires `ROLE_FILE_WRITE`.
 - Pass `withShortName: true` to create a short name, `false` to remove it, or omit to leave unchanged.
+- Pass `withAccessKey: true` to generate/regenerate an access key, `false` to remove it, or omit to leave unchanged.
+- The updated `accessKey` is returned in the response body (owner/admin only).
 - Returns `200` with the updated `FileUploadResponseItf`.
 - Full request/response structures are detailed in [file_list.md](assets/file_list.md).
 

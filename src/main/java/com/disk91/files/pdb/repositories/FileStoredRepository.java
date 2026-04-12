@@ -101,6 +101,22 @@ public interface FileStoredRepository extends JpaRepository<FileStored, String> 
     void incrementAccessCount(@Param("fileId") String fileId);
 
     /**
+     * Compute the total storage size (bytes) consumed by all files in the system.
+     * Returns 0 when no files exist.
+     * @return sum of all file sizes in bytes
+     */
+    @Query("SELECT COALESCE(SUM(f.size), 0) FROM FileStored f")
+    long sumAllSizes();
+
+    /**
+     * Compute the total number of accesses across all files in the system.
+     * Returns 0 when no files exist.
+     * @return sum of all accessCount values
+     */
+    @Query("SELECT COALESCE(SUM(f.accessCount), 0) FROM FileStored f")
+    long sumAllAccessCount();
+
+    /**
      * Paginated search across all files with optional case-insensitive LIKE filter.
      * When search is null or blank, all files are returned.
      * The filter is applied on ownerId, originalName and description fields.

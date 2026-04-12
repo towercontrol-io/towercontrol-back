@@ -397,6 +397,8 @@ public class FileService {
                         ActionCatalog.getActionName(ActionCatalog.Actions.FILES_INTEGRITY),
                         "system", "Thumbnail integrity check failed for file {0}",
                         new String[]{file.getUniqueName()});
+                // Track signature error in metrics counter
+                com.disk91.files.Files.incSignatureErrors();
                 throw new ITParseException("file-thumbnail-integrity-check-failed");
             }
         }
@@ -802,6 +804,8 @@ public class FileService {
                     auditIntegration.auditLog(ModuleCatalog.Modules.FILES, ActionCatalog.getActionName(ActionCatalog.Actions.FILES_INTEGRITY),
                             "system", "File integrity check failed: id={0} expected={1} got={2}",
                             new String[]{file.getUniqueName(), file.getSignature(), computed});
+                    // Track signature error in metrics counter
+                    com.disk91.files.Files.incSignatureErrors();
                     throw new ITParseException("file-integrity-check-failed");
                 }
                 // Record the successful check timestamp in the cache (in-memory only)

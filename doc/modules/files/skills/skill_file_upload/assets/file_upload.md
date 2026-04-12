@@ -147,13 +147,13 @@ filesModuleUpload: async (
 
 #### Response from the API
 
-| HTTP code | Meaning                                                    |
-|-----------|------------------------------------------------------------|
-| `201`     | Upload succeeded — body contains `FileUploadResponseItf`   |
-| `400`     | Empty file, invalid `accessType`, file too large, I/O error|
-| `403`     | Not authenticated or missing `ROLE_FILE_WRITE`             |
-| `429`     | User has reached file count or total storage quota         |
-| `50x`     | Server-side error                                          |
+| HTTP code | Meaning                                                     |
+|-----------|-------------------------------------------------------------|
+| `201`     | Upload succeeded — body contains `FileUploadResponseItf`    |
+| `400`     | Empty file, invalid `accessType`, file too large, I/O error |
+| `403`     | Not authenticated or missing `ROLE_FILES_WRITE`             |
+| `429`     | User has reached file count or total storage quota          |
+| `50x`     | Server-side error                                           |
 
 On error, the body contains an `ActionResult` with an i18n key in the `message` field.
 

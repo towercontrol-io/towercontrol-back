@@ -28,7 +28,9 @@ import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITOverQuotaException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITRightException;
+import com.disk91.files.api.interfaces.FileAdminListResponseItf;
 import com.disk91.files.api.interfaces.FileUpdateBody;
+import com.disk91.files.api.interfaces.FileUploadResponseItf;
 import com.disk91.files.config.ActionCatalog;
 import com.disk91.files.config.FilesConfig;
 import com.disk91.files.pdb.entities.FileStored;
@@ -57,6 +59,10 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.UUID;
 import java.security.SecureRandom;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 @Service
 public class FileService {
@@ -131,11 +137,11 @@ public class FileService {
             throw new ITParseException("files-upload-invalid-access-type");
         }
 
-        // Verify role rights: PUBLIC and CONNECTED require ROLE_FILE_WRITE or ROLE_FILE_ADMIN
+        // Verify role rights: PUBLIC and CONNECTED require ROLE_FILES_WRITE or ROLE_FILES_ADMIN
         if (accessType != FileAccessType.PRIVATE) {
-            boolean hasWriteRole = req.isUserInRole("ROLE_FILE_WRITE") || req.isUserInRole("ROLE_FILE_ADMIN");
+            boolean hasWriteRole = req.isUserInRole("ROLE_FILES_WRITE") || req.isUserInRole("ROLE_FILES_ADMIN");
             if (!hasWriteRole) {
-                log.warn("[files] User {} lacks ROLE_FILE_WRITE to create {} file", requestorLogin, accessType);
+                log.warn("[files] User {} lacks ROLE_FILES_WRITE to create {} file", requestorLogin, accessType);
                 throw new ITRightException("files-upload-missing-write-role");
             }
         }
@@ -423,8 +429,8 @@ public class FileService {
 
     /**
      * Update the description, access type and/or short name of a file.
-     * Only the owner or a ROLE_FILE_ADMIN can perform this operation.
-     * Upgrading to PUBLIC/CONNECTED requires ROLE_FILE_WRITE.
+     * Only the owner or a ROLE_FILES_ADMIN can perform this operation.
+     * Upgrading to PUBLIC/CONNECTED requires ROLE_FILES_WRITE.
      * When body.withShortName is true and no short name exists, a new one is generated.
      * When body.withShortName is false and a short name exists, it is removed.
      * When fileIdOrShortName is exactly 6 characters it is treated as a short name alias.
@@ -447,7 +453,7 @@ public class FileService {
         FileStored file = resolveFile(fileIdOrShortName);
 
         // Only owner or admin can update
-        boolean isAdmin = req.isUserInRole("ROLE_FILE_ADMIN");
+        boolean isAdmin = req.isUserInRole("ROLE_FILES_ADMIN");
         if (!file.getOwnerId().equals(requestorLogin) && !isAdmin) {
             log.warn("[files] User {} attempted to update file {} owned by {}", requestorLogin, fileIdOrShortName, file.getOwnerId());
             throw new ITRightException("file-update-not-owner");
@@ -461,8 +467,8 @@ public class FileService {
             throw new ITParseException("file-update-invalid-access-type");
         }
 
-        // Upgrading visibility requires ROLE_FILE_WRITE or ROLE_FILE_ADMIN
-        if (newAccessType != FileAccessType.PRIVATE && !req.isUserInRole("ROLE_FILE_WRITE") && !isAdmin) {
+        // Upgrading visibility requires ROLE_FILES_WRITE or ROLE_FILES_ADMIN
+        if (newAccessType != FileAccessType.PRIVATE && !req.isUserInRole("ROLE_FILES_WRITE") && !isAdmin) {
             log.warn("[files] User {} lacks role to set file {} to {}", requestorLogin, fileIdOrShortName, newAccessType);
             throw new ITRightException("file-update-missing-write-role");
         }
@@ -524,7 +530,7 @@ public class FileService {
 
     /**
      * Delete a file: removes the database record, the physical file and its thumbnail.
-     * Only the owner or a ROLE_FILE_ADMIN can delete a file.
+     * Only the owner or a ROLE_FILES_ADMIN can delete a file.
      * When fileIdOrShortName is exactly 6 characters it is treated as a short name alias.
      * @param requestorLogin    - login hash of the user requesting deletion
      * @param fileIdOrShortName - uniqueName or 6-character short name of the file to delete
@@ -538,7 +544,7 @@ public class FileService {
         FileStored file = resolveFile(fileIdOrShortName);
 
         // Only owner or admin can delete
-        boolean isAdmin = req.isUserInRole("ROLE_FILE_ADMIN");
+        boolean isAdmin = req.isUserInRole("ROLE_FILES_ADMIN");
         if (!file.getOwnerId().equals(requestorLogin) && !isAdmin) {
             log.warn("[files] User {} attempted to delete file {} owned by {}", requestorLogin, fileIdOrShortName, file.getOwnerId());
             throw new ITRightException("file-delete-not-owner");
@@ -574,6 +580,79 @@ public class FileService {
                 new String[]{file.getUniqueName()});
 
         log.info("[files] File {} deleted by {}", file.getUniqueName(), requestorLogin);
+    }
+
+    // ================================================================================================================
+    // ADMIN LIST
+    // ================================================================================================================
+
+    /**
+     * Return a paginated, searchable and sortable list of all files in the system (admin view).
+     * The optional search string performs a case-insensitive LIKE on ownerId, originalName and description.
+     * Sort order: CREATED (default, newest first) or ACCESS (most accessed first).
+     * Page size is clamped to [1, 250]; default is 50.
+     * @param requestorLogin - login hash of the admin
+     * @param page           - 0-based page index
+     * @param size           - requested page size (clamped to 1-250)
+     * @param sort           - sort mode: CREATED or ACCESS
+     * @param search         - optional LIKE search string (null means no filter)
+     * @return paginated response wrapping matched FileStored records
+     * @throws ITParseException - when the sort value is not recognised
+     */
+    public FileAdminListResponseItf adminListFiles(
+            String requestorLogin,
+            int page,
+            int size,
+            String sort,
+            String search
+    ) throws ITParseException {
+
+        // Clamp page size to allowed range
+        if (size <= 0) size = 50;
+        if (size > 250) {
+            log.debug("[files] Admin {} requested page size {} > 250, clamping", requestorLogin, size);
+            size = 250;
+        }
+        if (page < 0) page = 0;
+
+        // Resolve sort order
+        Sort sortOrder;
+        String sortUpper = (sort != null) ? sort.trim().toUpperCase() : "CREATED";
+        switch (sortUpper) {
+            case "ACCESS":
+                sortOrder = Sort.by(Sort.Direction.DESC, "accessCount");
+                break;
+            case "CREATED":
+                sortOrder = Sort.by(Sort.Direction.DESC, "createdAt");
+                break;
+            default:
+                log.warn("[files] Admin {} provided unknown sort value '{}', rejecting", requestorLogin, sort);
+                throw new ITParseException("files-admin-list-invalid-sort");
+        }
+
+        // Normalise search: treat blank as null to skip the LIKE filter
+        String searchParam = (search != null && !search.isBlank()) ? search.trim() : null;
+
+        Pageable pageable = PageRequest.of(page, size, sortOrder);
+        Page<FileStored> resultPage = fileStoredRepository.findAllBySearchCriteria(searchParam, pageable);
+
+        // Map each FileStored to the response format
+        List<FileUploadResponseItf> files = resultPage.getContent().parallelStream().map(f -> {
+            FileUploadResponseItf r = new FileUploadResponseItf();
+            r.buildFrom(f);
+            return r;
+        }).toList();
+
+        FileAdminListResponseItf response = new FileAdminListResponseItf();
+        response.setTotal(resultPage.getTotalElements());
+        response.setPage(page);
+        response.setSize(size);
+        response.setFiles(files);
+
+        log.debug("[files] Admin list by {} - page={} size={} sort={} search='{}' total={}",
+                requestorLogin, page, size, sortUpper, searchParam, resultPage.getTotalElements());
+
+        return response;
     }
 
     // ================================================================================================================
@@ -655,7 +734,7 @@ public class FileService {
                     throw new ITRightException("files-access-login-required");
                 }
                 String callerLogin = req.getUserPrincipal().getName();
-                boolean isAdmin = req.isUserInRole("ROLE_FILE_ADMIN");
+                boolean isAdmin = req.isUserInRole("ROLE_FILES_ADMIN");
                 if (!file.getOwnerId().equals(callerLogin) && !isAdmin) {
                     log.warn("[files] User {} denied access to PRIVATE file {} owned by {}",
                             callerLogin, file.getUniqueName(), file.getOwnerId());

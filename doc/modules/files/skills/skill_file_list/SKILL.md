@@ -58,7 +58,7 @@ The owner can update the following fields of an existing file:
   - `true` = generate/regenerate a 16-character access key enabling unauthenticated access.
   - `false` = remove the current access key (revokes unauthenticated access).
   - omit = leave the access key unchanged.
-Upgrading to `PUBLIC` or `CONNECTED` requires the role `ROLE_FILE_WRITE`.
+Upgrading to `PUBLIC` or `CONNECTED` requires the role `ROLE_FILES_WRITE`.
 
 ### Delete a file
 The owner (or an administrator) can permanently delete a file.
@@ -131,8 +131,8 @@ Get the metadata of a single file without serving its binary content.
 ### `PUT /files/1.0/{fileRef}`
 Update the `description`, `accessType`, `shortName` and/or `accessKey` of an existing file.
 - Requires authentication (Bearer token).
-- Only the owner or `ROLE_FILE_ADMIN` can call this endpoint.
-- Upgrading to `PUBLIC` or `CONNECTED` additionally requires `ROLE_FILE_WRITE`.
+- Only the owner or `ROLE_FILES_ADMIN` can call this endpoint.
+- Upgrading to `PUBLIC` or `CONNECTED` additionally requires `ROLE_FILES_WRITE`.
 - Pass `withShortName: true` to create a short name, `false` to remove it, or omit to leave unchanged.
 - Pass `withAccessKey: true` to generate/regenerate an access key, `false` to remove it, or omit to leave unchanged.
 - The updated `accessKey` is returned in the response body (owner/admin only).
@@ -142,14 +142,14 @@ Update the `description`, `accessType`, `shortName` and/or `accessKey` of an exi
 ### `DELETE /files/1.0/{fileId}`
 Delete a file and its thumbnail permanently.
 - Requires authentication (Bearer token).
-- Only the owner or `ROLE_FILE_ADMIN` can call this endpoint.
+- Only the owner or `ROLE_FILES_ADMIN` can call this endpoint.
 - Returns `200` on success, `403` when access is denied.
 
 ## Authentication requirements
 All endpoints require:
 - A valid authenticated session/token.
 - The Bearer token must be included in every request header.
-- `PUT` additionally requires `ROLE_FILE_WRITE` when upgrading the access level to `PUBLIC` or `CONNECTED`.
+- `PUT` additionally requires `ROLE_FILES_WRITE` when upgrading the access level to `PUBLIC` or `CONNECTED`.
 
 If authentication fails:
 - HTTP `403` (Forbidden) is returned.

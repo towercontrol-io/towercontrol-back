@@ -29,8 +29,8 @@ examples in TypeScript, made for Nuxt.js 4, but the code can be adapted to other
 ### Access types
 Every uploaded file must be assigned one of three access levels:
 - `PRIVATE` — accessible only by the owner or an administrator. No special role required to upload.
-- `CONNECTED` — accessible by any authenticated user. Requires the role `ROLE_FILE_WRITE`.
-- `PUBLIC` — accessible by anyone, including unauthenticated visitors. Requires the role `ROLE_FILE_WRITE`.
+- `CONNECTED` — accessible by any authenticated user. Requires the role `ROLE_FILES_WRITE`.
+- `PUBLIC` — accessible by anyone, including unauthenticated visitors. Requires the role `ROLE_FILES_WRITE`.
 
 The access type is chosen at upload time and can be changed later via the update endpoint.
 
@@ -98,7 +98,7 @@ structures and API call examples. The list of [i18n keys](assets/i18n.md) is als
 
 ### Step 4 — Handle errors
 - `400`: File is empty, MIME type is invalid, or a quota limit has been exceeded by size → display the i18n error message.
-- `403`: The user is not authenticated or lacks `ROLE_FILE_WRITE` for PUBLIC/CONNECTED files.
+- `403`: The user is not authenticated or lacks `ROLE_FILES_WRITE` for PUBLIC/CONNECTED files.
 - `429`: The user has reached their file count or total storage quota.
 - `50x`: Server error → display a generic error message.
 
@@ -120,7 +120,7 @@ export default defineNuxtConfig({
 ### `POST /files/1.0/upload`
 Upload a new file.
 - Requires authentication (Bearer token).
-- Requires `ROLE_FILE_WRITE` when `accessType` is `PUBLIC` or `CONNECTED`.
+- Requires `ROLE_FILES_WRITE` when `accessType` is `PUBLIC` or `CONNECTED`.
 - The request body must be `multipart/form-data`.
 - Returns `201` with a `FileUploadResponseItf` body on success.
 - Full request/response structures are detailed in [file_upload.md](assets/file_upload.md).
@@ -128,7 +128,7 @@ Upload a new file.
 ## Authentication requirements
 - The user must be authenticated (valid session/token).
 - The Bearer token must be included in the `Authorization` header.
-- Creating `PUBLIC` or `CONNECTED` files additionally requires the role `ROLE_FILE_WRITE`.
+- Creating `PUBLIC` or `CONNECTED` files additionally requires the role `ROLE_FILES_WRITE`.
 
 If authentication fails:
 - HTTP `403` (Forbidden) is returned.

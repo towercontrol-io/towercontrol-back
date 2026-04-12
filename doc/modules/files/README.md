@@ -133,7 +133,7 @@ When a valid key is provided, the normal authentication and ownership checks are
 
 ### Security considerations
 
-- The access key is returned in the API response **only to the file owner or a ROLE_FILE_ADMIN**.
+- The access key is returned in the API response **only to the file owner or a ROLE_FILES_ADMIN**.
   Other callers (e.g. CONNECTED users accessing the info endpoint) will not see the key value.
 - If a key is compromised, the owner can regenerate it (old key immediately becomes invalid) or remove it.
 - The key should be treated as a shared secret and transmitted only over HTTPS.
@@ -243,7 +243,7 @@ a restart to always trigger a verification.
 
 The `noSignatureCheck` flag can be set on a file to entirely skip integrity verification on download.
 This is intended for low-risk files that are accessed at very high frequency, where the CPU cost of
-repeated verification is not acceptable. Only an administrator (`ROLE_FILE_ADMIN`) is allowed to set
+repeated verification is not acceptable. Only an administrator (`ROLE_FILES_ADMIN`) is allowed to set
 or clear this flag. Setting it on a file is recorded in the audit log.
 
 ## Quota management
@@ -400,8 +400,62 @@ Returns the list of files owned by the authenticated user, sorted by creation da
 ## Roles
 
 Access to files does not require any specific role for read or write access. However, it is possible 
-to create private files without any role, but the `ROLE_FILE_WRITE` role will be required to create files that are 
-public or connected. `ROLE_FILE_ADMIN` allows accessing and managing any file regardless of ownership and access type; typically assigned to administrators
+to create private files without any role, but the `ROLE_FILES_WRITE` role will be required to create files that are 
+public or connected. `ROLE_FILES_ADMIN` allows accessing and managing any file regardless of ownership and access type; typically assigned to administrators
+
+## Admin API
+
+The admin API is reserved to users holding the `ROLE_FILES_ADMIN` role. All endpoints are located under
+`/files/1.0/admin/`.
+
+### Paginated file search (admin)
+
+```
+GET /files/1.0/admin/list
+```
+
+Returns a paginated list of **all** files in the system (not filtered by ownership). Supports:
+
+| Query parameter | Type    | Default   | Description                                                                      |
+|-----------------|---------|-----------|----------------------------------------------------------------------------------|
+| `page`          | integer | `0`       | 0-based page index                                                               |
+| `size`          | integer | `50`      | Page size (1 to 250; values outside this range are silently clamped)             |
+| `sort`          | string  | `CREATED` | Sort order: `CREATED` (newest first) or `ACCESS` (most accessed first)           |
+| `search`        | string  | *(none)*  | Optional case-insensitive LIKE filter applied on owner login, filename and description |
+
+Response body (`FileAdminListResponseItf`):
+
+```json
+{
+  "total": 142,
+  "page": 0,
+  "size": 50,
+  "files": [ /* array of FileUploadResponseItf */ ]
+}
+```
+
+Returns HTTP 400 when the `sort` value is unrecognised, HTTP 403 when the role is insufficient.
+
+### Update any file (admin)
+
+```
+PUT /files/1.0/admin/{fileId}
+```
+
+Same contract as the owner `PUT /files/1.0/{fileId}` endpoint but bypasses ownership restrictions.
+Accepts the same `FileUpdateBody` request body. Returns the updated `FileUploadResponseItf`.
+
+### Delete any file (admin)
+
+```
+DELETE /files/1.0/admin/{fileId}
+```
+
+Same contract as the owner `DELETE /files/1.0/{fileId}` endpoint but bypasses ownership restrictions.
+Returns HTTP 200 on success.
+
+> For both admin update and admin delete, the `{fileId}` path variable accepts either the `uniqueName`
+> or the 6-character short name.
 
 ## Traceability
 

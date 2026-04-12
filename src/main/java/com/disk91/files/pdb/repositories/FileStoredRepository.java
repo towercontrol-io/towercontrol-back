@@ -20,9 +20,11 @@
 package com.disk91.files.pdb.repositories;
 
 import com.disk91.files.pdb.entities.FileStored;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,7 +33,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface FileStoredRepository extends CrudRepository<FileStored, String> {
+public interface FileStoredRepository extends JpaRepository<FileStored, String> {
 
     /**
      * Find all files owned by a given user, sorted by creation date descending.
@@ -97,6 +99,23 @@ public interface FileStoredRepository extends CrudRepository<FileStored, String>
     @Transactional
     @Query("UPDATE FileStored f SET f.accessCount = f.accessCount + 1 WHERE f.id = :fileId")
     void incrementAccessCount(@Param("fileId") String fileId);
+
+    /**
+     * Paginated search across all files with optional case-insensitive LIKE filter.
+     * When search is null or blank, all files are returned.
+     * The filter is applied on ownerId, originalName and description fields.
+     * Sorting is controlled by the Pageable argument (CREATED or ACCESS).
+     * @param search   - optional search string for LIKE filtering (may be null)
+     * @param pageable - pagination and sort specification
+     * @return a page of matching FileStored records
+     */
+    @Query("SELECT f FROM FileStored f " +
+            "WHERE (:search IS NULL OR :search = '' OR " +
+            "LOWER(f.ownerId) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(f.originalName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(COALESCE(f.description, '')) LIKE LOWER(CONCAT('%', :search, '%'))" +
+            ")")
+    Page<FileStored> findAllBySearchCriteria(@Param("search") String search, Pageable pageable);
 
 }
 

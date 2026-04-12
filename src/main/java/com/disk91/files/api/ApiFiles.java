@@ -71,7 +71,7 @@ public class ApiFiles {
      * Upload a new file with multipart/form-data.
      * Enforces quotas, resizes images, generates thumbnails and persists the record.
      * PRIVATE files require only ROLE_LOGIN_COMPLETE.
-     * PUBLIC and CONNECTED files additionally require ROLE_FILE_WRITE.
+     * PUBLIC and CONNECTED files additionally require ROLE_FILES_WRITE.
      * An optional 6-character short name can be requested via withShortName=true.
      */
     @Operation(
@@ -83,7 +83,7 @@ public class ApiFiles {
                     "When withAccessKey=true, a 16-character key is generated; appending ?key=<value> to any " +
                     "download, thumbnail or info URL grants unauthenticated access to CONNECTED/PRIVATE files. " +
                     "Images are automatically resized and a thumbnail is generated. " +
-                    "Creating PUBLIC or CONNECTED files requires ROLE_FILE_WRITE.",
+                    "Creating PUBLIC or CONNECTED files requires ROLE_FILES_WRITE.",
             responses = {
                     @ApiResponse(responseCode = "201", description = "File uploaded",
                             content = @Content(schema = @Schema(implementation = FileUploadResponseItf.class))),
@@ -150,7 +150,7 @@ public class ApiFiles {
             description = "Return the raw binary content of a file with appropriate Content-Type and Content-Disposition headers. " +
                     "PUBLIC files are accessible without authentication. " +
                     "CONNECTED files require authentication or a valid ?key= parameter. " +
-                    "PRIVATE files are accessible only by the owner, ROLE_FILE_ADMIN, or via a valid ?key= parameter. " +
+                    "PRIVATE files are accessible only by the owner, ROLE_FILES_ADMIN, or via a valid ?key= parameter. " +
                     "The accessCount counter is incremented on success. " +
                     "The fileId path variable accepts either the uniqueName or a 6-character short name.",
             responses = {
@@ -277,7 +277,7 @@ public class ApiFiles {
 
     /**
      * Update the description, access type, short name and/or access key of a file.
-     * Only the owner or a ROLE_FILE_ADMIN can perform this operation.
+     * Only the owner or a ROLE_FILES_ADMIN can perform this operation.
      * Set withShortName=true to generate a short name, false to remove it, omit to leave unchanged.
      * Set withAccessKey=true to generate/regenerate an access key, false to remove it, omit to leave unchanged.
      * The fileId path variable can be either a uniqueName or a 6-character short name.
@@ -285,8 +285,8 @@ public class ApiFiles {
     @Operation(
             summary = "Update file metadata",
             description = "Update the description, accessType, shortName and/or accessKey of an existing file. " +
-                    "Only the owner or ROLE_FILE_ADMIN can perform this operation. " +
-                    "Upgrading to PUBLIC or CONNECTED additionally requires ROLE_FILE_WRITE. " +
+                    "Only the owner or ROLE_FILES_ADMIN can perform this operation. " +
+                    "Upgrading to PUBLIC or CONNECTED additionally requires ROLE_FILES_WRITE. " +
                     "Set withShortName=true to generate a short name, false to remove it, omit to leave unchanged. " +
                     "Set withAccessKey=true to generate/regenerate an access key allowing unauthenticated access, " +
                     "false to remove it, omit to leave unchanged. " +
@@ -329,12 +329,12 @@ public class ApiFiles {
 
     /**
      * Delete a file and its physical content from disk.
-     * Only the owner or ROLE_FILE_ADMIN can delete a file.
+     * Only the owner or ROLE_FILES_ADMIN can delete a file.
      */
     @Operation(
             summary = "Delete a file",
             description = "Delete the database record and the physical file (and its thumbnail) from disk. " +
-                    "Only the owner or ROLE_FILE_ADMIN can delete a file.",
+                    "Only the owner or ROLE_FILES_ADMIN can delete a file.",
             responses = {
                     @ApiResponse(responseCode = "200", description = "File deleted",
                             content = @Content(schema = @Schema(implementation = ActionResult.class))),

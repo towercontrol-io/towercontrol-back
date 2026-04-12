@@ -76,6 +76,8 @@ public class UsersRolesCache {
         "{'version':2, 'platform':true, 'name':'ROLE_USER_APIKEY','description':'role-user-apikey-desc', 'enDescription':'Apikey self creation', 'creationBy':'system','creationMs':0, 'assignable':true}",
         "{'version':2, 'platform':true, 'name':'ROLE_SUPPORT_MANAGER','description':'role-support-manager-desc', 'enDescription':'Ticket manager', 'creationBy':'system','creationMs':0, 'assignable':true}",
         "{'version':2, 'platform':true, 'name':'ROLE_SUPPORT_USER','description':'role-support-user-desc', 'enDescription':'Ticket creation', 'creationBy':'system','creationMs':0, 'assignable':true}",
+        "{'version':2, 'platform':true, 'name':'ROLE_FILES_WRITE','description':'role-files-write-desc', 'enDescription':'Public / Platform files creation', 'creationBy':'system','creationMs':0, 'assignable':true}",
+        "{'version':2, 'platform':true, 'name':'ROLE_FILES_ADMIN','description':'role-files-admin-desc', 'enDescription':'Files administrator', 'creationBy':'system','creationMs':0, 'assignable':true}",
     };
 
     // Standard roles strings
@@ -99,7 +101,9 @@ public class UsersRolesCache {
         ROLE_LOGIN_API("ROLE_LOGIN_API"),
         ROLE_USER_APIKEY("ROLE_USER_APIKEY"),
         ROLE_SUPPORT_MANAGER("ROLE_SUPPORT_MANAGER"),
-        ROLE_SUPPORT_USER("ROLE_SUPPORT_USER");
+        ROLE_SUPPORT_USER("ROLE_SUPPORT_USER"),
+        ROLE_FILES_WRITE("ROLE_FILES_WRITE"),
+        ROLE_FILES_ADMIN("ROEL_FILES_ADMIN");
 
         private String roleName;
         StandardRoles(String roleName) {

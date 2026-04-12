@@ -238,11 +238,11 @@ filesModuleUpdate: async (
 
 #### Response
 
-| HTTP code | Meaning                                                    |
-|-----------|------------------------------------------------------------|
+| HTTP code | Meaning                                                          |
+|-----------|------------------------------------------------------------------|
 | `200`     | Update succeeded — body contains updated `FileUploadResponseItf` |
-| `400`     | Invalid `accessType` value                                 |
-| `403`     | Not authenticated, not the owner, or missing `ROLE_FILE_WRITE` |
+| `400`     | Invalid `accessType` value                                       |
+| `403`     | Not authenticated, not the owner, or missing `ROLE_FILES_WRITE`  |
 
 ### Step 5 — Delete a file
 

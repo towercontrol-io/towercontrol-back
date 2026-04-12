@@ -58,6 +58,28 @@ In the case of a 403 error, the user may not have the required access rights to 
 a specific error message can be returned indicating that they do not have permission, and that they must use the standard 
 contact system to get help.
 
+## File Attachments
+
+Users can attach one or more files to a support ticket using the Files module API.
+
+### Principles
+- Files are uploaded **before** the ticket is submitted, via `POST /files/1.0/upload`.
+- Ticket attachments must always use:
+  - `accessType = PRIVATE`
+  - `withAccessKey = true` — enables direct link access without requiring authentication on the image `src` URL
+- Each uploaded file is referenced in the ticket's `context` field as a `CustomField`:
+  - `key`: the file type label, freely chosen by the user (e.g., `screenshot`, `log`, `config`, `document`)
+  - `value`: the string `"file_"` followed by the file's `uniqueName` (e.g., `"file_550e8400-...-1712345678901.jpg"`)
+- Multiple files can be attached; each produces one `CustomField` entry in `context`.
+- For **image files** (`mimeCategory === "IMAGE"`), the front-end must offer a **"Copy Markdown link"** button
+  that generates and copies to the clipboard the following Markdown image syntax:
+  ```
+  ![originalName](BACKEND_API_BASE/files/1.0/{uniqueName}/full?key={accessKey})
+  ```
+  This can be pasted directly into the ticket `content` field to embed the image inline.
+- The Files module API endpoints and full TypeScript data structures are documented in
+  [ticket_form.md](assets/ticket_form.md).
+
 ## Workflow of the ticket form creation
 The file [ticket_form.md](assets/ticket_form.md) contains the workflow of the ticket form creation, with the different 
 steps to implement in the front-end and the expected response from the backend. It also contains the structure and API calls 
@@ -70,6 +92,13 @@ As a functional summary:
 - The form syntax is validated on the front-end according to the principles described above.
 - It is submitted to the backend API endpoint with a `POST` request to `/tickets/1.0/ticket`.
 - The expected response is `201` when the contact form submission is successful. The field `ticketId` is set with the ticket ID.
+
+### Step 1.5 (optional) — Attach files
+- The user may attach one or more files before submitting the ticket.
+- Each file is uploaded individually via `POST /files/1.0/upload` with `accessType=PRIVATE` and `withAccessKey=true`.
+- On successful upload the file reference is added to the `context` array as a `CustomField`.
+- For image uploads a thumbnail preview is shown and a **"Copy Markdown link"** button is provided.
+- See [ticket_form.md](assets/ticket_form.md) for the full file attachment workflow.
 
 ### Step 2
 - When the contact form submission has been a success, the user should receive a confirmation message indicating that their inquiry has been received and will be processed.
@@ -99,6 +128,13 @@ It is the only API endpoint used for ticket form submission with an identified u
 - It requires authentication so the Bearer token must be included in the request headers
 - It accepts a `POST` request with the contact form data in the body of the request.
 - The POST body structure and response structures are detailed in file [ticket_form.md](assets/ticket_form.md).
+
+### `POST /files/1.0/upload`
+This endpoint is used to upload file attachments before submitting the ticket.
+- It requires authentication (Bearer token).
+- It accepts a `multipart/form-data` request.
+- Must be called with `accessType=PRIVATE` and `withAccessKey=true` for ticket attachments.
+- Full request/response structures and TypeScript examples are in [ticket_form.md](assets/ticket_form.md).
 
 This API endpoints is part of the IoT Tower Control backend, the base url should be an environment variable. You may ask 
 developer for it where generating the code for the contact form page if your don't know it.

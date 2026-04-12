@@ -83,6 +83,7 @@ The data is stored in two main tables in postgresql:
       "adminPending" : boolean                       // true when user added a message and admin response is pending
     }
     ```
+    Context field Key is limited to 256 chars and Value is limited to 16KB;
 
 - `ticket_messages`: contains the messages exchanged within a ticket (id, ticket_id, message, author, date, etc.)
 

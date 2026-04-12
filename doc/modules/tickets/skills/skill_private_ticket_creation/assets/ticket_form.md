@@ -28,6 +28,140 @@ The `techContext` element can also be filled in the context text field, which is
 as desired, but is less convenient for search. These fields are left to the developer’s discretion, who must ensure a 
 certain level of consistency so that the data can later be leveraged.
 
+### Step 2.5 (OPTIONAL) : attach files to the ticket
+
+Before submitting the ticket, the user can attach one or more files. Files are managed by the Files module API.
+
+#### File upload API endpoint
+Files are uploaded to `POST /files/1.0/upload` as `multipart/form-data`.
+
+| Form field      | Required | Description                                                                    |
+|-----------------|----------|--------------------------------------------------------------------------------|
+| `file`          | yes      | Binary file content                                                            |
+| `accessType`    | yes      | Always `PRIVATE` for ticket attachments                                        |
+| `description`   | no       | Short description (e.g. the ticket topic)                                      |
+| `fileName`      | no       | Original filename provided by the client                                       |
+| `withAccessKey` | yes      | Always `true` — generates the access key required for direct URL image loading |
+
+#### File upload response structure
+
+```typescript
+export interface FileUploadResponseItf {
+    /** Unique technical identifier (UUID) */
+    id: string;
+
+    /** Generated unique filename used as file identifier in all URLs */
+    uniqueName: string;
+
+    /** Original filename provided at upload time */
+    originalName: string;
+
+    /** Optional human-readable description */
+    description?: string;
+
+    /** MIME category: "IMAGE", "PDF", "TEXT", or "GENERIC" */
+    mimeCategory: 'IMAGE' | 'PDF' | 'TEXT' | 'GENERIC';
+
+    /** Full detected MIME type (e.g. "image/png") */
+    mimeType: string;
+
+    /** File size in bytes */
+    size: number;
+
+    /** Login of the file owner */
+    ownerId: string;
+
+    /** Access control (always "PRIVATE" for ticket attachments) */
+    accessType: string;
+
+    /** Number of times the file has been downloaded */
+    accessCount: number;
+
+    /** Creation timestamp in milliseconds since epoch */
+    createdAt: number;
+
+    /** 16-character access key enabling unauthenticated URL access */
+    accessKey: string;
+
+    /** Unique filename of the generated thumbnail (images only, null otherwise) */
+    thumbnailUniqueName?: string;
+}
+```
+
+#### TypeScript example for file upload
+
+```typescript
+const filesModuleUploadPost: string = '/files/1.0/upload';
+
+/**
+ * Upload a file as a PRIVATE attachment with an access key for a ticket
+ */
+filesModuleTicketUpload: async (
+    file: File,
+    description?: string
+): Promise<{ success?: FileUploadResponseItf; error?: ActionResult | { message: string } }> => {
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('accessType', 'PRIVATE');
+        formData.append('withAccessKey', 'true');
+        if (description) formData.append('description', description);
+        if (file.name)   formData.append('fileName', file.name);
+
+        // multipart/form-data upload — do NOT set Content-Type header manually
+        const response = await apiCallMultipartWithTimeout<FileUploadResponseItf>(
+            'POST',
+            filesModuleUploadPost,
+            formData,
+            false  // authentication required
+        );
+        return { success: response };
+    } catch (error: any) {
+        return { error };
+    }
+},
+```
+
+#### Mapping an uploaded file to a ticket context field
+
+Once a file is successfully uploaded, append a `CustomField` entry to the ticket body's `context` array:
+
+```typescript
+// fileType is the label chosen by the user, e.g. "screenshot", "log", "config"
+const customField: CustomField = {
+    key:   fileType,
+    value: `file_${uploadedFile.uniqueName}`
+};
+ticketBody.context = [...(ticketBody.context ?? []), customField];
+```
+
+#### Markdown link for images
+
+When the uploaded file is an image (`mimeCategory === "IMAGE"`), generate a Markdown image link so the user
+can paste it directly into the ticket `content` text area to embed the image inline:
+
+```typescript
+function getMarkdownImageLink(
+    file: FileUploadResponseItf,
+    backendBaseUrl: string
+): string {
+    return `![${file.originalName}](${backendBaseUrl}/files/1.0/${file.uniqueName}/full?key=${file.accessKey})`;
+}
+```
+
+Display a **"Copy Markdown link"** button next to each uploaded image that copies this string to the clipboard.
+
+#### Attachment list UI
+
+Render the list of attached files below the content text area. For each file:
+- Display the original filename and the user-chosen type label.
+- For images (`mimeCategory === "IMAGE"`):
+  - Show a thumbnail preview using:
+    `GET /files/1.0/{uniqueName}/thumbnail?key={accessKey}`
+  - Show a **"Copy Markdown link"** button.
+- Allow the user to remove a file from the attachment list. Removing a file only discards the `CustomField`
+  from the `context` array; the file remains in the files module (the user can delete it separately if needed).
+
 ### Step 3 : submit the form to backend
 The following structure is filled by the front end and `POST` to backend API endpoint `/tickets/1.0/ticket` ; the
 response is important to go on step 2.

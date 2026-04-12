@@ -124,6 +124,25 @@ Once the FAQ entries are retrieved from the backend, they should be displayed to
 The fields `id` and `totalFaq` should not be displayed to the user, they are only used for internal management and pagination.
 Important : `topic` and `content` fields are in Markdown format, so they should be rendered accordingly to display the formatted content to the user.
 
+#### Embedded images from the Files module
+
+FAQ `content` (and sometimes `topic`) may contain images served by the Files module. These images use the
+standard Markdown syntax with an access key in the URL:
+
+```
+![description](BACKEND_API_BASE/files/1.0/{uniqueName}/full?key={accessKey})
+```
+
+Because the Markdown is rendered into HTML `<img>` tags, the browser loads images directly from the Files API.
+The `?key=` access key in the URL is sufficient for `PRIVATE` files — no Bearer token is needed.
+
+> **Important**: `CONNECTED` images (without an access key) **will not load** in rendered Markdown for
+> unauthenticated callers. Support managers who create FAQ content must use either `PUBLIC` files or
+> `PRIVATE` files with `withAccessKey=true` for images to display correctly.
+
+No special configuration is needed in the Markdown renderer — image URLs with the `?key=` parameter are
+handled transparently by the browser.
+
 The front-end should:
 1. Parse and render the Markdown content in both `topic` and `content` fields
 2. Display the entries in a user-friendly format
@@ -205,4 +224,7 @@ When implementing the private FAQ page:
 5. Implement proper session management
 6. Clear authentication tokens on logout or authentication failure
 7. Use HTTPS for all API communications in production
+8. Images embedded in FAQ Markdown content are loaded by the browser directly from the Files module using
+   a `?key=` access key in the URL. Do not attempt to proxy or rewrite these image URLs — the key
+   mechanism is designed for exactly this use case.
 

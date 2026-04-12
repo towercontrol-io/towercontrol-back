@@ -51,6 +51,39 @@ From the detail view, the user can:
 - Optionally close the ticket (toggle/checkbox `closeTicket`).
 - After a successful reply, the ticket detail is refreshed to show the new message.
 
+### File attachments
+
+File attachments are a first-class feature of tickets:
+
+#### Viewing attached files
+When displaying a ticket's detail, the `context` array may contain `CustomField` entries where the `value`
+starts with `"file_"`. Each such entry represents an attached file:
+- `key`: the file type label chosen by the uploader (e.g., `screenshot`, `log`, `config`).
+- `value`: `"file_"` followed by the file's `uniqueName` (e.g., `"file_550e8400-...-1712345678901.jpg"`).
+
+To display these attachments the front-end must call `GET /files/1.0/{uniqueName}/info` for each entry to
+retrieve the file metadata (including `accessKey`, `mimeCategory` and `thumbnailUniqueName`). Since the user
+is the file owner, the response will include the `accessKey`.
+
+For image files (`mimeCategory === "IMAGE"`):
+- Render a thumbnail: `GET /files/1.0/{uniqueName}/thumbnail?key={accessKey}`
+- Provide a **"Copy Markdown link"** button that copies the following string to the clipboard:
+  ```
+  ![originalName](BACKEND_API_BASE/files/1.0/{uniqueName}/full?key={accessKey})
+  ```
+  This Markdown syntax can be pasted into a reply to embed the image inline.
+- Provide a direct download link: `GET /files/1.0/{uniqueName}/full?key={accessKey}`
+
+For non-image files, provide only the download link.
+
+#### Attaching files to a reply
+When adding a reply, the user can attach one or more new files using the same mechanism as ticket creation:
+1. Upload each file via `POST /files/1.0/upload` with `accessType=PRIVATE` and `withAccessKey=true`.
+2. Add the resulting `CustomField` entries to the `context` field of `PrivTicketUserMessageBody`.
+3. For image uploads, a thumbnail preview and a **"Copy Markdown link"** button are provided.
+
+Full TypeScript structures and API call examples are documented in [ticket_management.md](assets/ticket_management.md).
+
 ## Workflow
 
 The file [ticket_management.md](assets/ticket_management.md) contains the complete step-by-step workflow with all data
@@ -118,9 +151,22 @@ Get the full content of one ticket, including all replies.
 ### `PUT /tickets/1.0/ticket`
 Add a reply to an existing ticket or close it.
 - Requires authentication (Bearer token) **and** the role `ROLE_SUPPORT_USER`.
-- Body structure: `PrivTicketUserMessageBody`.
+- Body structure: `PrivTicketUserMessageBody` (includes an optional `context` field for new file attachments).
 - Returns an `ActionResult` on success (`200`).
 - Full request/response structures are detailed in [ticket_management.md](assets/ticket_management.md).
+
+### `GET /files/1.0/{uniqueName}/info`
+Retrieve file metadata for a ticket attachment.
+- Requires authentication (Bearer token).
+- Path variable: `uniqueName` — extracted from the `context` field value (strip the `"file_"` prefix).
+- Returns `FileUploadResponseItf` including `accessKey`, `mimeCategory`, `thumbnailUniqueName`.
+- Full structures are detailed in [ticket_management.md](assets/ticket_management.md).
+
+### `POST /files/1.0/upload`
+Upload a new file attachment when adding a reply.
+- Requires authentication (Bearer token).
+- Must be called with `accessType=PRIVATE` and `withAccessKey=true`.
+- Full structures and TypeScript examples are in [ticket_management.md](assets/ticket_management.md).
 
 ## Authentication requirements
 All three private ticket endpoints require:

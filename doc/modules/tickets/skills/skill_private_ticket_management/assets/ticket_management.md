@@ -187,7 +187,54 @@ When the ticket details are successfully retrieved:
    - Apply distinct visual styling:
      - `fromUser = true` → user message: align to the right, use the user's accent color.
      - `fromUser = false` → support message: align to the left, use the support accent color.
-4. Display a reply form at the bottom (see Step 5).
+4. Display attached files from the ticket context (see Step 4.5 below).
+5. Display a reply form at the bottom (see Step 5).
+
+---
+
+### Step 4.5: Display file attachments
+
+The ticket's `context` array (returned in `PrivTicketUserDetailResponseItf`) may contain `CustomField` entries
+representing attached files. These are identified by a `value` field that starts with `"file_"`.
+
+#### Identifying file attachments
+
+```typescript
+// Filter context entries that are file attachments
+const fileAttachments = ticketDetail.context?.filter(
+    (field: CustomField) => field.value.startsWith('file_')
+) ?? [];
+
+// Extract the uniqueName from each entry
+// e.g. "file_550e8400-...-1712345678901.jpg" → "550e8400-...-1712345678901.jpg"
+const uniqueName = field.value.substring('file_'.length);
+```
+
+#### Rendering file attachments
+
+For each attachment, display:
+- The original filename and the type label (`key` from the `CustomField`, e.g., `screenshot`).
+- **For image files** (`mimeCategory === "IMAGE"`) when `accessKey` is available:
+  - A thumbnail preview:
+    `GET /files/1.0/{uniqueName}/thumbnail?key={accessKey}`
+  - A **"Copy Markdown link"** button that copies the following string to the clipboard:
+    ```
+    ![originalName](BACKEND_API_BASE/files/1.0/{uniqueName}/full?key={accessKey})
+    ```
+    This Markdown syntax can be pasted into the reply text area to embed the image inline.
+  - A direct download link:
+    `GET /files/1.0/{uniqueName}/full?key={accessKey}`
+- **For non-image files**: a download link only:
+  `GET /files/1.0/{uniqueName}/full?key={accessKey}`
+
+```typescript
+function getMarkdownImageLink(
+    file: FileUploadResponseItf,
+    backendBaseUrl: string
+): string {
+    return `![${file.originalName}](${backendBaseUrl}/files/1.0/${file.uniqueName}/full?key=${file.accessKey})`;
+}
+```
 
 ---
 
@@ -231,6 +278,61 @@ For an authenticated user adding a reply, the fields should be:
 - `closeTicket`: `true` if the user wants to close the ticket, `false` otherwise.
 - `closeKb`: Always `false` for regular users.
 - `authKey`: Empty string or not set (not needed for authenticated users).
+
+#### Step 5.5 (optional): attach files to the reply
+
+Before submitting the reply, the user can attach one or more files. Upload each file via
+`POST /files/1.0/upload` with `accessType=PRIVATE` and `withAccessKey=true`, then append a `CustomField`
+to the `context` array of the reply body.
+
+```typescript
+const filesModuleUploadPost: string = '/files/1.0/upload';
+
+/**
+ * Upload a file attachment for a ticket reply
+ */
+filesModuleTicketUpload: async (
+    file: File,
+    description?: string
+): Promise<{ success?: FileUploadResponseItf; error?: ActionResult | { message: string } }> => {
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('accessType', 'PRIVATE');
+        formData.append('withAccessKey', 'true');
+        if (description) formData.append('description', description);
+        if (file.name)   formData.append('fileName', file.name);
+
+        const response = await apiCallMultipartWithTimeout<FileUploadResponseItf>(
+            'POST',
+            filesModuleUploadPost,
+            formData,
+            false  // authentication required
+        );
+        return { success: response };
+    } catch (error: any) {
+        return { error };
+    }
+},
+```
+
+After a successful upload, add the file reference to the reply body:
+
+```typescript
+// fileType is the label freely chosen by the user, e.g. "screenshot", "log", "config"
+const customField: CustomField = {
+    key:   fileType,
+    value: `file_${uploadedFile.uniqueName}`
+};
+replyBody.context = [...(replyBody.context ?? []), customField];
+```
+
+For image uploads (`mimeCategory === "IMAGE"`):
+- Show a thumbnail preview: `GET /files/1.0/{uniqueName}/thumbnail?key={accessKey}`
+- Provide a **"Copy Markdown link"** button so the image link can be pasted into the reply content:
+  ```
+  ![originalName](BACKEND_API_BASE/files/1.0/{uniqueName}/full?key={accessKey})
+  ```
 
 #### Way to submit a reply to the backend
 
@@ -327,19 +429,26 @@ The recommended layout for the ticket management page is a **two-panel or tabbed
 | [!] Ticket #91  OPEN      |  |-----------------------|
 |     Cannot connect ...    |  | [original content MD] |
 |     Created 2026-01-15    |  |-----------------------|
+|---------------------------|  | 📎 screenshot         |
+| Ticket #87    OPEN        |  |   [thumb] [📋 MD link]|
+|     Sensor offline ...    |  |   [⬇ Download]        |
+|     Created 2026-01-10    |  |-----------------------|
 |---------------------------|  | [Support] 2026-01-16  |
-| Ticket #87    OPEN        |  | Please try ...        |
-|     Sensor offline ...    |  |-----------------------|
-|     Created 2026-01-10    |  | [You] 2026-01-17      |
-|---------------------------|  | I tried but ...       |
-| Ticket #42    CLOSED      |  |-----------------------|
-|     ...                   |  | [ Reply text area   ] |
+| Ticket #42    CLOSED      |  | Please try ...        |
+|     ...                   |  |-----------------------|
+|                           |  | [You] 2026-01-17      |
+|                           |  | I tried but ...       |
+|                           |  |-----------------------|
+|                           |  | [ Reply text area   ] |
+|                           |  | [📎 Add attachment  ] |
 |                           |  | [☐ Close ticket]      |
 |                           |  | [        Send       ] |
 +---------------------------+  +-----------------------+
 ```
 
 - `[!]` indicator means `userPending = true` → the user has a reply waiting.
+- `📎` indicates file attachments with thumbnail (images), Markdown link copy and download buttons.
+- `[📋 MD link]` copies `![name](url?key=...)` to clipboard for inline image embedding.
 - The left panel is the `TicketList` component.
 - The right panel is the `TicketContent` component.
 

@@ -39,6 +39,41 @@ Each FAQ entry contains the following information:
 - `content`: FAQ content (String, Markdown) - The detailed answer or content of the FAQ entry
 - `totalFaq`: Total number of FAQ entries (Number) - Used for pagination to know the total number of entries available
 
+## Embedded images from the Files module
+
+FAQ entries are created and enriched by support managers. Their `content` field (Markdown) may include images
+stored in the Files module, using standard Markdown image syntax:
+
+```
+![image description](BACKEND_API_BASE/files/1.0/{uniqueName}/full?key={accessKey})
+```
+
+### Why the access key is mandatory for embedded images
+
+Browser image tags (`<img src="...">`) generated from Markdown rendering cannot include a Bearer token.
+Therefore, any image embedded in FAQ content **must** use either:
+- `accessType = PUBLIC` — freely accessible without authentication, or
+- `accessType = PRIVATE` with `withAccessKey = true` — the `accessKey` is appended as a `?key=` query
+  parameter directly in the URL stored in the Markdown content.
+
+`CONNECTED` images (requiring authentication but no key) **will not load** in rendered Markdown because
+the browser cannot forward the Bearer token to the image URL.
+
+### Thumbnail preview for images
+
+When a support manager embeds an image, they may choose to use the thumbnail URL instead of the full image
+for a lighter rendering:
+
+```
+![thumbnail](BACKEND_API_BASE/files/1.0/{uniqueName}/thumbnail?key={accessKey})
+```
+
+### Rendering consideration
+
+When rendering FAQ `content` with a Markdown library, no special handling is required for images that already
+contain the `?key=` parameter. The Markdown renderer will produce correct `<img>` tags that load via the Files
+module without additional authentication.
+
 ## Workflow of the private FAQ display
 The file [private_faq.md](assets/private_faq.md) contains the workflow of the private FAQ display, with the different 
 steps to implement in the front-end and the expected response from the backend. It also contains the structure and API calls 

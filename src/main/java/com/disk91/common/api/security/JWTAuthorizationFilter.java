@@ -179,9 +179,9 @@ public class JWTAuthorizationFilter extends GenericFilterBean {
             //log.warn("[users] Invalid token: "+token);
         } catch (MalformedJwtException x) {
             // sounds like signature problem
-            if ( token != null ) log.warn("[users] Invalid token: {}", token);
+            if ( token.compareToIgnoreCase("null") != 0 ) log.warn("[users] Invalid token: {}", token);
         } catch (Exception x) {
-            log.error("[users] Invalid token: {}", token);
+            if ( token.compareToIgnoreCase("null") != 0 ) log.error("[users] Invalid token: {}", token);
         }
         chain.doFilter(request, response);
 

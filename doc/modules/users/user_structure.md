@@ -7,7 +7,7 @@ The user data structure is defined as follows:
   "version": "number",            // user structure version
   "login": "string",              // user name for login, this is a hash of the email
   "userSearch": ["string" ],      // Hashes of the 3 first letter of the email + domain for search optimization, can be later extended with other keywords
-  "password": "string",           // password hash
+  "password": "string",           // password hash with hash-type exemple {sha256}hashvalue of {bcrypt}hashvalue, default is sha256 and should move to bcrypt on login
   "email": "string",              // user email [Base64(encrypted)]
   "roles": [
      "string"                     // user role collection, role are predefined
@@ -152,6 +152,23 @@ the API key contains a reference key corresponding to the 6 hex characters used 
 When a JWT is received, if it is an API key, the subject allows to find the user and the Id field allows 
 to identify the correct entry in `apiSession` to verify the signature with the specific secret for this 
 API key.
+
+### Password hash
+The password is initially hashed with SHA-256, but this method is not optimal, and the goal is to migrate to bcrypt. 
+In this way, and so it will be possible to change the hash later, the hash will be preceded by a brace indicating the 
+type of hash used. If it is not in the desired version, it will be migrated the next time the user enters the password.
+
+```
+abc4djkqsbuq is sha256 hash of the password
+{sha256}abc4djkqsbuq is sha256 hash of the password with the hash type indicated
+{bcrypt}jkhhundzlwnz is bcrypt hash of the password with the hash type indicated
+```
+
+At that point, a brace with the name of the algorithm will be indicated, whereas in the very first versions, there was 
+no such brace. Therefore, if there is no protocol information used for the hash, it is SHA-256.
+
+If a field does not contain the algorithm required in the current target, it will be migrated when the user logs in to 
+its new hashed version.
 
 ### Password change
 On password change, the data encryption need to be recreated as the `userSecret` will be different.

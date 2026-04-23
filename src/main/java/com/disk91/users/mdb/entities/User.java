@@ -38,6 +38,7 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
@@ -59,6 +60,10 @@ public class User implements CloneableObject<User> {
 
    @Transient
    private static final int USER_VERSION = 1;
+   @Transient
+   private static final String HASH_PREFIX_BCRYPT  = "{bcrypt}";
+   @Transient
+   private static final String HASH_PREFIX_SHA256  = "{sha256}";
 
     @Id
     protected String id;
@@ -357,12 +362,32 @@ public class User implements CloneableObject<User> {
      * @return true when the password matches
      */
     public boolean isRightPassword(String _password) {
+        if ( _password == null || this.password == null ) return false;
         try {
-            // Hash of the password with SHA256 ; this will be used to authenticate the user
+            // Bcrypt path — already in the target format, no migration needed
+            if (this.password.startsWith(HASH_PREFIX_BCRYPT)) {
+                String bcryptHash = this.password.substring(HASH_PREFIX_BCRYPT.length());
+                BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+                return encoder.matches(_password, bcryptHash);
+            }
+
+            // Legacy SHA-256 path (with or without the {sha256} prefix)
+            String storedHash = this.password.startsWith(HASH_PREFIX_SHA256)
+                    ? this.password.substring(HASH_PREFIX_SHA256.length())
+                    : this.password;
+
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             digest.update(this.salt);
-            byte[] passwordHash = digest.digest(_password.getBytes(StandardCharsets.UTF_8));
-            return (HexCodingTools.bytesToHex(passwordHash).compareTo(this.password) == 0);
+            byte[] computed = digest.digest(_password.getBytes(StandardCharsets.UTF_8));
+            boolean matches = HexCodingTools.bytesToHex(computed).equals(storedHash);
+
+            if (matches) {
+                // Migrate to bcrypt on the first successful login after the upgrade
+                BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+                this.password = HASH_PREFIX_BCRYPT + encoder.encode(_password);
+            }
+
+            return matches;
         } catch (Exception e) {
             return false;
         }
@@ -443,11 +468,9 @@ public class User implements CloneableObject<User> {
 
         try {
 
-            // Hash of the password with SHA256 ; this will be used to authenticate the user
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            digest.update(this.salt);
-            byte[] passwordHash = digest.digest(password.getBytes(StandardCharsets.UTF_8));
             byte[] passwordHashForEncryption = this.generateUserSecret(password);
+            BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+            String bcryptPassword = HASH_PREFIX_BCRYPT + encoder.encode(password);
 
             if ( ! create ) {
                 // We need to rekey all the encrypted data
@@ -479,7 +502,7 @@ public class User implements CloneableObject<User> {
                 String _getTwoFASecret = (this.twoFASecret != null )?this.getEncTwoFASecret():null;
 
                 // Re-encrypt all data
-                this.password = HexCodingTools.bytesToHex(passwordHash);
+                this.password = bcryptPassword;
                 this.userSecret = HexCodingTools.bytesToHex(passwordHashForEncryption);
                 if ( _email != null) this.setEncEmail(_email);
                 if ( _getRegistrationIP != null) this.setEncRegistrationIP(_getRegistrationIP);
@@ -509,12 +532,9 @@ public class User implements CloneableObject<User> {
 
             } else {
                 // Save the change
-                this.password = HexCodingTools.bytesToHex(passwordHash);
+                this.password = bcryptPassword;
                 this.userSecret = HexCodingTools.bytesToHex(passwordHashForEncryption);
             }
-        } catch (NoSuchAlgorithmException e) {
-            log.error("[users] Error while hashing password", e);
-            throw new ITParseException("Unsupported hashing algorithm");
         } catch (ITParseException e) {
             log.error("[users] Error while hashing password", e);
             throw new ITParseException("Invalid key spec");

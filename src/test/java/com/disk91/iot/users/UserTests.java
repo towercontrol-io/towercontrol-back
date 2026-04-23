@@ -60,13 +60,13 @@ public class UserTests {
             user.setEncLogin("john.doe@foo.bar");
             log.info("[users][test] login: " + user.getLogin());
             log.info("[users][test] salt: " + HexCodingTools.bytesToHex(user.getSalt()));
-            log.info("[users][test] password (SHA-256): " + user.getPassword());
+            log.info("[users][test] password (BCRYPT): " + user.getPassword());
             log.info("[users][test] secret (PBKDF2): " + user.getUserSecret());
             assertNotNull(user.getSalt());
             assertNotNull(user.getPassword());
             assertNotNull(user.getUserSecret());
             assertEquals(user.getSalt().length,16);
-            assertEquals(user.getPassword().length(),64); // 32 Bytes
+            assertEquals(user.getPassword().length(),68); // {bcrypt}...
             assertEquals(user.getUserSecret().length(),32); // 16 Bytes
         });
 
@@ -77,14 +77,15 @@ public class UserTests {
         assertDoesNotThrow(() -> {
             user2.changePassword("test", false);
             log.info("[users][test] salt: " + HexCodingTools.bytesToHex(user2.getSalt()));
-            log.info("[users][test] password (SHA-256): " + user2.getPassword());
+            log.info("[users][test] password (bcrypt): " + user2.getPassword());
             log.info("[users][test] secret (PBKDF2): " + user2.getUserSecret());
             assertNotNull(user2.getSalt());
             assertNotNull(user2.getPassword());
             assertNotNull(user2.getUserSecret());
             assertEquals("21AFD07BF82F5F9139942BCB3910619E", HexCodingTools.bytesToHex(user2.getSalt()));
-            assertEquals("8C9830810DD36F82E1AD24762ADD3477BF64378ECA36CD5D61772BC76B865930", user2.getPassword()); // 32 Bytes
-            assertEquals("ED8075DF985E20F80F3248DCCC11FEFD", user2.getUserSecret()); // 16 Bytes
+            assertEquals("ED8075DF985E20F80F3248DCCC11FEFD", user2.getUserSecret());
+            assertTrue(user2.isRightPassword("test"));// 16 Bytes
+            assertFalse(user2.isRightPassword("wrong"));
         });
 
         // make sure salt is working

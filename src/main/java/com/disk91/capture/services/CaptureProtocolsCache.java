@@ -273,7 +273,7 @@ public class CaptureProtocolsCache {
         protocolsCache.clear();
         // load the platform protocol from String structure
         ObjectMapper mapper = new ObjectMapper();
-        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        mapper.setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL);
         for ( String r : pfProtocols ) {
             try {
                 Protocols p = mapper.readValue(r.replace("'", "\""), Protocols.class);
@@ -306,7 +306,7 @@ public class CaptureProtocolsCache {
         // load the platform role from String structure
         HashMap<String,Protocols> defaultProtocols = new HashMap<>();
         ObjectMapper mapper = new ObjectMapper();
-        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        mapper.setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL);
         for ( String r : pfProtocols ) {
             try {
                 Protocols p = mapper.readValue(r.replace("'", "\""), Protocols.class);

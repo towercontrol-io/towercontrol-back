@@ -88,7 +88,7 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
     private void initLoraWanHeliumChirpstackV4Driver() {
         log.info("[LoraWanHeliumChirpstackV4Driver] Initializing LoraWan Helium Chirpstack V4 Protocol Driver");
         mapper = new ObjectMapper();
-        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        mapper.setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL);
         mapper.enable(JsonReadFeature.ALLOW_TRAILING_COMMA.mappedFeature());
         mapper.enable(JsonReadFeature.ALLOW_SINGLE_QUOTES.mappedFeature());
         try {

@@ -101,7 +101,7 @@ public class SigfoxV2Driver extends AbstractProtocol {
     private void initSigfoxV2Driver() {
         log.info("[SigfoxV2Driver] Initializing Sigfox V2 Protocol Driver");
         mapper = new ObjectMapper();
-        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        mapper.setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL);
         mapper.enable(JsonReadFeature.ALLOW_TRAILING_COMMA.mappedFeature());
         mapper.enable(JsonReadFeature.ALLOW_SINGLE_QUOTES.mappedFeature());
         try {

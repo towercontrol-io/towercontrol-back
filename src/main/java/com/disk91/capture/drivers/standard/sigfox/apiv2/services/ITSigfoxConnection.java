@@ -135,7 +135,7 @@ public class ITSigfoxConnection<S,T> {
             headers.setContentType(MediaType.APPLICATION_JSON);
             try {
                 ObjectMapper mapper = new ObjectMapper();
-                mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+                mapper.setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL);
                 he = new HttpEntity<String>(mapper.writeValueAsString(body), headers);
                 //log.info("body : "+mapper.writeValueAsString(body));
             } catch (JsonProcessingException e) {

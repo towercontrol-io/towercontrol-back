@@ -209,7 +209,7 @@ public class UsersRolesCache {
         rolesCache.clear();
         // load the platform role from String structure
         ObjectMapper mapper = new ObjectMapper();
-        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        mapper.setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL);
         for ( String r : pfRoles ) {
             try {
                 Role role = mapper.readValue(r.replace("'", "\""), Role.class);
@@ -241,7 +241,7 @@ public class UsersRolesCache {
         // load the platform role from String structure
         HashMap<String,Role> defaultRoles = new HashMap<>();
         ObjectMapper mapper = new ObjectMapper();
-        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        mapper.setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL);
         for ( String r : pfRoles ) {
             try {
                 Role role = mapper.readValue(r.replace("'", "\""), Role.class);

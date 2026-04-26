@@ -140,7 +140,8 @@ public class CaptureProtocolsCache {
                    "{ 'name':'protocol-sigfox-create-callback', 'unique': false, 'encrypted' : false, 'valueType':'boolean', 'description':'protocol-sigfox-create-callback-desc', 'enDescription': 'Create the callback when true'}" + "," +
                    "{ 'name':'protocol-sigfox-device-type', 'unique': false, 'encrypted' : false, 'valueType':'string', 'description':'protocol-sigfox-device-type-desc', 'enDescription': 'Device Type name or Id for devices'}" + "," +
                    "{ 'name':'protocol-sigfox-group', 'unique': false, 'encrypted' : false, 'valueType':'string', 'description':'protocol-sigfox-group-desc', 'enDescription': 'Group name or Id for devices'}" + "," +
-                   "{ 'name':'protocol-sigfox-id-reassignment', 'unique': false, 'encrypted' : false, 'valueType':'enum[no-reuse|reuse-last|reuse-first]', 'description':'protocol-sigfox-id-reassignment-desc', 'enDescription': 'ID reassignment strategy'}" +
+                   "{ 'name':'protocol-sigfox-id-reassignment', 'unique': false, 'encrypted' : false, 'valueType':'enum[no-reuse|reuse-last|reuse-first]', 'description':'protocol-sigfox-id-reassignment-desc', 'enDescription': 'ID reassignment strategy'}" +  "," +
+                   "{ 'name':'protocol-sigfox-subscription-enable', 'unique': false, 'encrypted' : false, 'valueType':'boolean', 'description':'protocol-sigfox-subscription-enable-desc', 'enDescription': 'New subscription / renewal authorized'}" +
                 "]," +
                 "'protocolIds':[ " +
                    "{ 'name':'sigfox-id-pac', 'description':'protocol-sigfox-idpac', 'enDescription': 'Sigfox ID & PAC Credentials', 'mandatoryFields':[ " +

@@ -326,7 +326,7 @@ public class CaptureIdsService {
             }
 
             try {
-                Object result = endpoint.getClass()
+                Object result = ap.getClass()
                         .getMethod("subscribe",
                                 CaptureEndpoint.class,
                                 List.class,
@@ -357,7 +357,7 @@ public class CaptureIdsService {
                 } // When null, not changed
                 return null;
             } catch (NoSuchMethodException | IllegalAccessException x) {
-                log.error("[capture] Id Subscribe/Renew failed, protocol class checkId method missing for protocolId {}", endpoint.getProtocolId());
+                log.error("[capture] Id Subscribe/Renew failed, protocol class subscribe method missing for protocolId {}", endpoint.getProtocolId());
                 throw new ITOverQuotaException("capture-protocol-class-check-id-method-missing");
             } catch (InvocationTargetException x) {
                 Throwable _expect = x.getCause();

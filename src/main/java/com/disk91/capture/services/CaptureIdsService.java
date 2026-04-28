@@ -334,7 +334,7 @@ public class CaptureIdsService {
                                 String.class,
                                 Long.class
                         )
-                        .invoke(endpoint,
+                        .invoke(ap,
                                 endpoint,
                                 endpoints,
                                 id,

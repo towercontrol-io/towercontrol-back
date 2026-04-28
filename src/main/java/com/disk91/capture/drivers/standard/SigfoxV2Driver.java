@@ -624,7 +624,7 @@ public class SigfoxV2Driver extends AbstractProtocol {
                         // get certificationId
                     }
                     try {
-                        String pac =  id.getOneField("sigfox-pac");
+                        String pac = captureIdsService.decrypteField(id.getOneField("sigfox-pac"));
                         if ( deviceWrapper.registerNewSigfoxDevice(
                                 sigfoxId,
                                 pac,

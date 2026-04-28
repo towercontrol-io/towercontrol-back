@@ -53,8 +53,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import static com.disk91.capture.api.interfaces.sub.InsertIDsStatus.*;
-import static com.disk91.capture.mdb.entities.sub.IdStateEnum.ASSIGNED;
-import static com.disk91.capture.mdb.entities.sub.IdStateEnum.IN_USE;
+import static com.disk91.capture.mdb.entities.sub.IdStateEnum.*;
 
 @Service
 public class CaptureIdsService {
@@ -157,6 +156,7 @@ public class CaptureIdsService {
                         case NOT_ASSIGNED:
                         case ASSIGNED:
                         case IN_USE:
+                        case WAITING_RENEWAL:
                             break;
                         case RETURNED:
                         case EXPIRED_RETURNED:
@@ -207,7 +207,7 @@ public class CaptureIdsService {
                             _id.setCreationMs(Now.NowUtcMs());
                             _id.setUpdateMs(0);
                             _id.setLastScanMs(0);
-                            if ( body.getInitialState() == IN_USE ||  body.getInitialState() == ASSIGNED ) {
+                            if ( body.getInitialState() == IN_USE || body.getInitialState() == WAITING_RENEWAL || body.getInitialState() == ASSIGNED ) {
                                 _id.setAssignedMs(Now.NowUtcMs());
                             } else _id.setAssignedMs(0);
                             _id.setReleasedMs(0);
@@ -279,6 +279,118 @@ public class CaptureIdsService {
     }
 
     // =====================================================================================================
+    // Manage creation / renewal Subscription
+    // =====================================================================================================
+
+    /**
+     * Called the function to adapt it in the driver to create the subscription. We reuse the driver’s `subscribe`
+     * function API, but with routing to the driver.
+     *
+     * @param endpoint - where ProtocolId is currently attached
+     * @param endpoints - list of possible endpointIds where to create the new subscriptions if the first one is closed for new subscriptions
+     * @param id - Id to associate, when null a new Id is created (depends on protocol, some will refuse, some will be default)
+     * @param familyId - Identifier of the device family, some information may be required
+     * @param subscriptionEnd - subscription end in ms, the subscription must be valid until this date, the function will decide whether to create a new subscription or not based on this date and the current subscription status
+     * @return ProtocolIDs updated or created saved in dataBase
+     * @throws ITOverQuotaException In case the backend refuses the creation for a technical reason (retry later)
+     * @throws ITTooManyException In case the backend refuses the creation due to a contractual limit
+     * @throws ITParseException In case of a syntax error where retrial is not expected until fix
+     */
+    public ProtocolIds subscribeOrRenew(
+            CaptureEndpoint endpoint,           // Current Endpoint
+            List<CaptureEndpoint> endpoints,    // Possible other endpoints to search
+            ProtocolIds id,                     // ID to subscribe - null to create a new one
+            String familyId,                    // Device family Id (can be null)
+            long subscriptionEnd                // Subscription end in ms, the subscription must be valid until this date
+    ) throws ITOverQuotaException, ITTooManyException, ITParseException  {
+
+        try {
+            Protocols p = captureProtocolsCache.getProtocol(endpoint.getProtocolId());
+            // Invoke the protocol ingestion
+            AbstractProtocol ap = protocolCache.get(p.getProcessingClassName());
+            if (ap == null) {
+                synchronized (protocolCache) {
+                    // Manage async call, block on cache and when released make sure another thread did not create it in the meantime
+                    ap = protocolCache.get(p.getProcessingClassName());
+                    if (ap == null) {
+                        try {
+                            Class<?> clazz = Class.forName(p.getProcessingClassName());
+                            ap = (AbstractProtocol) beanFactory.createBean(clazz);
+                            protocolCache.put(p.getProcessingClassName(), ap);
+                        } catch (Exception ex) {
+                            log.error("[capture] Id Subscribe/Renew failed, protocol class instantiation error for protocolId {}", endpoint.getProtocolId());
+                            throw new ITParseException("capture-protocol-class-instantiation-failed");
+                        }
+                    }
+                }
+            }
+
+            try {
+                Object result = endpoint.getClass()
+                        .getMethod("subscribe",
+                                CaptureEndpoint.class,
+                                List.class,
+                                ProtocolIds.class,
+                                String.class,
+                                Long.class
+                        )
+                        .invoke(endpoint,
+                                endpoint,
+                                endpoints,
+                                id,
+                                familyId,
+                                subscriptionEnd
+                        );
+                if (result != null) {
+                    // Id has been updated
+                    ProtocolIds reviewedId = (ProtocolIds) result;
+                    log.info("[capture] Id Subscribe/Renew updated {}, new state {}, subscriptionStart {}, subscriptionEnd {}",
+                            reviewedId.getId(),
+                            reviewedId.getState(),
+                            reviewedId.getSubscriptionStartMs(),
+                            reviewedId.getSubscriptionEndMs()
+                    );
+                    reviewedId.setLastScanMs(Now.NowUtcMs());
+                    reviewedId.setUpdateMs(Now.NowUtcMs());
+                    protocolIdsRepository.save(reviewedId);
+                    return reviewedId;
+                } // When null, not changed
+                return null;
+            } catch (NoSuchMethodException | IllegalAccessException x) {
+                log.error("[capture] Id Subscribe/Renew failed, protocol class checkId method missing for protocolId {}", endpoint.getProtocolId());
+                throw new ITOverQuotaException("capture-protocol-class-check-id-method-missing");
+            } catch (InvocationTargetException x) {
+                Throwable _expect = x.getCause();
+                // Re-throw known business exceptions
+                if (_expect instanceof ITOverQuotaException) {
+                    // skip the execution of the other IDs
+                    log.debug("[capture] Subscribe/Renew stopped, Backend Refused Creation, protocolId {}", endpoint.getProtocolId());
+                    throw new ITOverQuotaException(_expect.getMessage());
+                }
+                if (_expect instanceof ITTooManyException) {
+                    // skip the execution of the other IDs
+                    log.debug("[capture] Subscribe/Renew stopped, Contractual Limit, protocolId {}", endpoint.getProtocolId());
+                    throw new ITTooManyException(_expect.getMessage());
+                }
+                if (_expect instanceof ITParseException) {
+                    // skip the execution of the other IDs
+                    log.debug("[capture] Subscribe/Renew stopped, Contractual Limit, protocolId {}", endpoint.getProtocolId());
+                    throw new ITParseException(_expect.getMessage());
+                }
+                log.error("[capture] Id Subscribe/Renew failed, unexpected error for protocolId {}, error: {}",
+                    endpoint.getProtocolId(),
+                    _expect.getMessage()
+                );
+                throw new ITParseException("capture-id-driver-returned-unexpected-error");
+            }
+        } catch (ITNotFoundException e) {
+            // protocol not found
+            log.warn("[capture] Subscribe/Renew failed, protocol not found for protocolId {}", endpoint.getProtocolId());
+            throw new ITParseException("capture-id-driver-protocol-not-found");
+        }
+    }
+
+    // =====================================================================================================
     // Background scan for IDs
     // =====================================================================================================
 
@@ -333,69 +445,94 @@ public class CaptureIdsService {
 
             for ( ProtocolIds _id : ids ) {
                 try {
-                    Protocols p = captureProtocolsCache.getProtocol(endpoint.getProtocolId());
-                    // Invoke the protocol ingestion
-                    AbstractProtocol ap = protocolCache.get(p.getProcessingClassName());
-                    if (ap == null) {
-                        synchronized (protocolCache) {
-                            // Manage async call, block on cache and when released make sure another thread did not create it in the meantime
-                            ap = protocolCache.get(p.getProcessingClassName());
-                            if (ap == null) {
-                                try {
-                                    Class<?> clazz = Class.forName(p.getProcessingClassName());
-                                    ap = (AbstractProtocol) beanFactory.createBean(clazz);
-                                    protocolCache.put(p.getProcessingClassName(), ap);
-                                } catch (Exception ex) {
-                                    log.error("[capture] Id Check failed, protocol class instantiation error for protocolId {}", endpoint.getProtocolId());
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    try {
-                        Object result = ap.getClass()
-                                .getMethod("checkId",
-                                        CaptureEndpoint.class,
-                                        ProtocolIds.class
-                                )
-                                .invoke(ap,
-                                        endpoint,
-                                        _id
-                                );
-                        if (result != null) {
-                            // Id has been updated
-                            ProtocolIds reviewedId = (ProtocolIds) result;
-                            log.info("[capture] Id Check updated {}, new state {}, subscriptionStart {}, subscriptionEnd {}", reviewedId.getOneField("sigfox-id"), reviewedId.getState(), reviewedId.getSubscriptionStartMs(), reviewedId.getSubscriptionEndMs());
-                            reviewedId.setLastScanMs(Now.NowUtcMs());
-                            reviewedId.setUpdateMs(Now.NowUtcMs());
-                            protocolIdsRepository.save(reviewedId);
-                        } else {
-                            // no change, just update the scan date
-                            _id.setLastScanMs(Now.NowUtcMs());
-                            protocolIdsRepository.save(_id);
-                        }
-
-                    } catch (NoSuchMethodException | IllegalAccessException x) {
-                        log.error("[capture] Id Check failed, protocol class checkId method missing for protocolId {}", endpoint.getProtocolId());
-                        break;
-                    } catch (InvocationTargetException x) {
-                        Throwable _expect = x.getCause();
-                        // Re-throw known business exceptions
-                        if (_expect instanceof ITOverQuotaException) {
-                            // skip the execution of the other IDs
-                            log.debug("[capture] Id Check stopped, protocol class checkId method over quota for protocolId {}", endpoint.getProtocolId());
-                            break;
-                        }
-                    }
-                } catch (ITNotFoundException e) {
-                    // protocol not found
-                    log.warn("[capture] Id Check failed, protocol not found for protocolId {}", endpoint.getProtocolId());
+                    refreshOneId(endpoint, _id);
+                } catch (ITOverQuotaException e) {
+                    // stop processing the other IDs for this endpoint, we will retry at the next run
+                    break;
                 }
             }
         });
 
     }
 
+    /**
+     * This function is verifying a single ID with the backend, the ID will be saved in database with the
+     * updated state. Function returns the updated ProtocolIds or an exception. In case of exception, when
+     * batched, the batch may be stopped and retied according to the rate limitation given by the backend
+     * @param endpoint - endpoint associated to the ID
+     * @param _id - ID to refresh
+     * @throws ITOverQuotaException - fired in case of problem requiring to stop such processing for a couple of time
+     */
+    public ProtocolIds refreshOneId(
+            CaptureEndpoint endpoint,
+            ProtocolIds _id
+    ) throws ITOverQuotaException
+    {
+        try {
+            Protocols p = captureProtocolsCache.getProtocol(endpoint.getProtocolId());
+            // Invoke the protocol ingestion
+            AbstractProtocol ap = protocolCache.get(p.getProcessingClassName());
+            if (ap == null) {
+                synchronized (protocolCache) {
+                    // Manage async call, block on cache and when released make sure another thread did not create it in the meantime
+                    ap = protocolCache.get(p.getProcessingClassName());
+                    if (ap == null) {
+                        try {
+                            Class<?> clazz = Class.forName(p.getProcessingClassName());
+                            ap = (AbstractProtocol) beanFactory.createBean(clazz);
+                            protocolCache.put(p.getProcessingClassName(), ap);
+                        } catch (Exception ex) {
+                            log.error("[capture] Id Check failed, protocol class instantiation error for protocolId {}", endpoint.getProtocolId());
+                            throw new ITOverQuotaException("capture-protocol-class-instantiation-failed");
+                        }
+                    }
+                }
+            }
+            try {
+                Object result = ap.getClass()
+                        .getMethod("checkId",
+                                CaptureEndpoint.class,
+                                ProtocolIds.class
+                        )
+                        .invoke(ap,
+                                endpoint,
+                                _id
+                        );
+                if (result != null) {
+                    // Id has been updated
+                    ProtocolIds reviewedId = (ProtocolIds) result;
+                    log.info("[capture] Id Check updated {}, new state {}, subscriptionStart {}, subscriptionEnd {}",
+                            reviewedId.getId(),
+                            reviewedId.getState(), reviewedId.getSubscriptionStartMs(),
+                            reviewedId.getSubscriptionEndMs()
+                    );
+                    reviewedId.setLastScanMs(Now.NowUtcMs());
+                    reviewedId.setUpdateMs(Now.NowUtcMs());
+                    protocolIdsRepository.save(reviewedId);
+                } else {
+                    // no change, just update the scan date
+                    _id.setLastScanMs(Now.NowUtcMs());
+                    protocolIdsRepository.save(_id);
+                }
+
+            } catch (NoSuchMethodException | IllegalAccessException x) {
+                log.error("[capture] Id Check failed, protocol class checkId method missing for protocolId {}", endpoint.getProtocolId());
+                throw new ITOverQuotaException("capture-protocol-class-check-id-method-missing");
+            } catch (InvocationTargetException x) {
+                Throwable _expect = x.getCause();
+                // Re-throw known business exceptions
+                if (_expect instanceof ITOverQuotaException) {
+                    // skip the execution of the other IDs
+                    log.debug("[capture] Id Check stopped, protocol class checkId method over quota for protocolId {}", endpoint.getProtocolId());
+                    throw new ITOverQuotaException("capture-protocol-class-check-id-over-quota");
+                }
+            }
+        } catch (ITNotFoundException e) {
+            // protocol not found
+            log.warn("[capture] Id Check failed, protocol not found for protocolId {}", endpoint.getProtocolId());
+        }
+        return _id;
+    }
 
 
 }

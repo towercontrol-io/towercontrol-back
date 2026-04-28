@@ -51,7 +51,7 @@ public class DeviceWrapper {
 
     public static final int NEWDEVICE_REGISTER_ERROR = 0;
     public static final int NEWDEVICE_REGISTER_DELAYED = 1;
-    public static final int NEWDEVICE_REGISTER_SUCESS = 2;
+    public static final int NEWDEVICE_REGISTER_SUCCESS = 2;
 
     /**
      * Register a new device into the sigfox backend.
@@ -60,13 +60,15 @@ public class DeviceWrapper {
      * @param pac
      * @param deviceTypeId
      * @param certificate
+     * @param renewal
      * @return
      */
     public int registerNewSigfoxDevice(
             String id,
             String pac,
             String deviceTypeId,
-            String certificate
+            String certificate,
+            boolean renewal
     ) {
         try {
 
@@ -80,7 +82,7 @@ public class DeviceWrapper {
             device.setId(id);
             device.setName(id);
             device.setActivable(true);
-            device.setAutomaticRenewal(true);
+            device.setAutomaticRenewal(renewal);
             device.setLat(0);
             device.setLng(0);
             if ( certificate != null ) {
@@ -107,7 +109,7 @@ public class DeviceWrapper {
                 // Sigfox returns the device ID but removed the 0 on the left
                 // this is a bit boring to manage, just let's assume if we have
                 // an ID, we have the right ID.
-               return NEWDEVICE_REGISTER_SUCESS;
+               return NEWDEVICE_REGISTER_SUCCESS;
             } else {
                 log.warn("[capture][sigfox] Sigfox API return a invalid Id after registering the {} device : {}", id, deviceId.getId());
                 return NEWDEVICE_REGISTER_ERROR;

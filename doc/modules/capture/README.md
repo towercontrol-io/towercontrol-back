@@ -121,6 +121,7 @@ The possible states are as follows:
 - `NOT_ASSIGNED` indicates that the ID is not currently linked to any *device*.
 - `ASSIGNED` indicates that the ID is assigned to a *device*, but potentially not associated with an active telecom subscription.
 - `IN_USE` indicates that the ID is assigned and used in an active subscription.
+- `WAITING_RENEWAL` indicates the ID is assigned and customer renewed the subscription. Subscription is waiting for renewal processing.
 - `RETURNED` indicates that the ID is returned to the pool and can therefore be reassigned to another *device*; however, the subscription may still be active.
 - `EXPIRED_RETURNED` indicates that the subscription is no longer active for a returned ID.
 - `EXPIRED_IN_USE` indicates that the subscription is no longer active for an ID that is still assigned to a device, which may indicate a problem with the device or the subscription.

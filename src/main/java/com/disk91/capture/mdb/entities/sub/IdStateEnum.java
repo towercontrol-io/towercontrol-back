@@ -5,6 +5,7 @@ public enum IdStateEnum {
     NOT_ASSIGNED,     // The ID has been created but not yet assigned to any device
     ASSIGNED,         // The ID as assigned to an existing device but no subscription has been assigned yet
     IN_USE,           // The ID is assigned and a subscription has been activated. The subscription is valid.
+    WAITING_RENEWAL,  // The ID is in use, the subscription will need to be renewed as the user have prolongated the service
     RETURNED,         // The ID has been returned (unassigned) from a device and relocated into the pool, current subscription can be reused
     EXPIRED_RETURNED, // The subscription has expired for a returned ID, reassigning the ID will require a new subscription
     EXPIRED_IN_USE,   // The subscription has expired for an ID in use, the ID is still assigned to the device but a new subscription is required to reactivate it

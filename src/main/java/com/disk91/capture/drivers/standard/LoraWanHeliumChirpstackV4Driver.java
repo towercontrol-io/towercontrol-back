@@ -56,6 +56,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Enumeration;
+import java.util.List;
 
 import static com.disk91.capture.interfaces.CaptureDataPivot.CaptureStatus.CAP_STATUS_SUCCESS;
 import static com.disk91.capture.interfaces.sub.CaptureError.CaptureErrorLevel.CAP_ERROR_WARNING;
@@ -388,12 +389,42 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
 
     }
 
+    // =================================================================================================================
+    // Id management
+    // =================================================================================================================
+
+
     public ProtocolIds checkId(
             CaptureEndpoint endpoint,           // Corresponding endpoint
             ProtocolIds _id
     ) throws
             ITOverQuotaException {
         throw new ITOverQuotaException("capture-driver-not-implemented");
+    }
+
+    // =================================================================================================================
+    // Subscription management
+    // =================================================================================================================
+
+
+    public ProtocolIds subscribe(
+            CaptureEndpoint endpoint,           // Current Endpoint
+            List<CaptureEndpoint> endpoints,    // Possible other endpoints to search
+            ProtocolIds id,                     // ID to subscribe - null to create a new one
+            String familyId,                    // Device family Id (can be null)
+            Long subscriptionEnd                // Subscription end in ms, the subscription must be valid until this date
+    ) throws ITOverQuotaException, ITTooManyException, ITParseException {
+        throw new ITParseException("capture-driver-not-implemented");
+    }
+
+
+    public  ProtocolIds unsubscribe(
+            CaptureEndpoint endpoint,           // Corresponding endpoint
+            ProtocolIds id                      // ID to subscribe - null to create a new one
+    ) throws
+            ITOverQuotaException,               // In case the backend refuses the creation for a technical reason (retry later)
+            ITParseException {                  // In case of a syntax error where retrial is not expected until fix
+        throw new ITParseException("capture-driver-not-implemented");
     }
 
 }

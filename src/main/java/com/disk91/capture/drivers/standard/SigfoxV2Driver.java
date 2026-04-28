@@ -31,6 +31,7 @@ import com.disk91.capture.mdb.entities.CaptureEndpoint;
 import com.disk91.capture.mdb.entities.ProtocolIds;
 import com.disk91.capture.mdb.entities.Protocols;
 import com.disk91.capture.mdb.entities.sub.IdStateEnum;
+import com.disk91.capture.services.CaptureEndpointCache;
 import com.disk91.capture.services.CaptureEndpointService;
 import com.disk91.capture.services.CaptureIdsService;
 import com.disk91.common.config.CommonConfig;
@@ -63,9 +64,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Enumeration;
+import java.util.List;
 
+import static com.disk91.capture.drivers.standard.sigfox.apiv2.wrappers.DeviceWrapper.NEWDEVICE_REGISTER_SUCCESS;
 import static com.disk91.capture.interfaces.CaptureDataPivot.CaptureStatus.CAP_STATUS_SUCCESS;
 import static com.disk91.capture.interfaces.sub.CaptureError.CaptureErrorLevel.CAP_ERROR_WARNING;
+import static com.disk91.capture.mdb.entities.sub.IdStateEnum.UNKNOWN;
 
 @Service
 public class SigfoxV2Driver extends AbstractProtocol {
@@ -96,6 +100,9 @@ public class SigfoxV2Driver extends AbstractProtocol {
 
     @Autowired
     protected CaptureEndpointService captureEndpointService;
+
+    @Autowired
+    protected CaptureEndpointCache captureEndpointCache;
 
     @PostConstruct
     private void initSigfoxV2Driver() {
@@ -453,9 +460,13 @@ public class SigfoxV2Driver extends AbstractProtocol {
                 } else if ( _id.getState() == IdStateEnum.ASSIGNED && dev.getToken() != null && dev.getToken().getState() != 2  ) {
                     _id.setState(IdStateEnum.IN_USE);
                     modified = true;
-                } else if ( _id.getState() == IdStateEnum.IN_USE && dev.getState() != 0 ) {
+                } else if ( (_id.getState() == IdStateEnum.IN_USE || _id.getState() == IdStateEnum.WAITING_RENEWAL) && dev.getState() != 0 ) {
                     _id.setState(IdStateEnum.EXPIRED_IN_USE);
                     modified = true;
+                } else if ( _id.getState() == IdStateEnum.WAITING_RENEWAL && dev.getState() == 0) {
+                    // @TODO - we want to check if the device has been renewed, this is obtain with a subscription end or start changed
+                    // once it's changed, the status is back to IN_USE and the renewal flag may be updated based on the setup
+
                 } else if ( _id.getState() == IdStateEnum.RETURNED && dev.getState() != 0 ) {
                     _id.setState(IdStateEnum.EXPIRED_RETURNED);
                     modified = true;
@@ -525,5 +536,175 @@ public class SigfoxV2Driver extends AbstractProtocol {
     }
 
 
+    // =================================================================================================================
+    // Subscription management
+    // =================================================================================================================
+
+
+    // @TODO - we need to manage the quantity of subscription available in the "endpoint" and automatically close it
+    // when there is no more subscription available
+
+    public synchronized ProtocolIds subscribe(
+            CaptureEndpoint endpoint,           // Current Endpoint
+            List<CaptureEndpoint> endpoints,    // Possible other endpoints to search
+            ProtocolIds id,                     // ID to subscribe - null to create a new one
+            String familyId,                    // Device family Id (can be null)
+            Long subscriptionEnd                // Subscription end in ms, the subscription must be valid until this date
+    ) throws ITOverQuotaException, ITTooManyException, ITParseException {
+
+        String sigfoxId = "";
+        try {
+            sigfoxId = id.getOneField("sigfox-id");
+        } catch (ITNotFoundException e) {
+            log.error("[kavale] ID {} does not have a sigfox-id field, unable to validate subscription", id.getCaptureId());
+            throw new ITParseException("capture-driver-missing-sigfox-id");
+        }
+
+        if ( id.getState() == UNKNOWN || id.getLastScanMs() < Now.NowUtcMs() - 30*Now.ONE_FULL_DAY  ) {
+            // rescan it
+            try {
+                id = captureIdsService.refreshOneId(endpoint,id);
+            } catch (ITOverQuotaException e) {
+                // not a big problem, the risk will be to try to recreate an existing device
+                log.error("[kavale] Failed to rescan ID {} - {}", sigfoxId, e.getMessage());
+            }
+        }
+
+        try {
+            // make sure the endpoint is the right one for new allocation
+            String api = null;
+            String devType = null;
+            String user = null;
+            String pass = null;
+            int renewal = 1; // default-false
+            CaptureEndpoint targetEndpoint = endpoint;
+
+            if ( ! endpoint.getOneField("protocol-sigfox-subscription-enable").startsWith("true") ) {
+                // The endpoint is closed for subscription, we can try another on in the list
+                targetEndpoint = null;
+                for ( CaptureEndpoint endp : endpoints ) {
+                    if ( endpoint.getOneField("protocol-sigfox-subscription-enable").startsWith("true") ) {
+                        // get the first available
+                        targetEndpoint = endp;
+                        break;
+                    }
+                }
+                if ( targetEndpoint == null ) {
+                    log.error("[capture][sigfoxv2] No endpoint available for sigfox subscription");
+                    throw new ITTooManyException("capture-driver-no-endpoint-available-for-subscription");
+                }
+            }
+            // Get the required information
+            api = targetEndpoint.getOneField("protocol-sigfox-api-endpoint");
+            devType = targetEndpoint.getOneField("protocol-sigfox-device-type");
+            user = targetEndpoint.getOneField("protocol-sigfox-api-user");
+            pass = captureEndpointService.decrypteField(targetEndpoint.getOneField("protocol-sigfox-api-password"));
+            try {
+                String sRenew = targetEndpoint.getOneField("protocol-sigfox-renewal");
+                if ( sRenew.startsWith("true") )  {
+                    renewal =0; // true
+                } else if ( sRenew.startsWith("default-false") ) {
+                    renewal =1;
+                } else if ( sRenew.startsWith("force-false") ) {
+                    renewal =2;
+                }
+            } catch ( ITNotFoundException ignored) {
+                // default is false
+            }
+
+            DeviceWrapper deviceWrapper = new DeviceWrapper(api, user, pass);
+
+            // we may have a fresh ID information but this is not sure, considering UNKNOWN as NOT_ASSIGNED
+            switch (id.getState()) {
+                case UNKNOWN, NOT_ASSIGNED -> {
+                    // Get the device family information
+                    String certificationId = null;
+                    if ( familyId != null ) {
+                        // @TODO LATER
+                        // get certificationId
+                    }
+                    try {
+                        String pac =  id.getOneField("sigfox-pac");
+                        if ( deviceWrapper.registerNewSigfoxDevice(
+                                sigfoxId,
+                                pac,
+                                devType,
+                                certificationId,
+                                (renewal == 0)
+                              ) == NEWDEVICE_REGISTER_SUCCESS )
+                        {
+                            id.setState(IdStateEnum.ASSIGNED);
+
+                            // Update the subscription available
+                            try {
+                                String subs_s = targetEndpoint.getOneField("protocol-sigfox-subscriptions");
+                                int subs = Integer.parseInt(subs_s);
+                                if ( subs > 0 ) {
+                                    subs--;
+                                    targetEndpoint.setOneField("protocol-sigfox-subscriptions", ""+subs);
+                                    if ( subs == 0 ) {
+                                        targetEndpoint.setOneField("protocol-sigfox-subscription-enable", "false");
+                                    }
+                                    // save
+                                    captureEndpointCache.save(targetEndpoint);
+                                } else if ( subs == -2 ) {
+                                    // @TODO call the backend to query the number of available subscription
+                                    // not sure viable when the subscription is delayed ... but to be seen later
+                                    log.error("[capture][sigfoxv2] backend driven subscription limit not yet implemented");
+                                }
+                            } catch (ITNotFoundException | NumberFormatException ignored) {
+                                // invalid, lets assume default (0), no limit
+                            }
+                            return id;
+                        } else {
+                            // problem
+                            log.warn("[capture][sigfoxv2] Failed to register sigfox device {}, check the backend for more details", sigfoxId);
+                            throw new ITOverQuotaException("capture-driver-sigfox-registration-failure");
+                        }
+                    } catch ( ITNotFoundException x ) {
+                        // Missing PAC
+                        log.error("[capture][sigfoxv2] Missing sigfox device {} PAC key, registration failed", sigfoxId);
+                        throw new ITParseException("capture-driver-missing-pac-key");
+                    }
+                }
+                case ASSIGNED, IN_USE, WAITING_RENEWAL, RETURNED -> {
+                    // @TODO - check the duration and verify is authorized to go to the end
+                    log.info("[capture][sigfoxv2] Subscribe type renewal for {}", sigfoxId);
+                    return null;
+                }
+                case EXPIRED_RETURNED, EXPIRED_IN_USE -> {
+                    // @TODO - extends to the new expiration date
+                    log.info("[capture][sigfoxv2] Subscribe type renewal with a expired subscription {}", sigfoxId);
+                    return null;
+                }
+                case REMOVED -> {
+                    // @TODO - this is a problem
+                    log.error("[capture][sigfoxv2] Subscribe called for a REMOVED device {}, this is prohibited", sigfoxId);
+                    throw new ITParseException("capture-driver-subscription-for-removed-device");
+                }
+                default -> {
+                    // we should never be here until a case is missing in the switch
+                    throw new ITParseException("capture-driver-incoherent-situation");
+                }
+            }
+
+        } catch (ITNotFoundException x) {
+            // Missing configuration
+            log.error("[capture][sigfoxv2] Missing mandatory field in endpoint : {}", x.getMessage());
+            throw new ITParseException("capture-driver-missing-configuration-field");
+        }
+    }
+
+
+    public  ProtocolIds unsubscribe(
+            CaptureEndpoint endpoint,           // Corresponding endpoint
+            ProtocolIds _id                     // ID to subscribe
+    ) throws
+            ITOverQuotaException,               // In case the backend refuses the creation for a technical reason (retry later)
+            ITParseException {                  // In case of a syntax error where retrial is not expected until fix
+
+        throw new ITOverQuotaException("capture-driver-not-implemented");
+
+    }
 
 }

@@ -143,3 +143,18 @@ public abstract CaptureResponseItf fallbackResponse(
 ```
 
 ### Device provisioning functions
+
+
+## Sigfox protocol driver
+
+### ID State
+
+- `NOT_ASSIGNED`: The ID is new registered on Sigfox backend 
+- `ASSIGNED`: The ID is assigned to an existing device but the device has never been seen on the network. Subscription did not start yet.
+- `IN_USE`: The ID is assigned to a device, the device already sent a data on the network.
+    - `subscriptionStart = 0` : The device did not yet consume the test messages and the subscription did not start yet.
+    - `subscriptionStart > 0` : The device subscription is active.
+- `WAITING_RENEWAL`: The subscription is active, the user requested to renew for next year and the end of the current subscription did not happen yet.
+- `RETURNED` : The subscription is active, the user will not use it anymore, and it can be reused for a different device or waiting for the end of the current subscription.
+- `EXPIRED_RETURNED` : The subscription is expired, the device is not anymore active, normal end-of-life.
+- `EXPIRED_IN_USE` : The subscription is expired but the device was still active, which means that the device is sending data without a valid subscription ; this may conduct to renew the subscription a different way.

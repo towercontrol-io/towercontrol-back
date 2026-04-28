@@ -27,6 +27,7 @@ import com.disk91.common.tools.exceptions.*;
 import com.disk91.users.mdb.entities.User;
 import jakarta.servlet.http.HttpServletRequest;
 
+import java.util.List;
 import java.util.UUID;
 
 public abstract class AbstractProtocol {
@@ -133,5 +134,54 @@ public abstract class AbstractProtocol {
             ProtocolIds _id
     ) throws
             ITOverQuotaException;
+
+
+    /**
+     * This function will allow a subscription to be created in the back end if it does not already exist. It will be
+     * responsible for checking whether it is necessary to create the subscription based on the provided subscription
+     * end date.
+     * The endpoint may not be open for creating new subscriptions. In that case, a list of endpoints can also be
+     * passed to the function, allowing it to find another endpoint where the subscription will be created. The
+     * protocol ID is updated and returned by the function based on the elements that were obtained.
+     *
+     * @param endpoint - where ProtocolId is currently attached
+     * @param endpoints - list of possible endpointIds where to create the new subscriptions if the first one is closed for new subscriptions
+     * @param id - Id to associate, when null a new Id is created (depends on protocol, some will refuse, some will be default)
+     * @param familyId - Identifier of the device family, some information may be required
+     * @param subscriptionEnd - subscription end in ms, the subscription must be valid until this date, the function will decide whether to create a new subscription or not based on this date and the current subscription status
+     * @return ProtocolIDs updated or created (no db save) / null when unchanged
+     * @throws ITOverQuotaException In case the backend refuses the creation for a technical reason (retry later)
+     * @throws ITTooManyException In case the backend refuses the creation due to a contractual limit
+     * @throws ITParseException In case of a syntax error where retrial is not expected until fix
+     */
+    public abstract ProtocolIds subscribe(
+            CaptureEndpoint endpoint,           // Current Endpoint
+            List<CaptureEndpoint> endpoints,    // Possible other endpoints to search
+            ProtocolIds id,                     // ID to subscribe - null to create a new one
+            String familyId,                    // Device family Id (can be null)
+            Long subscriptionEnd                // Subscription end in ms, the subscription must be valid until this date
+    ) throws
+            ITOverQuotaException,               // In case the backend refuses the creation for a technical reason (retry later)
+            ITTooManyException,                 // In case the backend refuses the creation due to a contractual limit
+            ITParseException;                   // In case of a syntax error where retrial is not expected until fix
+
+    /**
+     * This function will make it possible to terminate an active subscription by releasing it on the back end. This
+     * ID will be updated, and according to the protocol, things will be implemented. The ID may be revoked or may be
+     * placed in a state so that it does not renew automatically.
+     *
+     * @param endpoint - Endpoint currently associated with the ID
+     * @param id - Id to be unsubscribed
+     * @return ProtocolIDs updated (no db save)
+     * @throws ITOverQuotaException In case the backend refuses the creation for a technical reason (retry later)
+     * @throws ITParseException In case of a syntax error where retrial is not expected until fix
+     */
+    public abstract ProtocolIds unsubscribe(
+            CaptureEndpoint endpoint,           // Corresponding endpoint
+            ProtocolIds id                      // ID to subscribe
+    ) throws
+            ITOverQuotaException,               // In case the backend refuses the creation for a technical reason (retry later)
+            ITParseException;                   // In case of a syntax error where retrial is not expected until fix
+
 
 }

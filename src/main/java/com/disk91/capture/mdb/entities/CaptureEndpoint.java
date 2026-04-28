@@ -191,6 +191,19 @@ public class CaptureEndpoint implements CloneableObject<CaptureEndpoint> {
         throw new ITNotFoundException("capture-endpoint-mandatory-field-missing");
     }
 
+
+    public void setOneField(String name, String value) throws ITNotFoundException {
+        if ( this.customConfig != null ) {
+            for ( CustomField cf : this.customConfig ) {
+                if ( cf.getName().equals(name) ) {
+                    cf.setValue(value);
+                }
+            }
+        }
+        throw new ITNotFoundException("capture-endpoint-mandatory-field-missing");
+    }
+
+
     // --------------------------------
 
 

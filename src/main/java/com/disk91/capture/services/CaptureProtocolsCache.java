@@ -141,7 +141,9 @@ public class CaptureProtocolsCache {
                    "{ 'name':'protocol-sigfox-device-type', 'unique': false, 'encrypted' : false, 'valueType':'string', 'description':'protocol-sigfox-device-type-desc', 'enDescription': 'Device Type name or Id for devices'}" + "," +
                    "{ 'name':'protocol-sigfox-group', 'unique': false, 'encrypted' : false, 'valueType':'string', 'description':'protocol-sigfox-group-desc', 'enDescription': 'Group name or Id for devices'}" + "," +
                    "{ 'name':'protocol-sigfox-id-reassignment', 'unique': false, 'encrypted' : false, 'valueType':'enum[no-reuse|reuse-last|reuse-first]', 'description':'protocol-sigfox-id-reassignment-desc', 'enDescription': 'ID reassignment strategy'}" +  "," +
-                   "{ 'name':'protocol-sigfox-subscription-enable', 'unique': false, 'encrypted' : false, 'valueType':'boolean', 'description':'protocol-sigfox-subscription-enable-desc', 'enDescription': 'New subscription / renewal authorized'}" +
+                   "{ 'name':'protocol-sigfox-renewal', 'unique': false, 'encrypted' : false, 'valueType':'enum[true|default-false|force-false]', 'description':'protocol-sigfox-allow-renewal', 'enDescription': 'Register new device with subscription renewal set when true, default-false will manage renewal flag manually, force-false prohibit renewal'}" +  "," +
+                   "{ 'name':'protocol-sigfox-subscription-enable', 'unique': false, 'encrypted' : false, 'valueType':'boolean', 'description':'protocol-sigfox-subscription-enable-desc', 'enDescription': 'New subscription / renewal authorized'}" + "," +
+                   "{ 'name':'protocol-sigfox-subscriptions', 'unique': false, 'encrypted' : false, 'valueType':'number', 'description':'protocol-sigfox-subscription-desc', 'enDescription': 'Number of available subscriptions. -1 unlimited, -2 request backend'}" +
                 "]," +
                 "'protocolIds':[ " +
                    "{ 'name':'sigfox-id-pac', 'description':'protocol-sigfox-idpac', 'enDescription': 'Sigfox ID & PAC Credentials', 'mandatoryFields':[ " +

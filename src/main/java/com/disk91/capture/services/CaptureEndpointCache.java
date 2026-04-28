@@ -202,6 +202,14 @@ public class CaptureEndpointCache {
         all.forEach(consumer);
     }
 
+    /**
+     * Saves the CaptureEndpoint to database and flush the cache
+     * @param captureEndpoint
+     */
+    public synchronized void save(CaptureEndpoint captureEndpoint) {
+        flushCaptureEndpoint(captureEndpoint.getRef());
+        repository.save(captureEndpoint);
+    }
 
     /**
      * On regular basis (5 minutes), save the stats of all cached endpoints
@@ -214,7 +222,7 @@ public class CaptureEndpointCache {
         for ( String key : Collections.list(this.cache.list()) ) {
             CaptureEndpoint ep = this.cache.get(key);
             if ( ep != null ) {
-                log.info("[capture][endpoint-cache] Endpoint {} | RX {} | +PV {} | +DR {} | +PR {} | +QP {} | -BO {} | -BP {} | -BR {}",
+                log.debug("[capture][endpoint-cache] Endpoint {} | RX {} | +PV {} | +DR {} | +PR {} | +QP {} | -BO {} | -BP {} | -BR {}",
                         ep.getRef(),
                         ep.getTotalFramesReceived(),
                         ep.getTotalFramesAcceptedToPivot(),
@@ -225,13 +233,9 @@ public class CaptureEndpointCache {
                         ep.getTotalBadPayloadFormat(),
                         ep.getTotalBadDeviceRight()
                 );
-                repository.save(ep);
+                this.save(ep);
             }
         }
     }
-
-
-
-
 
 }

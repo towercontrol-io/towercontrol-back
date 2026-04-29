@@ -173,6 +173,21 @@ public class CommonConfig {
     }
 
     // ----------------------------------------------
+    // Firebase messaging setup
+    // ----------------------------------------------
+    @Value("${common.firebase.enabled:false}")
+    protected boolean commonFirebaseEnabled;
+    public boolean isCommonFirebaseEnabled() {
+        return commonFirebaseEnabled;
+    }
+
+    @Value("${common.firebase.jsonkey.path:}")
+    protected String firebaseServiceAccountPath;
+    public String getFirebaseServiceAccountPath() {
+        return firebaseServiceAccountPath;
+    }
+
+    // ----------------------------------------------
     // Test activation
     // ----------------------------------------------
     @Value("${common.test.enabled:false}")

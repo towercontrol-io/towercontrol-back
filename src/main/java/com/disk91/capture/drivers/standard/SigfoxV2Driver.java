@@ -423,8 +423,6 @@ public class SigfoxV2Driver extends AbstractProtocol {
             ProtocolIds _id
     ) throws ITOverQuotaException {
 
-//        if ( _id != null ) throw new ITOverQuotaException();
-
         try {
             String api = endpoint.getOneField("protocol-sigfox-api-endpoint");
             String user = endpoint.getOneField("protocol-sigfox-api-user");
@@ -579,6 +577,7 @@ public class SigfoxV2Driver extends AbstractProtocol {
             int renewal = 1; // default-false
             CaptureEndpoint targetEndpoint = endpoint;
 
+            // Make sure we use a endpoint ready for subscription
             if ( ! endpoint.getOneField("protocol-sigfox-subscription-enable").startsWith("true") ) {
                 // The endpoint is closed for subscription, we can try another on in the list
                 targetEndpoint = null;
@@ -624,6 +623,7 @@ public class SigfoxV2Driver extends AbstractProtocol {
                         // get certificationId
                     }
                     try {
+                        // register the device
                         String pac = captureIdsService.decrypteField(id.getOneField("sigfox-pac"));
                         if ( deviceWrapper.registerNewSigfoxDevice(
                                 sigfoxId,

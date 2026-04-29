@@ -51,6 +51,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Random;
 
 import static com.disk91.capture.api.interfaces.sub.InsertIDsStatus.*;
 import static com.disk91.capture.mdb.entities.sub.IdStateEnum.*;
@@ -437,9 +438,14 @@ public class CaptureIdsService {
 
             // get the associated IDs to review job run every 1 minute, and we have a max rate per endpoint per minute as
             // a parameter so this fixes the max number of IDs to review
+            long inThePastMs = (captureConfig.getCaptureProtocolIdsRecheckRateDays()*Now.ONE_FULL_DAY);
+            Random rnd = new Random(Now.NowUtcMs());
+            double v = 1 + ( ( ( rnd.nextDouble() ) * 0.4 ) - 0.2); // we want a value between 0,8 and 1,2 to randomize the refresh, based on the initial duration
+            inThePastMs = (long) ( (double)inThePastMs * v );
+
             List<ProtocolIds> ids = protocolIdsRepository.findByCaptureIdAndLastScanMsBeforeAndNotRemoved(
                     endpoint.getRef(),
-                    Now.NowUtcMs() - (captureConfig.getCaptureProtocolIdsRecheckRateDays()*Now.ONE_FULL_DAY),
+                    Now.NowUtcMs() - inThePastMs,
                     PageRequest.of(0,toProcess)
             );
 

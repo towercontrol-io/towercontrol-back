@@ -127,8 +127,8 @@ public class ITSigfoxConnection<S,T> {
 
         HttpEntity<String> he;
         if (    httpMethod.compareToIgnoreCase("GET")  == 0
-                || httpMethod.compareToIgnoreCase("DELETE")  == 0
-                ) {
+             || httpMethod.compareToIgnoreCase("DELETE")  == 0
+           ) {
             headers.setContentType(MediaType.TEXT_HTML);
             he = new HttpEntity<String>(headers);
         } else {

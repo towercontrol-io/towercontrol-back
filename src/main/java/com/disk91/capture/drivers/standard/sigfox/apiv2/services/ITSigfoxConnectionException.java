@@ -67,4 +67,11 @@ public class ITSigfoxConnectionException extends Exception {
         this.errorMessage = _errorMessage;
     }
 
+    public HttpStatus getStatus() {
+        return status;
+    }
+
+    public String getErrorMessage() {
+        return errorMessage;
+    }
 }

@@ -27,11 +27,25 @@ import java.util.Date;
 public class Now {
 
     /**
+     * The `nanotime` command returns a number of nanoseconds, but without any particularly identified reference frame.
+     * However, it normally remains constant over time. It is therefore important to retrieve a time reference for
+     * this `nanotime` when the application starts. This will then make it possible to add this `nanotime` relative
+     * to the time in milliseconds that will be obtained.
+     */
+
+    protected static long nanoRef; // on init tme in ns (no ref)
+    protected static long msRef;  // on init time in Ms from epoch
+    public static void initNanoTime() {
+        nanoRef = System.nanoTime();
+        msRef = NowUtcMs();
+    }
+
+    /**
      * Return current nanotime, expiration about 292y apparently
      * @return
      */
     public static long NanoTime() {
-        return System.nanoTime();
+        return msRef+(System.nanoTime()-nanoRef);
     }
 
     public static long NowUtcMs() {

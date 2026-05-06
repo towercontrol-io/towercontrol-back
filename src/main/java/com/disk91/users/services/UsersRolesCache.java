@@ -78,6 +78,8 @@ public class UsersRolesCache {
         "{'version':2, 'platform':true, 'name':'ROLE_SUPPORT_USER','description':'role-support-user-desc', 'enDescription':'Ticket creation', 'creationBy':'system','creationMs':0, 'assignable':true}",
         "{'version':2, 'platform':true, 'name':'ROLE_FILES_WRITE','description':'role-files-write-desc', 'enDescription':'Public / Platform files creation', 'creationBy':'system','creationMs':0, 'assignable':true}",
         "{'version':2, 'platform':true, 'name':'ROLE_FILES_ADMIN','description':'role-files-admin-desc', 'enDescription':'Files administrator', 'creationBy':'system','creationMs':0, 'assignable':true}",
+        "{'version':2, 'platform':true, 'name':'ROLE_AUDIT_RD','description':'role-audit-read-desc', 'enDescription':'Ability to read the audit logs', 'creationBy':'system','creationMs':0, 'assignable':true}",
+        "{'version':2, 'platform':true, 'name':'ROLE_AUDIT_RD_CLEAR','description':'role-audit-read-clear-desc', 'enDescription':'Ability to read audit log in clear text', 'creationBy':'system','creationMs':0, 'assignable':true}",
     };
 
     // Standard roles strings
@@ -103,7 +105,9 @@ public class UsersRolesCache {
         ROLE_SUPPORT_MANAGER("ROLE_SUPPORT_MANAGER"),
         ROLE_SUPPORT_USER("ROLE_SUPPORT_USER"),
         ROLE_FILES_WRITE("ROLE_FILES_WRITE"),
-        ROLE_FILES_ADMIN("ROEL_FILES_ADMIN");
+        ROLE_FILES_ADMIN("ROLE_FILES_ADMIN"),
+        ROLE_AUDIT_RD("ROLE_AUDIT_RD"),
+        ROLE_AUDIT_RD_CLEAR("ROLE_AUDIT_RD_CLEAR");
 
         private String roleName;
         StandardRoles(String roleName) {

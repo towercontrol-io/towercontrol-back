@@ -55,19 +55,14 @@ public class AuditService {
         AUDIT_TARGET_NONE
     }
 
-    protected AuditTarget fromString(String targetStr) {
-        switch (targetStr.toLowerCase()) {
-            case "logs":
-                return AuditTarget.AUDIT_TARGET_LOGS;
-            case "files":
-                return AuditTarget.AUDIT_TARGET_FILES;
-            case "mongo":
-                return AuditTarget.AUDIT_TARGET_MONGO;
-            case "postgresql":
-                return AuditTarget.AUDIT_TARGET_PSQL;
-            default:
-                return AuditTarget.AUDIT_TARGET_NONE;
-        }
+    public static AuditTarget toAuditTarget(String targetStr) {
+        return switch (targetStr.toLowerCase()) {
+            case "logs" -> AuditTarget.AUDIT_TARGET_LOGS;
+            case "files" -> AuditTarget.AUDIT_TARGET_FILES;
+            case "mongo" -> AuditTarget.AUDIT_TARGET_MONGO;
+            case "postgresql" -> AuditTarget.AUDIT_TARGET_PSQL;
+            default -> AuditTarget.AUDIT_TARGET_NONE;
+        };
     }
 
     @Autowired
@@ -106,7 +101,7 @@ public class AuditService {
                             AuditMessage auditMessage = (AuditMessage) q.getQuery();
                             ArrayList<String> targets = Tools.getStringListFromParam(auditConfig.getAuditStoreMedium());
                             for (String t : targets) {
-                                switch (fromString(t)) {
+                                switch (toAuditTarget(t)) {
                                     case AUDIT_TARGET_LOGS:
                                         log.info(Tools.ANSI_YELLOW+"[audit] {}"+Tools.ANSI_RESET, auditIntegration.toString(auditMessage));
                                         break;

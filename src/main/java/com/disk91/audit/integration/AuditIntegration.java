@@ -33,6 +33,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.List;
 
 @Component
 public class AuditIntegration {
@@ -79,9 +80,10 @@ public class AuditIntegration {
     }
 
     /**
-     * Converts a audit message into a string to be printed in the logs
-     * @param a
-     * @return
+     * Converts an audit message into a string to be printed in the logs.
+     * Parameters are decrypted only when audit.logs.decryption.enabled is true in configuration.
+     * @param a - the audit message to convert
+     * @return formatted log string
      */
     public String toString(AuditMessage a) {
         StringBuffer l = new StringBuffer();
@@ -100,6 +102,34 @@ public class AuditIntegration {
         }
         l.append(_log);
         return l.toString();
+    }
+
+    /**
+     * Resolve a log string by substituting its {n} placeholders with parameter values.
+     * When clearAccess is true, parameters are decrypted using the shared IV before substitution.
+     * When clearAccess is false, all placeholders are replaced with *** to obfuscate sensitive data.
+     * @param logStr      - raw log string with {n} placeholders
+     * @param params      - list of encrypted parameter values
+     * @param clearAccess - true to decrypt and inline params, false to obfuscate with ***
+     * @return resolved log string
+     */
+    public String resolveLogStr(String logStr, List<String> params, boolean clearAccess) {
+        if (params == null || params.isEmpty()) {
+            return logStr;
+        }
+        String resolved = logStr;
+        for (int i = 0; i < params.size(); i++) {
+            String placeholder = "{" + i + "}";
+            if (clearAccess) {
+                // Decrypt the parameter using the shared IV and application encryption key
+                String decrypted = EncryptionHelper.decrypt(params.get(i), IV, commonConfig.getEncryptionKey());
+                resolved = resolved.replace(placeholder, decrypted != null ? decrypted : "???");
+            } else {
+                // Obfuscate sensitive parameters for users without clear access
+                resolved = resolved.replace(placeholder, "***");
+            }
+        }
+        return resolved;
     }
 
 

@@ -83,7 +83,7 @@ public class FirebaseTools {
                     .build();
             try {
                 String response = FirebaseMessaging.getInstance().send(message);
-                log.info("[common] Firebase push notification sent: {}", response);
+                log.debug("[common] Firebase push notification sent: {}", response);
             } catch (FirebaseMessagingException e) {
                 log.error("[common] Failed to send push notification to {}: {}", deviceToken, e.getMessage());
                 throw new ITParseException("common-firebase-push-notification-failed");

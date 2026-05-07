@@ -38,19 +38,27 @@ public interface AuditRepository extends JpaRepository<Audit, UUID> {
      * Date range filters and pagination are also supported. Results are ordered by actionMs descending.
      * A null search value means no text filter is applied.
      * Zero values for startMs / endMs mean no date bound.
+     * Explicit ::text casts are required because PostgreSQL may store these columns as bytea.
      * @param search  - free-text filter applied on service/action/owner (OR), null for no filter
      * @param startMs - lower bound on actionMs (0 = no bound)
      * @param endMs   - upper bound on actionMs (0 = no bound)
      * @param pageable - pagination parameters
      * @return page of matching Audit entries ordered from most recent to oldest
      */
-    @Query("SELECT a FROM Audit a WHERE " +
-            "(:search IS NULL OR LOWER(a.service) LIKE LOWER(CONCAT('%', :search, '%')) " +
-            "                 OR LOWER(a.action)  LIKE LOWER(CONCAT('%', :search, '%')) " +
-            "                 OR LOWER(a.owner)   LIKE LOWER(CONCAT('%', :search, '%'))) AND " +
-            "(:startMs = 0 OR a.actionMs >= :startMs) AND " +
-            "(:endMs = 0 OR a.actionMs <= :endMs) " +
-            "ORDER BY a.actionMs DESC")
+    @Query(value = "SELECT * FROM audit_audits a WHERE " +
+            "(:search IS NULL OR LOWER(a.service::text) LIKE LOWER(CONCAT('%', :search, '%')) " +
+            "                 OR LOWER(a.action::text)  LIKE LOWER(CONCAT('%', :search, '%')) " +
+            "                 OR LOWER(a.owner::text)   LIKE LOWER(CONCAT('%', :search, '%'))) AND " +
+            "(:startMs = 0 OR a.action_ms >= :startMs) AND " +
+            "(:endMs = 0 OR a.action_ms <= :endMs) " +
+            "ORDER BY a.action_ms DESC",
+            countQuery = "SELECT COUNT(*) FROM audit_audits a WHERE " +
+            "(:search IS NULL OR LOWER(a.service::text) LIKE LOWER(CONCAT('%', :search, '%')) " +
+            "                 OR LOWER(a.action::text)  LIKE LOWER(CONCAT('%', :search, '%')) " +
+            "                 OR LOWER(a.owner::text)   LIKE LOWER(CONCAT('%', :search, '%'))) AND " +
+            "(:startMs = 0 OR a.action_ms >= :startMs) AND " +
+            "(:endMs = 0 OR a.action_ms <= :endMs)",
+            nativeQuery = true)
     Page<Audit> searchAuditLogs(
             @Param("search") String search,
             @Param("startMs") long startMs,

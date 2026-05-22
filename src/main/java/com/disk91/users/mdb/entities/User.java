@@ -443,6 +443,10 @@ public class User implements CloneableObject<User> {
     /**
      * When the password is changed, it is necessary to rekey all information, as the password is used as a key
      * in the signature of user data. The password is also hashed with salt
+     *
+     * @TODO - what happen if the user lost his password and try to change it after expiration ?
+     * (it currenlty returns a ITParseException ... but the fields should be reseted)
+     *
      * @param password - clear text password
      * @param create - true if the password is created for the first time (no rekeying required)
      */

@@ -58,6 +58,9 @@ export interface PrivTicketUserDetailResponseItf {
     /** Moment of creation in milliseconds since epoch */
     creationMs: number;
     
+    /** Ticket status (OPEN or CLOSED) */
+    status: string;
+    
     /** List of responses & replies to the ticket */
     responses: PrivMessageContent[];
 }
@@ -101,6 +104,8 @@ When the ticket details are successfully retrieved:
 ### Step 3: Add a new response
 The user can add a new response to the ticket by filling a text area with Markdown content and submitting it. He can 
 select to send a response or to close the ticket.
+
+The option to add a user response will only be available if the ticket status is `OPEN`.
 
 #### Data Structure for adding a response
 ```typescript

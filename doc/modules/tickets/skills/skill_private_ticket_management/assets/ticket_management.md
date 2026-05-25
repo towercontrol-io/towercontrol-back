@@ -321,7 +321,7 @@ After a successful upload, add the file reference to the reply body:
 ```typescript
 // fileType is the label freely chosen by the user, e.g. "screenshot", "log", "config"
 const customField: CustomField = {
-    key:   fileType,
+    name:   fileType,
     value: `file_${uploadedFile.uniqueName}`
 };
 replyBody.context = [...(replyBody.context ?? []), customField];

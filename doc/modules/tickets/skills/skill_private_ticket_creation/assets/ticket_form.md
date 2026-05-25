@@ -129,7 +129,7 @@ Once a file is successfully uploaded, append a `CustomField` entry to the ticket
 ```typescript
 // fileType is the label chosen by the user, e.g. "screenshot", "log", "config"
 const customField: CustomField = {
-    key:   fileType,
+    name:   fileType,
     value: `file_${uploadedFile.uniqueName}`
 };
 ticketBody.context = [...(ticketBody.context ?? []), customField];
@@ -200,7 +200,7 @@ export interface PrivTicketCreationBody {
 
 export interface CustomField {
     // Define CustomField interface based on your needs
-    key: string;
+    name: string;
     value: string;
 }
 ```

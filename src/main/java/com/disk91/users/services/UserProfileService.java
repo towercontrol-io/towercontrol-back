@@ -401,7 +401,8 @@ public class UserProfileService {
 
             _user.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
             try {
-                _user.changePassword(password, false);
+                // @TODO - We need email information
+                _user.changePassword(null, password, false);
                 if ( usersConfig.getUsersPasswordExpirationDays() > 0 ) {
                     _user.setExpiredPassword(Now.NowUtcMs() + (usersConfig.getUsersPasswordExpirationDays() * Now.ONE_FULL_DAY));
                 } else {
@@ -452,7 +453,8 @@ public class UserProfileService {
         // We have a valid and not expired key, we can change password and expire it
         _user.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
         try {
-            _user.changePassword(body.getPassword(), false);
+            // @TODO - We need email information
+            _user.changePassword(null, body.getPassword(), false);
             if ( usersConfig.getUsersPasswordExpirationDays() > 0 ) {
                 _user.setExpiredPassword(Now.NowUtcMs() + (usersConfig.getUsersPasswordExpirationDays() * Now.ONE_FULL_DAY));
             } else {

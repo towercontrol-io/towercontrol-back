@@ -92,7 +92,7 @@ public class UserProfileServiceTests {
             johnDoe = new User();
             johnDoe.setKeys(testKey, testKey);
             johnDoe.setEncLogin("john.doe@foo.bar");
-            johnDoe.changePassword("abcd1234", true);
+            johnDoe.changePassword("john.doe@foo.bar","abcd1234", true);
             johnDoe.setEncEmail("john.doe@foo.bar");
             johnDoe.setLocked(false);
             johnDoe.setActive(true);
@@ -106,7 +106,7 @@ public class UserProfileServiceTests {
             admin = new User();
             admin.setKeys(testKey, testKey);
             admin.setEncLogin("master@foo.bar");
-            admin.changePassword("abcd1234", true);
+            admin.changePassword("master@foo.bar","abcd1234", true);
             admin.setEncEmail("master@foo.bar");
             admin.setLocked(false);
             admin.setActive(true);
@@ -118,7 +118,7 @@ public class UserProfileServiceTests {
             aliceBob = new User();
             aliceBob.setKeys(testKey, testKey);
             aliceBob.setEncLogin("alice.bob@foo.bar");
-            aliceBob.changePassword("abcd1234", true);
+            aliceBob.changePassword("alice.bob@foo.bar","abcd1234", true);
             aliceBob.setEncEmail("alice.bob@foo.bar");
             aliceBob.setLocked(false);
             aliceBob.setActive(true);

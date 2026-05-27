@@ -56,7 +56,7 @@ public class UserTests {
         user.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
 
         assertDoesNotThrow(() -> {
-            user.changePassword("test", true);
+            user.changePassword("john.doe@foo.bar","test", true);
             user.setEncLogin("john.doe@foo.bar");
             log.info("[users][test] login: " + user.getLogin());
             log.info("[users][test] salt: " + HexCodingTools.bytesToHex(user.getSalt()));
@@ -75,7 +75,7 @@ public class UserTests {
         user2.setSalt(HexCodingTools.getByteArrayFromHexString("21AFD07BF82F5F9139942BCB3910619E"));
         user2.setSessionSecret("ED8075DF985E20F80F3248DCCC11FEFD");
         assertDoesNotThrow(() -> {
-            user2.changePassword("test", false);
+            user2.changePassword("test@foo.bar","test", false);
             log.info("[users][test] salt: " + HexCodingTools.bytesToHex(user2.getSalt()));
             log.info("[users][test] password (bcrypt): " + user2.getPassword());
             log.info("[users][test] secret (PBKDF2): " + user2.getUserSecret());
@@ -138,7 +138,7 @@ public class UserTests {
 
         log.info("[users][test] create a full user");
         assertDoesNotThrow(() -> {
-            user.changePassword("test", true);
+            user.changePassword("john.doe@foo.bar","test", true);
             assertNotNull(user.getSalt());
             assertNotNull(user.getSessionSecret());
             assertNotEquals("", user.getUserSecret());
@@ -268,7 +268,7 @@ public class UserTests {
 
         log.info("[users][test] Rekeying the user");
         assertDoesNotThrow(() -> {
-            user.changePassword("newTest", false);
+            user.changePassword("john.doe@foo.bar","newTest", false);
             assertEquals(encLogin, user.getLogin());
             assertNotEquals(user.getBillingProfile().getVatNumber(), encVat);
             assertNotEquals(user.getProfile().getFirstName(), encFirstName);

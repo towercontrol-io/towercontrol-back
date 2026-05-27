@@ -49,6 +49,8 @@ import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 
+import static com.disk91.users.mdb.entities.sub.TwoFATypes.NONE;
+
 @Document(collection = "users_users")
 @CompoundIndexes({
         @CompoundIndex(name = "login", def = "{'login': 'hashed'}"),
@@ -341,7 +343,7 @@ public class User implements CloneableObject<User> {
      * @return
      */
     protected byte[] getEncryptionKey() throws ITParseException {
-        if ( userSecret == null || userSecret.length() < 32 ) throw new ITParseException("User secret not set");
+        if ( userSecret == null || userSecret.length() < 32 ) throw new ITParseException("User secret not set - sz("+(userSecret==null?"0":userSecret.length())+")!");
         byte[] serverKey = HexCodingTools.getByteArrayFromHexString(this.serverKey);
         byte[] applicationKey = HexCodingTools.getByteArrayFromHexString(this.applicationKey);
         byte[] userKey = HexCodingTools.getByteArrayFromHexString(this.userSecret);
@@ -406,10 +408,10 @@ public class User implements CloneableObject<User> {
             SecretKeyFactory skf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
             return skf.generateSecret(spec).getEncoded();
         } catch (NoSuchAlgorithmException e) {
-            log.error("[users] Error while hashing password", e);
+            log.error("[users] Error while hashing password - generateUserSecret {}", e.getMessage());
             throw new ITParseException("Unsupported hashing algorithm");
         } catch (InvalidKeySpecException e) {
-            log.error("[users] Error while hashing password", e);
+            log.error("[users] Error while hashing password - generateUserSecret {}", e.getMessage());
             throw new ITParseException("Invalid key spec");
         }
     }
@@ -443,14 +445,13 @@ public class User implements CloneableObject<User> {
     /**
      * When the password is changed, it is necessary to rekey all information, as the password is used as a key
      * in the signature of user data. The password is also hashed with salt
-     *
-     * @TODO - what happen if the user lost his password and try to change it after expiration ?
-     * (it currenlty returns a ITParseException ... but the fields should be reseted)
-     *
+     * @param clearEmail - because in some certain situation we need to reinit the email when encrypted...
      * @param password - clear text password
      * @param create - true if the password is created for the first time (no rekeying required)
+     *
+     * Return true in most of situation but false when the profile has been reset
      */
-    public void changePassword(String password, boolean create)
+    public boolean changePassword(String clearEmail, String password, boolean create)
     throws ITParseException
     {
         // Make sure structure is complete
@@ -476,7 +477,7 @@ public class User implements CloneableObject<User> {
             BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
             String bcryptPassword = HASH_PREFIX_BCRYPT + encoder.encode(password);
 
-            if ( ! create ) {
+            if ( ! create && this.userSecret != null ) {
                 // We need to rekey all the encrypted data
                 // Decode all Data ...
                 String _email = ( this.email != null ) ? this.getEncEmail() : null;
@@ -534,13 +535,61 @@ public class User implements CloneableObject<User> {
                 if ( _getBillingVatNumber != null) this.setEncBillingVatNumber(_getBillingVatNumber);
                 if ( _getTwoFASecret != null) this.setEncTwoFASecret(_getTwoFASecret);
 
+                return true;
+
             } else {
+                boolean normalCreation = true;
                 // Save the change
                 this.password = bcryptPassword;
                 this.userSecret = HexCodingTools.bytesToHex(passwordHashForEncryption);
+
+                // clear data
+                if ( email != null) {
+                    if ( clearEmail == null) {
+                        log.error("[users] User reset due to expiration, with unknown email !");
+                        this.setEncEmail("noreply@foo.bar"); // make sure not empty - until the associated TODO are managed
+                    } else this.setEncEmail(clearEmail);
+                    normalCreation = false;
+                }
+                if ( this.getRegistrationIP() != null) this.setRegistrationIP(null);
+                this.setCustomFields(new ArrayList<>());
+
+                if ( this.getProfile() != null ) {
+                    if (this.getProfile().getGender() != null) this.getProfile().setGender(null);
+                    if (this.getProfile().getFirstName() != null) this.getProfile().setFirstName(null);
+                    if (this.getProfile().getLastName() != null) this.getProfile().setLastName(null);
+                    if (this.getProfile().getPhoneNumber() != null) this.getProfile().setPhoneNumber(null);
+                    if (this.getProfile().getAddress() != null) this.getProfile().setAddress(null);
+                    if (this.getProfile().getCity() != null) this.getProfile().setCity(null);
+                    if (this.getProfile().getZipCode() != null) this.getProfile().setZipCode(null);
+                    if (this.getProfile().getCountry() != null) this.getProfile().setCountry(null);
+                    if (this.getProfile().getCustomFields() != null) this.getProfile().setCustomFields(new ArrayList<>());
+                }
+                if ( this.getBillingProfile() != null ) {
+                    if ( this.getBillingProfile().getGender() != null) this.getBillingProfile().setGender(null);
+                    if ( this.getBillingProfile().getFirstName() != null) this.getBillingProfile().setFirstName(null);
+                    if ( this.getBillingProfile().getLastName() != null) this.getBillingProfile().setLastName(null);
+                    if ( this.getBillingProfile().getPhoneNumber() != null) this.getBillingProfile().setPhoneNumber(null);
+                    if ( this.getBillingProfile().getAddress() != null) this.getBillingProfile().setAddress(null);
+                    if ( this.getBillingProfile().getCity() != null) this.getBillingProfile().setCity(null);
+                    if ( this.getBillingProfile().getZipCode() != null) this.getBillingProfile().setZipCode(null);
+                    if ( this.getBillingProfile().getCountry() != null) this.getBillingProfile().setCountry(null);
+                    if ( this.getBillingProfile().getCustomFields() != null) this.getBillingProfile().setCustomFields(new ArrayList<>());
+                    if ( this.getBillingProfile().getCompanyName() != null) this.getBillingProfile().setCompanyName(null);
+                    if ( this.getBillingProfile().getCountryCode() != null) this.getBillingProfile().setCountryCode(null);
+                    if ( this.getBillingProfile().getVatNumber() != null) this.getBillingProfile().setVatNumber(null);
+                }
+                // We must reset the 2FA in this situation
+                // @TODO - it could be better to encrypt w/o the user secret to continue to use the 2FA secret.
+                if ( this.getTwoFASecret() != null) {
+                    this.setTwoFAType(NONE);
+                    this.setTwoFASecret(null);
+                }
+
+                return normalCreation;
             }
         } catch (ITParseException e) {
-            log.error("[users] Error while hashing password", e);
+            log.error("[users] Error while hashing password - changePassword {}", e.getMessage());
             throw new ITParseException("Invalid key spec");
         }
 

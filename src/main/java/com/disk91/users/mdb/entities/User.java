@@ -424,7 +424,7 @@ public class User implements CloneableObject<User> {
      * Clear the user secret, so the personal data can't be decrypted anymore (until next login)
      */
     public void clearUserSecret() {
-        this.userSecret = "";
+        this.userSecret = null;
     }
 
     /**
@@ -477,7 +477,7 @@ public class User implements CloneableObject<User> {
             BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
             String bcryptPassword = HASH_PREFIX_BCRYPT + encoder.encode(password);
 
-            if ( ! create && this.userSecret != null ) {
+            if ( ! create && this.isPersonalDataAccessible() ) {
                 // We need to rekey all the encrypted data
                 // Decode all Data ...
                 String _email = ( this.email != null ) ? this.getEncEmail() : null;

@@ -20,7 +20,7 @@
 
 package com.disk91.common.interfaces.sigfox.apiv2.wrappers;
 
-import com.disk91.capture.drivers.standard.sigfox.apiv2.models.*;
+import com.disk91.common.interfaces.sigfox.apiv2.models.*;
 import com.disk91.common.interfaces.sigfox.apiv2.models.*;
 import com.disk91.common.interfaces.sigfox.apiv2.services.ITSigfoxConnection;
 import com.disk91.common.interfaces.sigfox.apiv2.services.ITSigfoxConnectionException;

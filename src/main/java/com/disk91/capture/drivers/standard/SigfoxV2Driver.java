@@ -20,9 +20,10 @@
 package com.disk91.capture.drivers.standard;
 
 import com.disk91.capture.api.interfaces.CaptureResponseItf;
-import com.disk91.capture.drivers.standard.sigfox.apiv2.models.SigfoxApiv2Device;
-import com.disk91.capture.drivers.standard.sigfox.apiv2.services.ITSigfoxConnectionException;
-import com.disk91.capture.drivers.standard.sigfox.apiv2.wrappers.DeviceWrapper;
+import com.disk91.common.interfaces.sigfox.SigfoxCommonMessage;
+import com.disk91.common.interfaces.sigfox.apiv2.models.SigfoxApiv2Device;
+import com.disk91.common.interfaces.sigfox.apiv2.services.ITSigfoxConnectionException;
+import com.disk91.common.interfaces.sigfox.apiv2.wrappers.DeviceWrapper;
 import com.disk91.capture.interfaces.AbstractProtocol;
 import com.disk91.capture.interfaces.CaptureDataPivot;
 import com.disk91.capture.interfaces.CaptureIngestResponse;
@@ -66,7 +67,7 @@ import java.util.Base64;
 import java.util.Enumeration;
 import java.util.List;
 
-import static com.disk91.capture.drivers.standard.sigfox.apiv2.wrappers.DeviceWrapper.NEWDEVICE_REGISTER_SUCCESS;
+import static com.disk91.common.interfaces.sigfox.apiv2.wrappers.DeviceWrapper.NEWDEVICE_REGISTER_SUCCESS;
 import static com.disk91.capture.interfaces.CaptureDataPivot.CaptureStatus.CAP_STATUS_SUCCESS;
 import static com.disk91.capture.interfaces.sub.CaptureError.CaptureErrorLevel.CAP_ERROR_WARNING;
 import static com.disk91.capture.mdb.entities.sub.IdStateEnum.UNKNOWN;

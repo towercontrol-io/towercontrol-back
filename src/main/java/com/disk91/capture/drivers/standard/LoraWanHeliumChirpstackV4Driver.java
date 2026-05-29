@@ -353,6 +353,7 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
                     ccmeta.setLongitude(l.lng);
                     ccmeta.setAccuracy(l.radius);
                     ccmeta.setAltitude(0);
+                    ccmeta.setSource(CaptureLocationSource.NETWORK_RSSI);
                     if (encryptionRequired && h3 != null) {
                         ccmeta.setHexagonId(EncryptionHelper.encrypt(h3.latLngToCellAddress(ccmeta.getLatitude(), ccmeta.getLongitude(), 15), IV, commonConfig.getEncryptionKey()));
                         ccmeta.setLatitude(0.0);

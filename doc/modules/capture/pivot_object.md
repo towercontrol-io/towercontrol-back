@@ -68,7 +68,8 @@ but only metadata, while aiming to be generic with respect to possible integrati
       longitude: "double",                   // Longitude in decimal degrees
       altitude: "double",                    // Altitude in meters
       accuracy: "float",                     // Accuracy in meters
-      hexagonId: "string"                    // Hexagon ID 
+      hexagonId: "string",                   // Hexagon ID 
+      source: "enum"                         // Location source (e.g., "NETWORK_RSSSI", "GPS", "...")
     }
   },
   nwkStations: [                            // List of network stations that received the frame

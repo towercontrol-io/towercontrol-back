@@ -144,25 +144,27 @@ public class SigfoxV2Driver extends AbstractProtocol {
         p.setRxUuid(this.getRxUUID());
         p.setRxCaptureRef(endpoint.getRef());
 
-
-
-        // convert to Chirpstack Payload
-        ChirpstackV4HeliumPayload payload;
+        // convert to Sigfox Payload
+        SigfoxCommonMessage payload;
         try {
             String json = new String(rawData);
             log.debug(json);
-            payload = mapper.readValue(json, ChirpstackV4HeliumPayload.class);
+            payload = mapper.readValue(json, SigfoxCommonMessage.class);
         } catch (JsonProcessingException x) {
             // failed to parse
             endpoint.incTotalBadPayloadFormat();
-            log.debug("[HeliumChirpstackV4Protocol] Conversion failed {}", x.getMessage());
-            throw new ITParseException("capture-driver-helium-chirpstackv4-failed-to-parse-json");
+            log.debug("[capture][sigfoxv2] Conversion failed {}", x.getMessage());
+            throw new ITParseException("capture-driver-sigfox-v2-failed-to-parse-json");
         }
+
+        // Compute a network ID for frame cache and completion over multiple callback
+        // This is not a unique Id
+        String nwkId = payload.getDevice() + "-" + payload.getSeq();
 
         // Get the associated device if exists
         Device d = null;
         try {
-            d = devicesNwkCache.getDevice("LoRa", "deveui", payload.getDeviceInfo().getDevEui().toLowerCase());
+            d = devicesNwkCache.getDevice("Sigfox", "deveui", payload.getDevice().toLowerCase());
 
             // Check rights on device
             // When the JWT user is in group ROLE_GLOBAL_CAPTURE it has global access on devices
@@ -199,21 +201,26 @@ public class SigfoxV2Driver extends AbstractProtocol {
             }
             if (!authorized) {
                 endpoint.incTotalBadDeviceRight();
-                throw new ITHackerException("capture-driver-helium-chirpstackv4-no-rights-on-device");
+                throw new ITHackerException("capture-driver-sigfox-v2-no-rights-on-device");
             }
 
         } catch (ITNotFoundException x) {
             // This device is not known
+
+            // @TODO - check if the protocol allow unknown device creation and configuration in a default group
+            // if yes ... just do it (check the API key right on this group also and ability to create devices)
+
             endpoint.incTotalBadDeviceRight();
-            throw new ITRightException("capture-driver-helium-chirpstackv4-unknown-device");
+            throw new ITRightException("capture-driver-sigfox-v2-unknown-device");
         }
         // Once on this point, the authorization is OK
         final boolean encryptionRequired = endpoint.isEncrypted() || d.isDataEncrypted();
 
-        // Manage Payload, it will be Base64 encoded and encrypted is required
-        String toStoreData = payload.getData();
+        // Manage Payload, it is HexString encoded and wil be base64 encoded
+        if ( payload.getData() == null ) payload.setData("");
+        String toStoreData = Base64.getEncoder().encodeToString(HexCodingTools.getByteArrayFromHexString(payload.getData()));
         if (encryptionRequired) {
-            toStoreData = "$" + EncryptionHelper.encrypt(payload.getData(), IV, commonConfig.getEncryptionKey());
+            toStoreData = "$" + EncryptionHelper.encrypt(toStoreData, IV, commonConfig.getEncryptionKey());
         }
         p.setPayload(toStoreData);
         if ( payload.getData() != null && !payload.getData().isEmpty()) {
@@ -224,22 +231,14 @@ public class SigfoxV2Driver extends AbstractProtocol {
                 CaptureError e = new CaptureError();
                 e.setCode("004");
                 e.setLevel(CAP_ERROR_WARNING);
-                e.setMessage("capture-driver-helium-chirpstackv4-invalid-base64-payload");
+                e.setMessage("capture-driver-sigfox-v2-invalid-base64-payload");
                 p.getErrors().add(e);
                 p.setPayloadSize(-1);
             }
         } else p.setPayloadSize(0);
 
-
-        if (payload.getObject() != null && !payload.getObject().isEmpty()) {
-            if (encryptionRequired) {
-                p.setDecodedPayload("$" + EncryptionHelper.encrypt(payload.getObject(), IV, commonConfig.getEncryptionKey()));
-            } else {
-                p.setDecodedPayload(Base64.getEncoder().encodeToString(payload.getObject().getBytes()));
-            }
-        } else {
-            p.setDecodedPayload("");
-        }
+        // No decoded payload on sigfox
+        p.setDecodedPayload("");
 
         p.setNwkStatus(CaptureDataPivot.NetworkStatus.NWK_STATUS_SUCCESS);
         p.setCoredDump("");
@@ -265,135 +264,74 @@ public class SigfoxV2Driver extends AbstractProtocol {
         }
 
         CaptureMetaData meta = p.getMetadata();
-        meta.setNwkUuid(payload.getDeduplicationId());
-        try {
-            meta.setNwkTimestamp(DateConverters.StringDateToMs(payload.getTime()));
-            meta.setNwkTimeNs(0);
-        } catch (ITParseException x) {
-            CaptureError e = new CaptureError();
-            e.setCode("001");
-            e.setLevel(CAP_ERROR_WARNING);
-            e.setMessage("capture-driver-helium-chirpstackv4-bad-timestamp-format");
-            p.getErrors().add(e);
-            meta.setNwkTimestamp(Now.NowUtcMs());
-            meta.setNwkTimeNs(0);
-        }
-        meta.setNwkDeviceId(payload.getDeviceInfo().getDevEui());
+
+        // No Sigfox network ID, use a non uniq id based on deveui + seqeui, purpose is to link mulitple message in a short time windows
+        meta.setNwkUuid(nwkId);
+        meta.setNwkTimestamp(payload.getTimeMs());
+        meta.setNwkTimeNs(0);
+        meta.setNwkDeviceId(payload.getDevice());
         meta.setDeviceId(d.getId());
         meta.setDataStreamId(d.getDataStreamId());
         meta.setSessionCounter(0);
-        meta.setFrameCounterUp(payload.getfCnt());
-        meta.setFrameCounterDwn(payload.getfCntDown());
-        meta.setFramePort(payload.getfPort());
-        meta.setConfirmReq(payload.isConfirmed());
+        meta.setFrameCounterUp(payload.getSeq());
+        meta.setFrameCounterDwn(-1);
+        meta.setFramePort(0);
+        meta.setConfirmReq(payload.isAck()); // @TODO - this is only available with uplink frames...
         meta.setConfirmed(false); // default to false
-        meta.setDownlinkReq(payload.isConfirmed());
+        meta.setDownlinkReq(payload.isAck()); // @TODO - this is only available with uplink frames...
         meta.setDownlinkResp(false);
 
         CaptureRadioMetadata crmeta = meta.getRadioMetadata();
-        crmeta.setAddress(payload.getDevAddr());
-        crmeta.setFrequency(0);
-        crmeta.setDataRate(""+payload.getDr());
-        if ( payload.getTxInfo() != null ) {
-            crmeta.setFrequency(payload.getTxInfo().getFrequency());
-        }
+        crmeta.setAddress(payload.getDevice());
+        crmeta.setFrequency(0);         // @TODO - based on RC ... we could put something here
+        crmeta.setDataRate("");         // @TODO - based on RC ... we could put something here (but not enough)
 
         // Network stations
         ArrayList<Location> locs = new ArrayList<>();
-        if ( payload.getRxInfo() != null ) {
-            payload.getRxInfo().forEach(ri -> {
+        if ( payload.getDuplicates() != null ) {
+            payload.getDuplicates().forEach(ri -> {
                 CaptureNwkStation ns = new CaptureNwkStation();
                 ns.setCustomParams(new ArrayList<>());
-                try {
-                    if ( ri.getNsTime() != null && !ri.getNsTime().isEmpty() ) {
-                        ns.setNkwTimestamp(DateConverters.StringNsDateToMs(ri.getNsTime()));
-                        ns.setNkwTimeNs(DateConverters.StringNsDateToNsRemaining(ri.getNsTime()));
-                    } else {
-                        ns.setNkwTimestamp(DateConverters.StringDateToMs(ri.getTime()));
-                        ns.setNkwTimeNs(0);
-                    }
-                } catch (ITParseException x) {
-                    CaptureError e = new CaptureError();
-                    e.setCode("002");
-                    e.setLevel(CAP_ERROR_WARNING);
-                    e.setMessage("capture-driver-helium-chirpstackv4-bad-timestamp-format");
-                    p.getErrors().add(e);
-                    ns.setNkwTimestamp(0);
-                    ns.setNkwTimeNs(0);
-                }
-                if ( ri.getMetadata() != null ) {
-                    if ( ri.getMetadata().getGateway_id() != null ) {
-                        ns.setStationId(ri.getMetadata().getGateway_id());
-                    } else {
-                        CaptureError e = new CaptureError();
-                        e.setCode("003");
-                        e.setLevel(CAP_ERROR_WARNING);
-                        e.setMessage("capture-driver-helium-chirpstackv4-missing-gateway-id");
-                        p.getErrors().add(e);
-                        ns.setStationId(ri.getGatewayId()); // use mac as backup
-                    }
-                    CaptureCalcLocation loc = new CaptureCalcLocation();
-                    loc.setLatitude(0.0);
-                    loc.setLongitude(0.0);
-                    loc.setEncrypted(false);
-                    try {
-                        if ( ri.getMetadata().getGateway_lat() != null && ri.getMetadata().getGateway_long() != null ) {
-                            loc.setLatitude(Double.parseDouble(ri.getMetadata().getGateway_lat()));
-                            loc.setLongitude(Double.parseDouble(ri.getMetadata().getGateway_long()));
-                        }
-                    } catch (NumberFormatException ignored) {}
-                    loc.setAccuracy(300);
-                    loc.setAltitude(0);
-                    if ( GeolocationTools.isAValidCoordinate(loc.getLatitude(),loc.getLongitude())) {
-                        // add until encryption
-                        locs.add( new Location(loc.getLatitude(), loc.getLongitude(), 300, ri.getRssi()) );
-                    }
-                    if (encryptionRequired && h3 != null) {
-                        loc.setHexagonId(EncryptionHelper.encrypt(h3.latLngToCellAddress(loc.getLatitude(), loc.getLongitude(), 15), IV, commonConfig.getEncryptionKey()));
-                        loc.setLatitude(0.0);
-                        loc.setLongitude(0.0);
-                        loc.setEncrypted(true);
-                    } else {
-                        loc.setHexagonId(ri.getMetadata().getGateway_h3index());
-                    }
-                    ns.setStationLocation(loc);
-                    ns.getCustomParams().add(new CustomField("gateway-name", ri.getMetadata().getGateway_name()));
-                    ns.getCustomParams().add(new CustomField("gateway-region", ri.getMetadata().getRegi()));
-                }
-                ns.setRssi(ri.getRssi());
+                ns.setNkwTimestamp(payload.getTimeMs());
+                ns.setNkwTimeNs(0);
+                ns.setStationId(ri.getBsId());
+                CaptureCalcLocation loc = new CaptureCalcLocation();
+                loc.setLatitude(0.0);
+                loc.setLongitude(0.0);
+                loc.setEncrypted(false);
+                loc.setAccuracy(300);
+                loc.setAltitude(0);
+                ns.setStationLocation(loc);
+                ns.setRssi(-1);
                 ns.setSnr(ri.getSnr());
                 p.getNwkStations().add(ns);
             });
 
             CaptureCalcLocation ccmeta = new CaptureCalcLocation();
-            if ( locs.isEmpty() ) {
-                ccmeta.setAccuracy(0);
+            ccmeta.setAccuracy(0);
+            ccmeta.setAltitude(0);
+            ccmeta.setLatitude(0.0);
+            ccmeta.setLatitude(0.0);
+            ccmeta.setHexagonId("");
+            if ( payload.getComputedLocation() != null ) {
+                ccmeta.setLatitude(payload.getComputedLocation().getLat());
+                ccmeta.setLongitude(payload.getComputedLocation().getLng());
+                ccmeta.setAccuracy(payload.getComputedLocation().getRadius());
                 ccmeta.setAltitude(0);
-                ccmeta.setLatitude(0.0);
-                ccmeta.setLatitude(0.0);
-                ccmeta.setHexagonId("");
-            } else {
-                try {
-                    Location l = ComputeLocation.computeLocation(locs);
-                    ccmeta.setLatitude(l.lat);
-                    ccmeta.setLongitude(l.lng);
-                    ccmeta.setAccuracy(l.radius);
-                    ccmeta.setAltitude(0);
-                    if (encryptionRequired && h3 != null) {
-                        ccmeta.setHexagonId(EncryptionHelper.encrypt(h3.latLngToCellAddress(ccmeta.getLatitude(), ccmeta.getLongitude(), 15), IV, commonConfig.getEncryptionKey()));
-                        ccmeta.setLatitude(0.0);
-                        ccmeta.setLongitude(0.0);
-                        ccmeta.setEncrypted(true);
-                    } else if ( h3 != null ){
-                        ccmeta.setHexagonId(h3.latLngToCellAddress(ccmeta.getLatitude(), ccmeta.getLongitude(),14));
-                    } else ccmeta.setHexagonId("");
-                } catch (ITNotFoundException x) {
-                    ccmeta.setAccuracy(0);
-                    ccmeta.setAltitude(0);
+                switch (payload.getComputedLocation().getSource()) {
+                    case 1: ccmeta.setSource(CaptureLocationSource.GPS); break;
+                    case 2: ccmeta.setSource(CaptureLocationSource.NETWORK_RSSI); break;
+                    case 6: ccmeta.setSource(CaptureLocationSource.WIFI_RSSI); break;
+                    default: ccmeta.setSource(CaptureLocationSource.UNKNOWN); break;
+                }
+                if (encryptionRequired && h3 != null) {
+                    ccmeta.setHexagonId(EncryptionHelper.encrypt(h3.latLngToCellAddress(ccmeta.getLatitude(), ccmeta.getLongitude(), 15), IV, commonConfig.getEncryptionKey()));
                     ccmeta.setLatitude(0.0);
                     ccmeta.setLongitude(0.0);
-                    ccmeta.setHexagonId("");
-                }
+                    ccmeta.setEncrypted(true);
+                } else if ( h3 != null ){
+                    ccmeta.setHexagonId(h3.latLngToCellAddress(ccmeta.getLatitude(), ccmeta.getLongitude(),14));
+                } else ccmeta.setHexagonId("");
             }
             meta.setCalculatedLocation(ccmeta);
         }

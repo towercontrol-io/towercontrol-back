@@ -68,6 +68,13 @@ public class CaptureCalcLocation implements CloneableObject<CaptureCalcLocation>
     )
     protected String hexagonId;
 
+    @Schema(
+            description = "Source",
+            example = "NETWORK_RSSI",
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED
+    )
+    protected CaptureLocationSource source;
+
     // ======================================
     @Override
     public CaptureCalcLocation clone() {
@@ -78,6 +85,7 @@ public class CaptureCalcLocation implements CloneableObject<CaptureCalcLocation>
         o.altitude = this.altitude;
         o.accuracy = this.accuracy;
         o.hexagonId = this.hexagonId;
+        o.source = this.source;
         return o;
     }
 
@@ -130,5 +138,13 @@ public class CaptureCalcLocation implements CloneableObject<CaptureCalcLocation>
 
     public void setEncrypted(boolean encrypted) {
         this.encrypted = encrypted;
+    }
+
+    public CaptureLocationSource getSource() {
+        return source;
+    }
+
+    public void setSource(CaptureLocationSource source) {
+        this.source = source;
     }
 }

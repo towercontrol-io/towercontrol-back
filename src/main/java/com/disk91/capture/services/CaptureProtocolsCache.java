@@ -118,7 +118,9 @@ public class CaptureProtocolsCache {
                 "'processingClassName':'com.disk91.capture.drivers.standard.LoraWanHeliumChirpstackV4Driver', 'creationBy':'system', 'creationMs':0, 'defaultWideOpen':false, " +
                 "'mandatoryFields':[ " +
                   "{ 'name':'protocol-server-api-endpoint', 'unique': false, 'encrypted' : false, 'valueType':'string,^https?://', 'description':'protocol-lorawan-helium-chirp-v4-api-endpoint', 'enDescription': 'Helium Chirpstack Api Endpoint'}" + "," +
-                  "{ 'name':'protocol-server-api-key', 'unique': false, 'encrypted' : true, 'valueType':'string', 'description':'protocol-lorawan-helium-chirp-v4-api-apikey', 'enDescription': 'Helium Chirpstack Api Key, stored encrypted'}" +
+                  "{ 'name':'protocol-server-api-key', 'unique': false, 'encrypted' : true, 'valueType':'string', 'description':'protocol-lorawan-helium-chirp-v4-api-apikey', 'enDescription': 'Helium Chirpstack Api Key, stored encrypted'}" + "," +
+                  "{ 'name':'protocol-auto-create', 'unique': false, 'encrypted' : false, 'valueType':'boolean', 'description':'protocol-lorawan-helium-chirp-v4-auto-create', 'enDescription': 'True when unknown device are created automatically'}" + "," +
+                  "{ 'name':'protocol-auto-create-group', 'unique': false, 'encrypted' : false, 'valueType':'groupid', 'description':'protocol-lorawan-helium-chirp-v4-auto-create-group', 'enDescription': 'Group Id when the auto-create is true'}" +
                 "]," +
                 "'protocolIds':[ " +
                     "{ 'name':'lorawan-dynamic-ids', 'description':'protocol-lorawan-dynamic-ids', 'enDescription': 'LoRa Network Server provided device identifiers', 'mandatoryFields':[ " +
@@ -143,7 +145,9 @@ public class CaptureProtocolsCache {
                    "{ 'name':'protocol-sigfox-id-reassignment', 'unique': false, 'encrypted' : false, 'valueType':'enum[no-reuse|reuse-last|reuse-first]', 'description':'protocol-sigfox-id-reassignment-desc', 'enDescription': 'ID reassignment strategy'}" +  "," +
                    "{ 'name':'protocol-sigfox-renewal', 'unique': false, 'encrypted' : false, 'valueType':'enum[true|default-false|force-false]', 'description':'protocol-sigfox-allow-renewal', 'enDescription': 'Register new device with subscription renewal set when true, default-false will manage renewal flag manually, force-false prohibit renewal'}" +  "," +
                    "{ 'name':'protocol-sigfox-subscription-enable', 'unique': false, 'encrypted' : false, 'valueType':'boolean', 'description':'protocol-sigfox-subscription-enable-desc', 'enDescription': 'New subscription / renewal authorized'}" + "," +
-                   "{ 'name':'protocol-sigfox-subscriptions', 'unique': false, 'encrypted' : false, 'valueType':'number', 'description':'protocol-sigfox-subscription-desc', 'enDescription': 'Number of available subscriptions. -1 unlimited, -2 request backend'}" +
+                   "{ 'name':'protocol-sigfox-subscriptions', 'unique': false, 'encrypted' : false, 'valueType':'number', 'description':'protocol-sigfox-subscription-desc', 'enDescription': 'Number of available subscriptions. -1 unlimited, -2 request backend'}" + "," +
+                   "{ 'name':'protocol-sigfox-auto-create', 'unique': false, 'encrypted' : false, 'valueType':'boolean', 'description':'protocol-sigfox-auto-create-desc', 'enDescription': 'True when unknown device are created automatically'}" + "," +
+                   "{ 'name':'protocol-sigfox-auto-create-group', 'unique': false, 'encrypted' : false, 'valueType':'groupid', 'description':'protocol-sigfox-auto-create-group-desc', 'enDescription': 'Group Id when the auto-create is true'}" +
                 "]," +
                 "'protocolIds':[ " +
                    "{ 'name':'sigfox-id-pac', 'description':'protocol-sigfox-idpac', 'enDescription': 'Sigfox ID & PAC Credentials', 'mandatoryFields':[ " +

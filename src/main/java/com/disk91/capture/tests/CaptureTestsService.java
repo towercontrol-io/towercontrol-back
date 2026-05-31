@@ -498,9 +498,7 @@ public class CaptureTestsService {
         dev.setCreationOnMs(Now.NowUtcMs());
         dev.setDataEncrypted(false);
         dev.setCommunicationIds(new ArrayList<>());
-        DevAttribute a = new DevAttribute();
-        a.addOneSimpleParam("LoRa", "deveui", "6081f9dde602cd71");
-        dev.getCommunicationIds().add(a);
+        dev.addOneCommunicationId("LoRa", "deveui", "6081f9dde602cd71");
         dev.setAssociatedGroups(new ArrayList<>());
         deviceCache.saveDevice(dev, DeviceHistoryReason.NO_REASON);
 

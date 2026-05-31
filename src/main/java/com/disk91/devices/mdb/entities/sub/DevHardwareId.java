@@ -42,6 +42,15 @@ public class DevHardwareId implements CloneableObject<DevHardwareId> {
             requiredMode = Schema.RequiredMode.REQUIRED
     ) protected String id;
 
+    // === INIT ===
+
+    public static DevHardwareId newDevHardwareId(String type, String id) {
+        DevHardwareId devHardwareId = new DevHardwareId();
+        devHardwareId.type = type;
+        devHardwareId.id = id;
+        return devHardwareId;
+    }
+
     // === CLONE ===
 
     public DevHardwareId clone() {

@@ -45,7 +45,6 @@ import java.util.ArrayList;
 
 import static com.disk91.devices.interfaces.DeviceBatType.UNKNOWN_BATTERY_TYPE;
 import static com.disk91.devices.interfaces.DeviceState.IDENTIFIED;
-import static com.disk91.devices.mdb.entities.sub.DevSubState.DEV_SUBSTATE_NONE;
 
 @Document(collection = "devices")
 @CompoundIndexes({
@@ -323,6 +322,31 @@ public class Device implements CloneableObject<Device> {
             log.error("[devices] Unable to create H3Core instance", ioException);
         }
     }
+
+    // ========================================
+
+    /**
+     * Add a Communication Parameter, search for existing type, if exists, add the key/value into it
+     * if not existing, create it.
+     * @param type
+     * @param key
+     * @param value
+     */
+    public void addOneCommunicationId( String type, String key, String value ) {
+        if ( this.communicationIds == null ) this.communicationIds = new ArrayList<>();
+        boolean exists = false;
+        for ( DevAttribute a : this.communicationIds ) {
+            if ( a.getType().equals(type) ) {
+                // add into the existing one
+                a.upsertOneSimpleParam(key, value);
+                exists = true;
+            }
+        }
+        if ( !exists ) {
+            this.communicationIds.add(DevAttribute.newDevAttribute(type, key, value));
+        }
+    }
+
 
 
     // ========================================

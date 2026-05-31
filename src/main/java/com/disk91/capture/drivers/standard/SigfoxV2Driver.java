@@ -20,6 +20,7 @@
 package com.disk91.capture.drivers.standard;
 
 import com.disk91.capture.api.interfaces.CaptureResponseItf;
+import com.disk91.capture.interfaces.AbstractProcessor;
 import com.disk91.common.interfaces.sigfox.SigfoxCommonMessage;
 import com.disk91.common.interfaces.sigfox.apiv2.models.SigfoxApiv2Device;
 import com.disk91.common.interfaces.sigfox.apiv2.services.ITSigfoxConnectionException;
@@ -41,8 +42,11 @@ import com.disk91.common.tools.*;
 import com.disk91.common.tools.computeLocation.ComputeLocation;
 import com.disk91.common.tools.computeLocation.Location;
 import com.disk91.common.tools.exceptions.*;
+import com.disk91.devices.interfaces.DeviceState;
 import com.disk91.devices.mdb.entities.Device;
+import com.disk91.devices.mdb.entities.sub.DevAttribute;
 import com.disk91.devices.mdb.entities.sub.DevGroupAssociated;
+import com.disk91.devices.mdb.entities.sub.DevHardwareId;
 import com.disk91.devices.services.DevicesNwkCache;
 import com.disk91.groups.services.GroupsServices;
 import com.disk91.users.mdb.entities.User;
@@ -160,59 +164,87 @@ public class SigfoxV2Driver extends AbstractProtocol {
         // Compute a network ID for frame cache and completion over multiple callback
         // This is not a unique Id
         String nwkId = payload.getDevice() + "-" + payload.getSeq();
+        String nwkName = payload.getDevice().toLowerCase();
 
         // Get the associated device if exists
         Device d = null;
         try {
-            d = devicesNwkCache.getDevice("Sigfox", "deveui", payload.getDevice().toLowerCase());
-
-            // Check rights on device
-            // When the JWT user is in group ROLE_GLOBAL_CAPTURE it has global access on devices
-            boolean authorized = false;
+            d = devicesNwkCache.getDevice("Sigfox", "deveui", nwkName);
+        } catch (ITNotFoundException x) {
+            // This device is not known, if the endpoint allows auto-creation, let's do it
+            boolean deviceOk = false;
             try {
-                userCommon.getUserWithRolesAndGroups(
-                        jwtUser,
-                        UsersRolesCache.StandardRoles.ROLE_GLOBAL_CAPTURE.getRoleName(),
-                        null,
-                        null,
-                        false
-                );
-                authorized = true;
-            } catch (ITNotFoundException | ITRightException x) {
-                // Not a global capture user, we need to check device groups
-
-                // When the JWT user is an apikey we need to check the apikey rights searching for the groups of the
-                // device and ensuring the apikey has write rights on at least one of them.
-                for (DevGroupAssociated g : d.getAssociatedGroups()) {
-                    try {
+                if (endpoint.getOneField("protocol-sigfox-auto-create").startsWith("true")) {
+                    String group = endpoint.getOneField("protocol-sigfox-auto-create-group");
+                    if (!group.startsWith("__none__")) {
+                        // We have a default group identified for creation.
                         userCommon.getUserWithRolesAndGroups(
                                 jwtUser,
-                                UsersRolesCache.StandardRoles.ROLE_DEVICE_WRITE.getRoleName(),
+                                UsersRolesCache.StandardRoles.ROLE_DEVICE_ADMIN.getRoleName(),
                                 null,
-                                g.getGroupId(),
+                                group,
                                 true
                         );
-                        authorized = true;
-                        break; // found, no need to continue
-                    } catch (ITNotFoundException | ITRightException ignore) {
-                        // not in this group, try the next one
+                        // It's Ok, we can create the new device.
+                        Device dev = Device.newDevice(user.getLogin());
+                        dev.getHardwareIds().add(DevHardwareId.newDevHardwareId("SIGFOX",nwkName));
+                        dev.setDataStreamId(nwkName+"-"+Now.formatToYYYYMMDDUtc(Now.NowUtcMs()));
+                        dev.setName("Sigfox-"+nwkName);
+                        dev.setDevState(DeviceState.OPEN);
+                        dev.setLastSeenDateMs(Now.NowUtcMs());
+                        dev.addOneCommunicationId("Sigfox", "deveui", nwkName);
+                        // @TODO - We will need to add the information herited from the devce type profile
+                        dev.getAssociatedGroups().add(DevGroupAssociated.newGroupAssociated(group));
+                        d = devicesNwkCache.createDevice(dev,"Sigfox", "deveui", nwkName);
+                        if ( d != null  ) deviceOk = true;
                     }
                 }
-            }
-            if (!authorized) {
+            } catch (ITNotFoundException | ITRightException ignore) {} // auto-creat => false or no group defined
+            if ( !deviceOk ) {
+                // else
                 endpoint.incTotalBadDeviceRight();
-                throw new ITHackerException("capture-driver-sigfox-v2-no-rights-on-device");
+                throw new ITRightException("capture-driver-sigfox-v2-unknown-device");
             }
-
-        } catch (ITNotFoundException x) {
-            // This device is not known
-
-            // @TODO - check if the protocol allow unknown device creation and configuration in a default group
-            // if yes ... just do it (check the API key right on this group also and ability to create devices)
-
-            endpoint.incTotalBadDeviceRight();
-            throw new ITRightException("capture-driver-sigfox-v2-unknown-device");
         }
+
+        // Check rights on device
+        // When the JWT user is in group ROLE_GLOBAL_CAPTURE it has global access on devices
+        boolean authorized = false;
+        try {
+            userCommon.getUserWithRolesAndGroups(
+                    jwtUser,
+                    UsersRolesCache.StandardRoles.ROLE_GLOBAL_CAPTURE.getRoleName(),
+                    null,
+                    null,
+                    false
+            );
+            authorized = true;
+        } catch (ITNotFoundException | ITRightException x) {
+            // Not a global capture user, we need to check device groups
+
+            // When the JWT user is an apikey we need to check the apikey rights searching for the groups of the
+            // device and ensuring the apikey has write rights on at least one of them.
+            for (DevGroupAssociated g : d.getAssociatedGroups()) {
+                try {
+                    userCommon.getUserWithRolesAndGroups(
+                            jwtUser,
+                            UsersRolesCache.StandardRoles.ROLE_DEVICE_WRITE.getRoleName(),
+                            null,
+                            g.getGroupId(),
+                            true
+                    );
+                    authorized = true;
+                    break; // found, no need to continue
+                } catch (ITNotFoundException | ITRightException ignore) {
+                    // not in this group, try the next one
+                }
+            }
+        }
+        if (!authorized) {
+            endpoint.incTotalBadDeviceRight();
+            throw new ITHackerException("capture-driver-sigfox-v2-no-rights-on-device");
+        }
+
         // Once on this point, the authorization is OK
         final boolean encryptionRequired = endpoint.isEncrypted() || d.isDataEncrypted();
 

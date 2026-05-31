@@ -26,11 +26,16 @@ import com.disk91.capture.mdb.entities.Protocols;
 import com.disk91.common.tools.exceptions.*;
 import com.disk91.users.mdb.entities.User;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.TreeMap;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
-public abstract class AbstractProtocol {
+public abstract class AbstractProtocol extends AbstractProcessor {
 
     /**
      * This function is used to create a unique RX UUID that will be used to trace the frame over the different
@@ -182,6 +187,59 @@ public abstract class AbstractProtocol {
     ) throws
             ITOverQuotaException,               // In case the backend refuses the creation for a technical reason (retry later)
             ITParseException;                   // In case of a syntax error where retrial is not expected until fix
+
+
+
+    // ================================================================================
+    // Static processor registry
+    // ================================================================================
+
+    private static final Logger staticLog = LoggerFactory.getLogger(CaptureDataPivot.class);
+
+    // Thread-safe map of registered processors, keyed by a string id
+    private static final ConcurrentHashMap<String, Consumer<CaptureDataPivot>> staticProcessors = new ConcurrentHashMap<>();
+
+    /**
+     * Register a processor for CaptureDataPivot under the given id.
+     * If a processor already exists for that id, it is replaced.
+     * @param id        - Unique identifier for the processor
+     * @param processor - Function consuming a CaptureDataPivot instance
+     */
+    public static void addProcessor(String id, Consumer<CaptureDataPivot> processor) {
+        staticProcessors.put(id, processor);
+        staticLog.info("[capture] Static processor registered with id '{}'", id);
+    }
+
+    /**
+     * Remove a previously registered processor by its id.
+     * @param id - Unique identifier of the processor to remove
+     */
+    public static void removeProcessor(String id) {
+        Consumer<CaptureDataPivot> removed = staticProcessors.remove(id);
+        if (removed != null) {
+            staticLog.info("[capture] Static processor with id '{}' removed", id);
+        } else {
+            staticLog.warn("[capture] Attempted to remove unknown static processor with id '{}'", id);
+        }
+    }
+
+    /**
+     * Invoke all registered static processors on the given pivot, in ascending id order.
+     * Exceptions thrown by individual processors are caught and logged but do not interrupt the chain.
+     * @param pivot - CaptureDataPivot instance to pass to each processor
+     */
+    public void process(CaptureDataPivot pivot) {
+        if (staticProcessors.isEmpty()) return;
+
+        // Sort processors by id (ascending string order) before invocation
+        new TreeMap<>(staticProcessors).forEach((id, processor) -> {
+            try {
+                processor.accept(pivot);
+            } catch (Exception e) {
+                staticLog.warn("[capture] Static processor '{}' threw an exception and was skipped: {}", id, e.getMessage());
+            }
+        });
+    }
 
 
 }

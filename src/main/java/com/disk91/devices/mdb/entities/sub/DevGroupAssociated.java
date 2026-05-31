@@ -34,6 +34,14 @@ public class DevGroupAssociated implements CloneableObject<DevGroupAssociated> {
     )
     protected String groupId;
 
+    // === CREATE ===
+
+    public static DevGroupAssociated newGroupAssociated(String shortId) {
+        DevGroupAssociated d = new DevGroupAssociated();
+        d.setGroupId(shortId);
+        return d;
+    }
+
     // === CLONE ===
 
     public DevGroupAssociated clone() {

@@ -26,6 +26,7 @@ import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.devices.config.DevicesConfig;
 import com.disk91.devices.interfaces.DeviceState;
 import com.disk91.devices.mdb.entities.Device;
+import com.disk91.devices.mdb.entities.sub.DevHardwareId;
 import com.disk91.devices.mdb.repositories.DevicesRepository;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -210,6 +211,36 @@ public class DevicesNwkCache {
                 this.devicesCache.remove(k, false);
                 k = kToRemove.poll();
             } while ( k != null );
+        }
+    }
+
+    /**
+     * We are going to create a device, but first we will make sure it has not been
+     * created in parallel, to avoid duplicates that would be problematic.
+     *
+     * @param d
+     * @param type
+     * @param key
+     * @param value
+     * @return
+     */
+    synchronized public Device createDevice(Device d, String type, String key, String value) {
+        String searchKey = type + ":" + key + ":" + value;
+        DeviceNwkCacheEntry u = this.devicesCache.get(searchKey);
+        if ( u == null) {
+            d = devicesRepository.save(d);
+            deviceCache.addDevicesToCache(d);
+            u = new DeviceNwkCacheEntry();
+            u.deviceId = d.getId();
+            this.devicesCache.put(u, searchKey);
+            return d;
+        } else {
+            try {
+                return deviceCache.getDevice(u.deviceId);
+            } catch (ITNotFoundException e) {
+                log.error("[devices] incoherent state : device not found for {}:{}/{}", type, key, value);
+                return null;
+            }
         }
     }
 

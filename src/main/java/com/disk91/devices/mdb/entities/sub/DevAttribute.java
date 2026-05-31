@@ -47,12 +47,42 @@ public class DevAttribute implements CloneableObject<DevAttribute> {
 
     // === HELPER ===
 
-    public void addOneSimpleParam(String type, String key, String value) {
-        this.setType(type);
+    /**
+     * Add or update a parameter based on its key.
+     * @param key
+     * @param value
+     */
+    public void upsertOneSimpleParam(String key, String value) {
         if ( this.params == null ) this.params = new ArrayList<>();
+        boolean found = false;
+        for ( KeyValues kv : this.params) {
+            if ( kv.getKey().equals(key) ) {
+                kv.setOnKeyValue(key, value);
+                found = true;
+                break;
+            }
+        }
+        if ( !found ) {
+            KeyValues kv = new KeyValues();
+            kv.setOnKeyValue( key, value );
+            this.params.add(kv);
+        }
+    }
+
+    /**
+     * Create a new simple devAttribute entity with a single key and a single value pour un type donné
+     * @param type
+     * @param key
+     * @param value
+     * @return
+     */
+    public static DevAttribute newDevAttribute(String type, String key, String value) {
+        DevAttribute devAttribute = new DevAttribute();
+        devAttribute.setType(type);
         KeyValues kv = new KeyValues();
         kv.setOnKeyValue( key, value );
-        this.params.add(kv);
+        devAttribute.params.add(kv);
+        return devAttribute;
     }
 
     // === CLONE ===

@@ -22,7 +22,6 @@ package com.disk91.capture.interfaces;
 import com.disk91.capture.interfaces.sub.CaptureError;
 import com.disk91.capture.interfaces.sub.CaptureMetaData;
 import com.disk91.capture.interfaces.sub.CaptureNwkStation;
-import com.disk91.capture.interfaces.sub.CaptureRadioMetadata;
 import com.disk91.common.tools.CloneableObject;
 import com.disk91.common.tools.CustomField;
 import com.disk91.common.tools.Now;
@@ -407,4 +406,5 @@ public class CaptureDataPivot implements CloneableObject<CaptureDataPivot>  {
     public int getVersion() {
         return version;
     }
+
 }

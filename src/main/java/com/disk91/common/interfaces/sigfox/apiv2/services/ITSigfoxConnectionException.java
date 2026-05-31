@@ -55,8 +55,8 @@ import org.springframework.http.HttpStatus;
 import java.io.Serial;
 
 public class ITSigfoxConnectionException extends Exception {
-    public HttpStatus status;
-    public String      errorMessage;
+    protected HttpStatus status;
+    protected String      errorMessage;
 
     @Serial
     private static final long serialVersionUID = 0L;

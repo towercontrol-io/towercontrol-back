@@ -69,7 +69,7 @@ public class SigfoxCommonMessage {
     public static final int INFOCODE_ROAMING_PENDING    =   10;
 
     public static final String TYPE_DATA = "data";
-    public static final String TYPE_SERVICE_STATUS = "srv_status";
+    public static final String TYPE_SERVICE_STATUS = "srv_status";          // Deprecated in 2026
     public static final String TYPE_SERVICE_ACK = "srv_ack";
     public static final String TYPE_SERVICE_GEOLOC = "srv_geoloc";
     public static final String TYPE_SERVICE_ADVANCED = "srv_advanced";

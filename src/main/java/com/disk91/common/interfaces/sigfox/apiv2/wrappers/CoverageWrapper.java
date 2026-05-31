@@ -92,7 +92,7 @@ public class CoverageWrapper {
                 }
             }
         } catch (ITSigfoxConnectionException x) {
-            log.warn("[capture][sigfox] Problem during Sigfox connection :{}",x.errorMessage );
+            log.warn("[capture][sigfox] Problem during Sigfox connection :{}",x.getErrorMessage() );
         }
         return 0;
     }
@@ -118,7 +118,7 @@ public class CoverageWrapper {
             );
 
         } catch (ITSigfoxConnectionException x) {
-            log.warn("[capture][sigfox] Problem during Sigfox connection :{}", x.errorMessage);
+            log.warn("[capture][sigfox] Problem during Sigfox connection :{}", x.getErrorMessage());
         }
         SigfoxApiv2CoverageGlobalResponse r = new SigfoxApiv2CoverageGlobalResponse();
         r.setLocationCovered(false);

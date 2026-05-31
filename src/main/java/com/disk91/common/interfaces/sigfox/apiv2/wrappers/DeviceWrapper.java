@@ -117,7 +117,7 @@ public class DeviceWrapper {
             }
 
         } catch (ITSigfoxConnectionException x) {
-            log.warn("[capture][sigfox] Problem during Sigfox connection :{}", x.errorMessage);
+            log.warn("[capture][sigfox] Problem during Sigfox connection :{}", x.getErrorMessage());
             return NEWDEVICE_REGISTER_ERROR;
         }
 
@@ -204,7 +204,7 @@ public class DeviceWrapper {
             } while (true);
 
         } catch (ITSigfoxConnectionException x) {
-            log.error("[capture][sigfox] Problem accessing sigfox device list {}", x.errorMessage);
+            log.error("[capture][sigfox] Problem accessing sigfox device list {}", x.getErrorMessage());
             return new ArrayList<SigfoxApiv2Device>();
         }
 
@@ -247,7 +247,7 @@ public class DeviceWrapper {
                 );
 
             } catch (ITSigfoxConnectionException x) {
-                log.error("[capture][sigfox] Problem updating device name {}", x.errorMessage);
+                log.error("[capture][sigfox] Problem updating device name {}", x.getErrorMessage());
                 ret = false;
             }
         }
@@ -277,7 +277,7 @@ public class DeviceWrapper {
                 log.info("actions:"+resp.getTotal());
 
             } catch (ITSigfoxConnectionException x) {
-                log.error("Problem updating deviceType "+x.errorMessage);
+                log.error("Problem updating deviceType "+x.getErrorMessage());
                 ret = false;
             }
 

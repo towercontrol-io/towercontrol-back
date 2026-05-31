@@ -439,7 +439,7 @@ public class SigfoxV2Driver extends AbstractProtocol {
                 log.warn("[capture][sigfoxv2] Missing mandatory field for sigfox id {}, stopping processing", sigfoxId);
                 return null;
             } catch (ITSigfoxConnectionException e) {
-                if ( e.status == HttpStatus.FORBIDDEN )  {
+                if ( e.getStatus() == HttpStatus.FORBIDDEN )  {
                     if ( _id.getState() != IdStateEnum.NOT_ASSIGNED && _id.getState() != IdStateEnum.REMOVED ) {
                         // The resource is not authorized, either because it has not yet been created in the backend system,
                         // or because it belongs to another user. Not blocking, process the next one. But to update the status
@@ -458,11 +458,11 @@ public class SigfoxV2Driver extends AbstractProtocol {
                             throw new ITOverQuotaException("capture-driver-backend-rate-limitation");
                         }
                     } else return null;
-                } else if (e.status == HttpStatus.TOO_MANY_REQUESTS) {
+                } else if (e.getStatus() == HttpStatus.TOO_MANY_REQUESTS) {
                     throw new ITOverQuotaException("capture-driver-backend-rate-limitation");
                 } else {
                     // Other error, we can retry later, but log it
-                    log.error("[capture][sigfoxv2] Error from Sigfox API: {}", e.getMessage());
+                    log.error("[capture][sigfoxv2] Error from Sigfox API: status={} message={}", e.getStatus(), e.getErrorMessage());
                     return null;
                 }
             }

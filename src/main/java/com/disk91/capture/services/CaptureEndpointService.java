@@ -290,6 +290,24 @@ public class CaptureEndpointService {
                         if ( ! m.isValueValid( cf.getValue() ) ) {
                             throw new ITParseException("capture-endpoint-custom-field-invalid");
                         }
+                        // for groupid, check the group rights
+                        if ( m.getValueType().startsWith("groupid") ) {
+                            String groupId = cf.getValue();
+                            if ( groupId.compareTo("__none__") != 0 ) {
+                                // this is a groupId, not the default empty value
+                                try {
+                                   userCommon.getUserWithRolesAndGroups(
+                                           userLogin,
+                                           UsersRolesCache.StandardRoles.ROLE_DEVICE_ADMIN.getRoleName(),
+                                           null,
+                                           groupId,
+                                           true
+                                   );
+                                } catch ( ITNotFoundException | ITRightException x) {
+                                    throw new ITParseException("capture-endpoint-custom-field-groupid-not-in-user-groups");
+                                }
+                            }
+                        }
                         found = true;
                         break;
                     }

@@ -104,6 +104,12 @@ public class MandatoryField implements CloneableObject<MandatoryField> {
             }
         }
 
+        // --- groupid ---
+        if (valueType.startsWith("groupid")) {
+           // Plain string, any non-null value is valid
+           return !value.isEmpty();
+        }
+
         // --- boolean ---
         if (valueType.equals("boolean")) {
             return value.equalsIgnoreCase("true") || value.equalsIgnoreCase("false");

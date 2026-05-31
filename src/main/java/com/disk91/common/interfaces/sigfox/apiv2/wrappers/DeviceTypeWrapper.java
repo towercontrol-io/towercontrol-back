@@ -91,7 +91,7 @@ public class DeviceTypeWrapper {
             }
             return null;
         } catch (ITSigfoxConnectionException x) {
-            log.warn("[capture][sigfox] Problem during Sigfox connection : {}",x.errorMessage );
+            log.warn("[capture][sigfox] Problem during Sigfox connection : {}",x.getErrorMessage() );
             return null;
         }
 
@@ -123,7 +123,7 @@ public class DeviceTypeWrapper {
             );
             return dt;
         } catch (ITSigfoxConnectionException x) {
-            log.warn("[capture][sigfox] Problem during Sigfox connection :{}",x.errorMessage );
+            log.warn("[capture][sigfox] Problem during Sigfox connection :{}",x.getErrorMessage() );
             return null;
         }
 
@@ -148,7 +148,7 @@ public class DeviceTypeWrapper {
             );
 
         } catch (ITSigfoxConnectionException x) {
-            log.warn("[capture][sigfox] Problem during Sigfox connection :{}",x.errorMessage );
+            log.warn("[capture][sigfox] Problem during Sigfox connection :{}",x.getErrorMessage() );
             return null;
         }
 
@@ -223,7 +223,7 @@ public class DeviceTypeWrapper {
                 }
                 log.info("[capture][sigfox] DeviceType {} created", dtc.getDeviceTypeId());
             } catch  (ITSigfoxConnectionException x) {
-                log.warn("[capture][sigfox] Problem during Sigfox connection :{}", x.errorMessage);
+                log.warn("[capture][sigfox] Problem during Sigfox connection :{}", x.getErrorMessage());
                 // Need to cancel all the existing callbacks
                 for (DeviceTypeCreationCallback callback : dtc.getCallbacks()) {
                     if (callback.getCallBackId() != null && !callback.getCallBackId().isEmpty()) {
@@ -259,7 +259,7 @@ public class DeviceTypeWrapper {
                 return null;
             }
         } catch (ITSigfoxConnectionException x) {
-            log.warn("[capture][sigfox] Problem during Sigfox connection :{}", x.errorMessage);
+            log.warn("[capture][sigfox] Problem during Sigfox connection :{}", x.getErrorMessage());
             return null;
         }
         return dtc;
@@ -286,7 +286,7 @@ public class DeviceTypeWrapper {
 
             return true;
         } catch (ITSigfoxConnectionException x) {
-            log.warn("[capture][sigfox] Problem during Sigfox connection :{}", x.errorMessage);
+            log.warn("[capture][sigfox] Problem during Sigfox connection :{}", x.getErrorMessage());
             return false;
         }
 

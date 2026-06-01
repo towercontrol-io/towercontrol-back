@@ -294,8 +294,8 @@ public class SigfoxV2Driver extends AbstractProtocol {
 
         CaptureMetaData meta = p.getMetadata();
 
-        // No Sigfox network ID, use a non uniq id based on deveui + seqeui, purpose is to link mulitple message in a short time windows
-        meta.setNwkUuid(d.getId());
+        // No Sigfox network ID, use a non uniq id based on deveui + seqeui, purpose is to link multiple message in a short time windows
+        meta.setNwkUuid(nwkId);
         meta.setNwkTimestamp(payload.getTimeMs());
         meta.setNwkTimeNs(0);
         meta.setNwkDeviceId(payload.getDevice());

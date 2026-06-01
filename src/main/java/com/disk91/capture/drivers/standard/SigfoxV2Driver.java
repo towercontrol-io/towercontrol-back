@@ -298,7 +298,7 @@ public class SigfoxV2Driver extends AbstractProtocol {
         CaptureMetaData meta = p.getMetadata();
 
         // No Sigfox network ID, use a non uniq id based on deveui + seqeui, purpose is to link mulitple message in a short time windows
-        meta.setNwkUuid(nwkId);
+        meta.setNwkUuid(d.getId());
         meta.setNwkTimestamp(payload.getTimeMs());
         meta.setNwkTimeNs(0);
         meta.setNwkDeviceId(payload.getDevice());
@@ -331,8 +331,10 @@ public class SigfoxV2Driver extends AbstractProtocol {
                 loc.setLatitude(0.0);
                 loc.setLongitude(0.0);
                 loc.setEncrypted(false);
-                loc.setAccuracy(300);
+                loc.setAccuracy(-1);
                 loc.setAltitude(0);
+                loc.setHexagonId("");
+                loc.setSource(CaptureLocationSource.NONE);
                 ns.setStationLocation(loc);
                 ns.setRssi(-1);
                 ns.setSnr(ri.getSnr());
@@ -344,8 +346,10 @@ public class SigfoxV2Driver extends AbstractProtocol {
             ccmeta.setAltitude(0);
             ccmeta.setLatitude(0.0);
             ccmeta.setLatitude(0.0);
+            ccmeta.setAccuracy(-1);
+            ccmeta.setSource(CaptureLocationSource.NONE);
             ccmeta.setHexagonId("");
-            if ( payload.getComputedLocation() != null ) {
+            if ( payload.getComputedLocation() != null && GeolocationTools.isAValidCoordinate(payload.getComputedLocation().getLat(), payload.getComputedLocation().getLng()) ) {
                 ccmeta.setLatitude(payload.getComputedLocation().getLat());
                 ccmeta.setLongitude(payload.getComputedLocation().getLng());
                 ccmeta.setAccuracy(payload.getComputedLocation().getRadius());

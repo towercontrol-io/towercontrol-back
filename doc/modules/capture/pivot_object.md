@@ -64,11 +64,11 @@ but only metadata, while aiming to be generic with respect to possible integrati
       }
     },
     calculatedLocation: {                   // Calculated location when available
-      latitude: "double",                    // Latitude in decimal degrees
-      longitude: "double",                   // Longitude in decimal degrees
+      latitude: "double",                    // Latitude in decimal degrees or 0 when encryption enabled
+      longitude: "double",                   // Longitude in decimal degrees or 0 when encryption enabled
       altitude: "double",                    // Altitude in meters
       accuracy: "float",                     // Accuracy in meters
-      hexagonId: "string",                   // Hexagon ID 
+      hexagonId: "string",                   // Hexagon ID when starting by "$" means encrypted content
       source: "enum"                         // Location source (e.g., "NETWORK_RSSSI", "GPS", "...")
     }
   },

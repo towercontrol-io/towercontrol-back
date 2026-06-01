@@ -32,6 +32,10 @@ import java.util.UUID;
 
 public abstract class AbstractProtocol {
 
+    // Add a driver seed
+    public static final String IV = "90f7adcf874990333cf159c1857fe539";
+
+
     /**
      * This function is used to create a unique RX UUID that will be used to trace the frame over the different
      * processing steps and splits.

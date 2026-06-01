@@ -49,7 +49,7 @@ public class SigfoxAdvancedMessDuplicates {
 
 
     @Schema(
-            description = "Snr",
+            description = "Snr (deprecated)",
             example = "6.3",
             requiredMode = Schema.RequiredMode.REQUIRED
     )

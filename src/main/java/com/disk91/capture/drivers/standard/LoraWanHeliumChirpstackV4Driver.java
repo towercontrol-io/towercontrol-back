@@ -70,9 +70,6 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
     protected ObjectMapper mapper;
     protected H3Core h3;
 
-    // Add a driver seeed
-    private static final String IV = "90f7adcf874990333cf159c1857fe539";
-
     @Autowired
     protected CommonConfig commonConfig;
 
@@ -323,7 +320,7 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
                         locs.add( new Location(loc.getLatitude(), loc.getLongitude(), 300, ri.getRssi()) );
                     }
                     if (encryptionRequired && h3 != null) {
-                        loc.setHexagonId(EncryptionHelper.encrypt(h3.latLngToCellAddress(loc.getLatitude(), loc.getLongitude(), 15), IV, commonConfig.getEncryptionKey()));
+                        loc.setHexagonId("$"+EncryptionHelper.encrypt(h3.latLngToCellAddress(loc.getLatitude(), loc.getLongitude(), 15), IV, commonConfig.getEncryptionKey()));
                         loc.setLatitude(0.0);
                         loc.setLongitude(0.0);
                         loc.setEncrypted(true);
@@ -355,7 +352,7 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
                     ccmeta.setAltitude(0);
                     ccmeta.setSource(CaptureLocationSource.NETWORK_RSSI);
                     if (encryptionRequired && h3 != null) {
-                        ccmeta.setHexagonId(EncryptionHelper.encrypt(h3.latLngToCellAddress(ccmeta.getLatitude(), ccmeta.getLongitude(), 15), IV, commonConfig.getEncryptionKey()));
+                        ccmeta.setHexagonId("$"+EncryptionHelper.encrypt(h3.latLngToCellAddress(ccmeta.getLatitude(), ccmeta.getLongitude(), 15), IV, commonConfig.getEncryptionKey()));
                         ccmeta.setLatitude(0.0);
                         ccmeta.setLongitude(0.0);
                         ccmeta.setEncrypted(true);

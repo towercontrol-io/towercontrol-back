@@ -85,9 +85,6 @@ public class SigfoxV2Driver extends AbstractProtocol {
     protected ObjectMapper mapper;
     protected H3Core h3;
 
-    // Add a driver seeed
-    private static final String IV = "90f7adcf874990333cf159c1857fe539";
-
     @Autowired
     protected CommonConfig commonConfig;
 
@@ -336,8 +333,10 @@ public class SigfoxV2Driver extends AbstractProtocol {
                 loc.setHexagonId("");
                 loc.setSource(CaptureLocationSource.NONE);
                 ns.setStationLocation(loc);
-                ns.setRssi(-1);
+                ns.setRssi((int)ri.getRssi());
                 ns.setSnr(ri.getSnr());
+                ns.setCustomParams(new ArrayList<>());
+                ns.getCustomParams().add(CustomField.of("repeat",""+ri.getNbRep()));
                 p.getNwkStations().add(ns);
             });
 
@@ -361,7 +360,7 @@ public class SigfoxV2Driver extends AbstractProtocol {
                     default: ccmeta.setSource(CaptureLocationSource.UNKNOWN); break;
                 }
                 if (encryptionRequired && h3 != null) {
-                    ccmeta.setHexagonId(EncryptionHelper.encrypt(h3.latLngToCellAddress(ccmeta.getLatitude(), ccmeta.getLongitude(), 15), IV, commonConfig.getEncryptionKey()));
+                    ccmeta.setHexagonId("$"+EncryptionHelper.encrypt(h3.latLngToCellAddress(ccmeta.getLatitude(), ccmeta.getLongitude(), 15), IV, commonConfig.getEncryptionKey()));
                     ccmeta.setLatitude(0.0);
                     ccmeta.setLongitude(0.0);
                     ccmeta.setEncrypted(true);

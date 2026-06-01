@@ -16,7 +16,7 @@ last. It is therefore the callback that is definitely required, but it will not 
 The JWT token required for authentication can be created via the `API Key` menu with the `ROLE_GLOBAL_CAPTURE` and 
 `ROLE_BACKEND_CAPTURE` roles. In case you want to manage security at group level, the user does not have the global 
 capture role, they must have the `ROLE_DEVICE_WRITE` role on the group to which this device belongs plus the
-`ROLE_BACKEND_CAPTURE`.
+`ROLE_BACKEND_CAPTURE`. If your need to create new device dynamically, role `ROLE_DEVICE_ADMIN` is required.
 
 - Authorization: `JWT`
 - Content-Type: `application/json`

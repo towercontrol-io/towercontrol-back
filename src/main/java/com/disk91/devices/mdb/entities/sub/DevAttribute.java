@@ -78,6 +78,7 @@ public class DevAttribute implements CloneableObject<DevAttribute> {
      */
     public static DevAttribute newDevAttribute(String type, String key, String value) {
         DevAttribute devAttribute = new DevAttribute();
+        devAttribute.setParams(new ArrayList<>());
         devAttribute.setType(type);
         KeyValues kv = new KeyValues();
         kv.setOnKeyValue( key, value );

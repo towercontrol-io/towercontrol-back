@@ -3,7 +3,7 @@ The device data structure is defined as follows:
 
 ```json
 {
-  "id": "string",                 // technical uniq identifier usined inside the platform
+  "id": "string",                 // technical uniq identifier used inside the platform
   "version": "number",            // group structure version
   
   "instanceOfId" : "string",      // When this device is an instance of a given device, this makes the link with the upper

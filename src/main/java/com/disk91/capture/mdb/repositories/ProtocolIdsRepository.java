@@ -38,9 +38,9 @@ public interface ProtocolIdsRepository extends MongoRepository<ProtocolIds,Strin
      * @param value - the expected value for the given custom config field name
      * @return an Optional containing the matching ProtocolIds if found
      */
-    @Query("{ 'captureId': ?0, 'customConfig': { $elemMatch: { 'name': ?1, 'value': ?2 } } }")
+    @Query("{ 'captureId': ?0, 'customConfig': { $elemMatch: { 'name': ?1, 'value': { $regex: ?2 } } } }")
     Optional<ProtocolIds> findByCaptureIdAndCustomConfigNameAndValue(String captureId, String name, String value);
-
+    
     /**
      * Find a limited number of ProtocolIds for a given captureId where lastScanMs is below a threshold and removalMs is 0
      * @param captureId  - the capture endpoint identifier to filter on

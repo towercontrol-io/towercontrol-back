@@ -74,4 +74,12 @@ public interface UserRepository extends MongoRepository<User,String> {
     @Query(value = "{ 'roles' : { $in : ?0 } }")
     public List<User> findByRoles(List<UsersRolesCache.StandardRoles> roles);
 
+    /**
+     * Find user by CustomField Name & value
+     * this will only work for name starting by clear_ or cbasic_ the other one are encrypted
+     */
+    @Query("{ 'customFields': { $elemMatch: { 'name': ?0, 'value': ?1 } } }")
+    public List<User> findByCustomFieldNameAndValue(String name, String value);
+
+
 }

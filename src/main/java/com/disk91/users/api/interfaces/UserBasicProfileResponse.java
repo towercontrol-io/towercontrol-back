@@ -157,7 +157,7 @@ public class UserBasicProfileResponse {
         this.customFields = new ArrayList<>();
         if ( u.getCustomFields() != null) {
             for (CustomField cf : u.getCustomFields()) {
-                if (cf.getName().startsWith("basic_")) {
+                if ( cf.getName().startsWith("basic_") || cf.getName().startsWith("cbasic_")) {
                     try {
                         this.customFields.add(u.getEncCustomField(cf.getName()));
                     } catch (ITParseException | ITNotFoundException x) {

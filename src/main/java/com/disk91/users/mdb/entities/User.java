@@ -749,13 +749,24 @@ public class User implements CloneableObject<User> {
         this.twoFASecret = EncryptionHelper.encrypt(_twoFASecret, IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
     }
 
+    // ====================================================
+    // Custom Fields
+
+    public static boolean isEncryptedCustomField(String name) {
+        return !( name.startsWith("clear_") || name.startsWith("cbasic_"));
+    }
+
     public ArrayList<CustomField> getEncCustomFields() throws ITParseException {
         ArrayList<CustomField> customFields = new ArrayList<>();
         if ( this.customFields == null ) this.customFields = new ArrayList<>();
         for ( CustomField cf : this.getCustomFields() ) {
             CustomField _cf = new CustomField();
             _cf.setName(cf.getName());
-            _cf.setValue(EncryptionHelper.decrypt(cf.getValue(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+            if ( isEncryptedCustomField(cf.getName()) ) {
+                _cf.setValue(EncryptionHelper.decrypt(cf.getValue(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+            } else {
+                _cf.setValue(cf.getValue());
+            }
             customFields.add(_cf);
         }
         return customFields;
@@ -772,10 +783,12 @@ public class User implements CloneableObject<User> {
         if ( this.customFields == null ) throw new ITNotFoundException("custom-field-nod-found");
         for ( CustomField cf : this.getCustomFields() ) {
             if ( cf.getName().equals(name) ) {
-                CustomField _cf = new CustomField();
-                _cf.setName(cf.getName());
-                _cf.setValue(EncryptionHelper.decrypt(cf.getValue(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
-                return _cf;
+                if ( isEncryptedCustomField(cf.getName()) ) {
+                    CustomField _cf = new CustomField();
+                    _cf.setName(cf.getName());
+                    _cf.setValue(EncryptionHelper.decrypt(cf.getValue(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+                    return _cf;
+                } else return cf.clone();
             }
         }
         throw new ITNotFoundException("custom-field-nod-found");
@@ -800,10 +813,19 @@ public class User implements CloneableObject<User> {
                     toRemove = cf;
                 } else {
                     // found, update it if the value has changed
-                    String encValue = EncryptionHelper.encrypt(_cf.getValue(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
-                    if ( encValue != null && ! encValue.equals(cf.getValue()) ) {
-                        cf.setValue(EncryptionHelper.encrypt(_cf.getValue(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
-                        somethingHasChanged = true;
+                    if ( isEncryptedCustomField(cf.getName()) ) {
+                        String encValue = EncryptionHelper.encrypt(_cf.getValue(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+                        if (encValue != null && !encValue.equals(cf.getValue())) {
+                            cf.setValue(EncryptionHelper.encrypt(_cf.getValue(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+                            somethingHasChanged = true;
+                        }
+                    } else {
+                        if ( _cf.getValue() == null || cf.getValue() == null || !_cf.getValue().equals(cf.getValue()) ) {
+                            if ( cf.getValue() != null && _cf.getValue() != null ) {
+                                cf.setValue(_cf.getValue());
+                                somethingHasChanged = true;
+                            }
+                        }
                     }
                 }
                 break; // name is unique, so we can stop here
@@ -831,7 +853,11 @@ public class User implements CloneableObject<User> {
         for ( CustomField cf : _value ) {
             CustomField _cf = new CustomField();
             _cf.setName(cf.getName());
-            _cf.setValue(EncryptionHelper.encrypt(cf.getValue(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+            if ( isEncryptedCustomField(cf.getName()) ) {
+                _cf.setValue(EncryptionHelper.encrypt(cf.getValue(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+            } else {
+                _cf.setValue(cf.getValue());
+            }
             customFields.add(_cf);
         }
         this.setCustomFields(customFields);

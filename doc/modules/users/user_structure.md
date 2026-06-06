@@ -91,8 +91,8 @@ The user data structure is defined as follows:
  
     "lastComMessageSeen": "number",     // last communication message seen
     "customFields": [{                  // user custom fields
-        "name": "string",               // custom field key [clear], the one starting with `basic_` are returned in the basic API
-        "value": "string"               // custom field value [Base64(encrypted)]
+        "name": "string",               // custom field key [clear], the one starting with `basic_` or `cbasic_` are returned in the basic API
+        "value": "string"               // custom field value [Base64(encrypted)] value will be clear for seach when name start with `clear_` or `cbasic_`
     }]
 }
 ```

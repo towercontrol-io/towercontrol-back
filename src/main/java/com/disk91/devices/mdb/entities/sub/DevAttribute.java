@@ -21,6 +21,7 @@ package com.disk91.devices.mdb.entities.sub;
 
 import com.disk91.common.interfaces.KeyValues;
 import com.disk91.common.tools.CloneableObject;
+import com.disk91.common.tools.exceptions.ITNotFoundException;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
@@ -85,6 +86,30 @@ public class DevAttribute implements CloneableObject<DevAttribute> {
         devAttribute.params.add(kv);
         return devAttribute;
     }
+
+    public static DevAttribute getByType(List<DevAttribute> devAttributes, String type) throws ITNotFoundException {
+        for ( DevAttribute devAttribute : devAttributes ) {
+            if ( devAttribute.getType().equals(type) ) {
+                return devAttribute;
+            }
+        }
+        throw new ITNotFoundException("dev-attribute-type-not-found");
+    }
+
+    public static List<String> getByTypeAndKey(List<DevAttribute> devAttributes, String type, String key) throws ITNotFoundException {
+        for ( DevAttribute devAttribute : devAttributes ) {
+            if ( devAttribute.getType().equals(type) ) {
+                for ( KeyValues kv : devAttribute.getParams() ) {
+                    if ( kv.getKey().equals(key) ) {
+                        return kv.getValues();
+                    }
+                }
+                throw new ITNotFoundException("dev-attribute-key-not-found");
+            }
+        }
+        throw new ITNotFoundException("dev-attribute-type-not-found");
+    }
+
 
     // === CLONE ===
 

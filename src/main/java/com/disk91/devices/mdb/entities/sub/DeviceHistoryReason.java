@@ -22,5 +22,6 @@ package com.disk91.devices.mdb.entities.sub;
 public enum DeviceHistoryReason {
     NO_REASON,
     DEVICE_DISASSOCIATION,
-
+    DEVICE_UPDATE,
+    DEVICE_GROUP_CHANGE
 }

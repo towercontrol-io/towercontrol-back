@@ -28,6 +28,8 @@ package com.disk91.devices.mdb.entities;
 
 import com.disk91.common.tools.CloneableObject;
 import com.disk91.common.tools.Now;
+import com.disk91.common.tools.exceptions.ITNotFoundException;
+import com.disk91.common.tools.exceptions.ITTooManyException;
 import com.disk91.devices.interfaces.DeviceBatType;
 import com.disk91.devices.interfaces.DeviceState;
 import com.disk91.devices.mdb.entities.sub.*;
@@ -42,6 +44,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 import static com.disk91.devices.interfaces.DeviceBatType.UNKNOWN_BATTERY_TYPE;
 import static com.disk91.devices.interfaces.DeviceState.IDENTIFIED;
@@ -333,18 +336,89 @@ public class Device implements CloneableObject<Device> {
      * @param value
      */
     public void addOneCommunicationId( String type, String key, String value ) {
-        if ( this.communicationIds == null ) this.communicationIds = new ArrayList<>();
-        boolean exists = false;
-        for ( DevAttribute a : this.communicationIds ) {
-            if ( a.getType().equals(type) ) {
-                // add into the existing one
-                a.upsertOneSimpleParam(key, value);
-                exists = true;
+        if ( this.getCommunicationIds() == null ) this.setCommunicationIds(new ArrayList<>());
+        try {
+            DevAttribute a = DevAttribute.getByType(this.getCommunicationIds(), type);
+            a.upsertOneSimpleParam(key, value);
+        } catch (ITNotFoundException x) {
+            // to be created
+            this.getCommunicationIds().add(DevAttribute.newDevAttribute(type, key, value));
+        }
+    }
+
+    // ========================================
+    // Attributes
+
+    public void upsertAttribute(String type, String key, String value) {
+        if (this.getAttributes() == null) this.setAttributes(new ArrayList<>());
+        try {
+            DevAttribute a = DevAttribute.getByType(this.getAttributes(), type);
+            a.upsertOneSimpleParam(key, value);
+        } catch (ITNotFoundException x) {
+            // to be created
+            this.getAttributes().add(DevAttribute.newDevAttribute(type, key, value));
+        }
+    }
+
+    public List<String> getAttributeValues(String type, String key) throws ITNotFoundException {
+        if (this.getAttributes() == null) throw new ITNotFoundException("device-attribute-type-not-found");
+        try {
+            return DevAttribute.getByTypeAndKey(this.getAttributes(), type, key);
+        } catch (ITNotFoundException x) {
+            throw new ITNotFoundException("device-attribute-not-found");
+        }
+    }
+
+    public String getAttributeValue(String type, String key) throws ITNotFoundException, ITTooManyException {
+        List<String> values = this.getAttributeValues(type, key);
+        if ( values.size() != 1 ) throw new ITTooManyException("device-attribute-too-many-values");
+        return values.getFirst();
+    }
+
+    // =======================================
+    // Groups
+
+    public boolean isInGroup(String shortId) {
+        if ( this.associatedGroups == null ) return false;
+        for ( DevGroupAssociated g : this.associatedGroups ) {
+            if ( g.getGroupId().equals(shortId) ) {
+                return true;
             }
         }
-        if ( !exists ) {
-            this.communicationIds.add(DevAttribute.newDevAttribute(type, key, value));
+        return false;
+    }
+
+    public void associateToGroup(String shortId) {
+        if ( this.associatedGroups == null ) this.associatedGroups = new ArrayList<>();
+        for ( DevGroupAssociated g : this.associatedGroups ) {
+            if ( g.getGroupId().equals(shortId) ) {
+                // already associated
+                return;
+            }
         }
+        // not existing
+        this.associatedGroups.add(DevGroupAssociated.newGroupAssociated(shortId));
+    }
+
+    public void disassociateGroup(String shortId) {
+        if ( this.associatedGroups == null ) return;
+        ArrayList<DevGroupAssociated> _gs = new ArrayList<>();
+        for ( DevGroupAssociated g : this.associatedGroups ) {
+            if ( !g.getGroupId().equals(shortId) ) {
+                _gs.add(g);
+            }
+        }
+        // not existing
+        this.associatedGroups=_gs;
+    }
+
+
+    public void associateToUserGroup(String userLogin) {
+        associateToGroup("user_"+userLogin);
+    }
+
+    public void disassociateUserGroup(String userLogin) {
+        disassociateGroup("user_"+userLogin);
     }
 
 

@@ -166,7 +166,7 @@ public class SigfoxV2Driver extends AbstractProtocol {
         // Get the associated device if exists
         Device d = null;
         try {
-            d = devicesNwkCache.getDevice("Sigfox", "deveui", nwkName);
+            d = devicesNwkCache.getDevice("sigfox", "deveui", nwkName);
         } catch (ITNotFoundException x) {
             // This device is not known, if the endpoint allows auto-creation, let's do it
             boolean deviceOk = false;
@@ -186,13 +186,13 @@ public class SigfoxV2Driver extends AbstractProtocol {
                         Device dev = Device.newDevice(user.getLogin());
                         dev.getHardwareIds().add(DevHardwareId.newDevHardwareId("SIGFOX",nwkName));
                         dev.setDataStreamId(nwkName+"-"+Now.formatToYYYYMMDDUtc(Now.NowUtcMs()));
-                        dev.setName("Sigfox-"+nwkName);
+                        dev.setName("sigfox-"+nwkName);
                         dev.setDevState(DeviceState.OPEN);
                         dev.setLastSeenDateMs(Now.NowUtcMs());
-                        dev.addOneCommunicationId("Sigfox", "deveui", nwkName);
+                        dev.addOneCommunicationId("sigfox", "deveui", nwkName);
                         // @TODO - We will need to add the information herited from the devce type profile
                         dev.getAssociatedGroups().add(DevGroupAssociated.newGroupAssociated(group));
-                        d = devicesNwkCache.createDevice(dev,"Sigfox", "deveui", nwkName);
+                        d = devicesNwkCache.createDevice(dev,"sigfox", "deveui", nwkName);
                         if ( d != null  ) deviceOk = true;
                     }
                 }

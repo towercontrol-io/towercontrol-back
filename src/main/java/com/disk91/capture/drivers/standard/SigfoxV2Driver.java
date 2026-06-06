@@ -314,6 +314,10 @@ public class SigfoxV2Driver extends AbstractProtocol {
         crmeta.setAddress(payload.getDevice());
         crmeta.setFrequency(0);         // @TODO - based on RC ... we could put something here
         crmeta.setDataRate("");         // @TODO - based on RC ... we could put something here (but not enough)
+        crmeta.setCustomParams(new ArrayList<>());
+        crmeta.getCustomParams().add(CustomField.of("lqi",payload.getLqi()));
+        crmeta.getCustomParams().add(CustomField.of("operatorName",payload.getOperatorName()));
+        crmeta.getCustomParams().add(CustomField.of("countryCode",""+payload.getCountryCode()));
 
         // Network stations
         ArrayList<Location> locs = new ArrayList<>();

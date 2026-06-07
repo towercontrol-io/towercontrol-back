@@ -491,6 +491,7 @@ public class User implements CloneableObject<User> {
                 String _getProfileCity = (this.profile.getCity() != null )?this.getEncProfileCity():null;
                 String _getProfileZipCode = (this.profile.getZipCode() != null )?this.getEncProfileZipCode():null;
                 String _getProfileCountry = (this.profile.getCountry() != null )?this.getEncProfileCountry():null;
+                String _getTimezone = (this.profile.getTimezone() != null)?this.getEncProfileTimezone():null;
                 ArrayList<CustomField> _getProfileCustomFields = (this.profile.getCustomFields() != null )?this.getEncProfileCustomFields():null;
                 String _getBillingGender = (this.billingProfile.getGender() != null )?this.getEncBillingGender():null;
                 String _getBillingFirstName = (this.billingProfile.getFirstName() != null )?this.getEncBillingFirstName():null;
@@ -520,6 +521,7 @@ public class User implements CloneableObject<User> {
                 if ( _getProfileCity != null) this.setEncProfileCity(_getProfileCity);
                 if ( _getProfileZipCode != null) this.setEncProfileZipCode(_getProfileZipCode);
                 if ( _getProfileCountry != null) this.setEncProfileCountry(_getProfileCountry);
+                if ( _getTimezone != null) this.setEncProfileTimezone(_getTimezone);
                 if ( _getProfileCustomFields != null) this.setEncProfileCustomFields(_getProfileCustomFields);
                 if ( _getBillingGender != null) this.setEncBillingGender(_getBillingGender);
                 if ( _getBillingFirstName != null) this.setEncBillingFirstName(_getBillingFirstName);
@@ -563,6 +565,7 @@ public class User implements CloneableObject<User> {
                     if (this.getProfile().getCity() != null) this.getProfile().setCity(null);
                     if (this.getProfile().getZipCode() != null) this.getProfile().setZipCode(null);
                     if (this.getProfile().getCountry() != null) this.getProfile().setCountry(null);
+                    if (this.getProfile().getTimezone() != null) this.getProfile().setTimezone(null);
                     if (this.getProfile().getCustomFields() != null) this.getProfile().setCustomFields(new ArrayList<>());
                 }
                 if ( this.getBillingProfile() != null ) {
@@ -899,6 +902,11 @@ public class User implements CloneableObject<User> {
         return EncryptionHelper.decrypt(this.profile.getCountry(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
     }
 
+    public String getEncProfileTimezone() throws ITParseException {
+        return EncryptionHelper.decrypt(this.profile.getTimezone(), IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+    }
+
+
     public ArrayList<CustomField> getEncProfileCustomFields() throws ITParseException {
         ArrayList<CustomField> customFields = new ArrayList<>();
         for ( CustomField cf : this.profile.getCustomFields() ) {
@@ -948,6 +956,11 @@ public class User implements CloneableObject<User> {
     public void setEncProfileCountry(String _value)  throws ITParseException {
         if (this.profile == null) throw new ITParseException("Profile not set");
         this.profile.setCountry(EncryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
+    }
+
+    public void setEncProfileTimezone(String _value)  throws ITParseException {
+        if (this.profile == null) throw new ITParseException("Profile not set");
+        this.profile.setTimezone(EncryptionHelper.encrypt(_value, IV, HexCodingTools.bytesToHex(this.getEncryptionKey())));
     }
 
     public void setEncProfileCustomFields(ArrayList<CustomField> _value)  throws ITParseException {

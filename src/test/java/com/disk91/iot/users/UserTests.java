@@ -187,6 +187,7 @@ public class UserTests {
             user.setEncProfileZipCode("75001");
             user.setEncProfileCity("Paris");
             user.setEncProfileCountry("France");
+            user.setEncProfileTimezone("CET");
             user.setEncProfilePhone("0123456789");
             customFields = new ArrayList<>();
             cf = new CustomField();
@@ -241,10 +242,11 @@ public class UserTests {
         assertNotEquals("75001", user.getProfile().getZipCode());
         assertNotEquals("Paris", user.getProfile().getCity());
         assertNotEquals("France", user.getProfile().getCountry());
+        assertNotEquals("CET", user.getProfile().getTimezone());
         assertNotEquals("0123456789", user.getProfile().getPhoneNumber());
         assertEquals(1, user.getProfile().getCustomFields().size());
-        assertEquals("mobile", user.getProfile().getCustomFields().get(0).getName());
-        assertNotEquals("0203040506", user.getProfile().getCustomFields().get(0).getValue());
+        assertEquals("mobile", user.getProfile().getCustomFields().getFirst().getName());
+        assertNotEquals("0203040506", user.getProfile().getCustomFields().getFirst().getValue());
         assertNotEquals("Mr", user.getBillingProfile().getGender());
         assertNotEquals("John", user.getBillingProfile().getFirstName());
         assertNotEquals("Doe", user.getBillingProfile().getLastName());
@@ -289,10 +291,11 @@ public class UserTests {
             assertEquals("75001", user.getEncProfileZipCode());
             assertEquals("Paris", user.getEncProfileCity());
             assertEquals("France", user.getEncProfileCountry());
+            assertEquals("CET", user.getEncProfileTimezone());
             assertEquals("0123456789", user.getEncProfilePhone());
             assertEquals(1,user.getProfile().getCustomFields().size());
-            assertEquals("mobile", user.getEncProfileCustomFields().get(0).getName());
-            assertEquals("0203040506", user.getEncProfileCustomFields().get(0).getValue());
+            assertEquals("mobile", user.getEncProfileCustomFields().getFirst().getName());
+            assertEquals("0203040506", user.getEncProfileCustomFields().getFirst().getValue());
             assertEquals("Mr", user.getEncBillingGender());
             assertEquals("John", user.getEncBillingFirstName());
             assertEquals("Doe", user.getEncBillingLastName());

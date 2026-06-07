@@ -1,0 +1,216 @@
+## Alerts module
+
+The alerts module provides an autonomous notification system used by the platform to broadcast information to users when 
+a business rule or a technical event matches a trigger.
+
+The module is intentionally independent of the modules that generate the trigger. A source module detects a condition, 
+then sends an alert intent to the alerts' module. From that point, the alerts module handles:
+- alert persistence
+- target group resolution
+- user fan-out
+- delivery channel selection
+- localization and message rendering
+- retry / fallback selection
+- history and audit traceability
+
+## Purpose
+
+An alert is generally attached to a group. The group is used as the broadcast perimeter, so every user associated with 
+that group can receive the alert according to the delivery channels available on their profile.
+
+The same alert can be delivered through different channels:
+- email
+- SMS
+- push notification
+
+The channel list requested by the alert is a preference list, not a strict requirement. If the preferred channel is not 
+available for a user, the module must select another usable channel as a fallback.
+
+## Core principles
+
+- Alerts are group-based, not user-based.
+- The module must remain independent from the source module that created the trigger.
+- The same logical alert can be emitted once, repeatedly, or kept active until a stop condition is met.
+- Alerts are persisted in the database so they can be queried, purged, and used to rebuild the operational history.
+- Each emission must create an audit entry.
+
+## Alert flow
+
+1. A source module detects a condition.
+2. The source module creates or updates an alert record with the group, message key, parameters, desired channels, and lifecycle information. Alert is stored in the database for async processes.
+3. A process in the alert module will handle pending alerts asynchronously.
+4. The alerts module resolves the target group members.
+5. For each user, the module selects the first compatible delivery channel.
+6. The message is rendered with the appropriate translation and the best matching parameters.
+7. The alert is delivered.
+8. The alert emission and its processing outcome are written to the audit trail.
+
+## Delivery model
+
+Delivery is performed per user, even if the alert itself is stored at group level.
+
+For a given user, the delivery engine evaluates the requested channels in priority order. The first usable channel is 
+selected according to:
+- the channels requested by the alert
+- the channels enabled for the user
+- the platform availability of the delivery provider
+
+If the preferred channel cannot be used, the module falls back to another available channel. When multiple channels are 
+available, the module should keep a deterministic selection order to avoid inconsistent user experience.
+
+## Message localization
+
+An alert message is not stored only as a final text. It is stored as a translatable message key with parameters so that 
+the final rendering can be adapted to the delivery medium and to the user language.
+
+The message rendering process must support:
+- language selection from translation files
+- parameter substitution
+- channel-specific message variants when required
+- reuse of the same parameters across channels when possible
+
+When a channel-specific template cannot reuse the full parameter list, the module should keep the first parameters that 
+match the target template to avoid losing critical information.
+
+## Alert structure
+
+```json
+{
+  "id" : "string",                 // technical uniq identifier used inside the platform
+  "alertId" : "string",            // stable alert identifier, used to identify the same alert across multiple emissions, see bellow for more details
+  "alertDefRef" : "string",        // reference to the alert definition, this is used to link the alert to the source module and to the alert template
+  "alertTemplateId" : "string",    // reference to the alert template, this is used to link the alert to the message key and parameters
+  
+  "state" : "AlarmState",          // Alarm state: indicates whether it is **active**, **terminated**. 
+  "requestMs" : "long",            // Moment the alarm has been raised (event time)
+  "fireMs" : "long",               // Moment the alarm has been raised (alert execution time)
+  "expirationMs" : "long",         // Moment the alarm expired (rearm the alarm)
+  
+  "publicId" : "string",           // Random secret to access this alert from a public page
+}
+```
+
+### Alert identifier `alertId`
+
+The alert identifier will be used to retrieve an alert, avoid duplicates, and manage alert resolution. An alert identifier 
+is made up of a string containing a replaceable field, which can be a **device** or a **group ID**, so that a re-emission 
+by the same device or the same group ID is correctly considered the same alert.
+
+The device identification is used to raise an alert originating from a specific device. The group ID identification is 
+used when a set of devices raises the same alert. For example, in an intrusion detection scenario with multiple sensors, 
+one of the sensors will raise the alert, and the alert will be raised only once, not every time a detector reacts.
+
+An alert cache will use the delayed reference to manage access to active alerts.
+
+Here are examples of alert identifiers, in a generic and instantiated format.
+
+```
+"alert-temperature-high-{deviceId}" -> "alert-temperature-high-123456789"
+"alert-intrusion-detected-{groupId}" -> "alert-intrusion-detected-987654321"
+```
+
+### Alert templates
+
+Alerts are associated with a template that, among other things, contains the translations of the different messages, 
+as well as the integration of the variables expected in the error message and the alert message, in order to generate 
+the text according to the different transmission channels.
+
+See [Alert tamplates](./alert_templates.md) for more details on the alert template structure and management.
+
+## Alert lifecycle
+
+Alerts can have several lifecycle modes.
+
+### One-shot alert
+
+A one-shot alert is emitted once and can be sent again immediately if the source module creates a new alert instance.
+
+### Active alert
+
+An active alert is associated with a condition that remains true over time.
+
+While the condition is active, the module must avoid emitting duplicate alerts every time the source module reports the 
+same state. The alert is only emitted again when the stop condition is reached and a new activation cycle starts.
+
+Example:
+- temperature rises above 30°C -> alert is activated and emitted
+- temperature stays at 31°C or 32°C -> no new emission
+- temperature drops below the stop threshold -> alert is closed, potentially with a resolution message
+- temperature rises again -> a new alert emission is allowed
+
+### Recurrent reminder alert
+
+An active alert can also define a reminder interval.
+
+In that case, while the alert remains active, the module can re-emit the alert periodically. This is useful for long-lasting
+incidents, for example a high temperature condition that should be reminded every 15 minutes until it is cleared.
+
+### Expiration / deactivation
+
+An alert can be explicitly deactivated by its source module or automatically closed by a stop condition.
+
+When an alert uses a reminder cadence, the module must still respect the configured lifetime and must stop scheduling 
+emissions when the alert is canceled, resolved, or purged.
+
+## Persistent storage
+
+Alerts are stored in the database. The persistent record is used for:
+- current state tracking
+- delivery retry and fallback handling
+- search and operational monitoring
+- history reconstruction
+- purge processing
+
+The stored alert should keep, at minimum:
+- alert identifier
+- source module reference
+- attached group identifier
+- message key
+- message parameters
+- selected channels
+- alert type
+- activation state
+- creation timestamp
+- last emission timestamp
+- reminder / expiration timestamp when applicable
+- delivery status
+- processing status
+
+## Operational history
+
+The alert history is preserved through the audit log and thus the audit module so that operators can understand what was 
+emitted, when it was emitted, and to whom it was delivered.
+
+Processed (and terminated) alerts can be deleted from the alerts table after a configurable period so that the alert table 
+does not become too large.
+
+## Audit traceability
+
+Every alert emission must generate an audit log entry.
+
+The audit entry should record at least:
+- the source of the alert
+- the attached group
+- the selected delivery channel
+- the result of the delivery attempt
+- the processing timestamp
+
+This traceability is mandatory even when the final delivery fails, because the alert activity itself is part of the system history.
+
+
+## Translation files
+
+Alert messages should be defined in translation files so the same alert can be displayed in different languages.
+
+The translation keys should be short, stable, and independent from the delivery channel. Channel-specific wording can be 
+handled by separate keys when necessary.
+
+Example concept:
+```json
+{
+  "alert-temperature-high": "Temperature is above the configured threshold: {value}°C",
+  "alert-temperature-high-sms": "High temperature detected: {value}°C"
+}
+```
+
+

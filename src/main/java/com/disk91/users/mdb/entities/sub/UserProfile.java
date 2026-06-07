@@ -31,6 +31,9 @@ public class UserProfile implements CloneableObject<UserProfile> {
     // iso country code (encrypted) - expl : FR, US, etc.
     private String country;
 
+    // time zone (ex CET)
+    private String timezone;
+
     // Custom fields, contains key / value pairs, encrypted
     private ArrayList<CustomField> customFields;
 
@@ -108,6 +111,14 @@ public class UserProfile implements CloneableObject<UserProfile> {
         this.customFields = customFields;
     }
 
+    public String getTimezone() {
+        return timezone;
+    }
+
+    public void setTimezone(String timezone) {
+        this.timezone = timezone;
+    }
+
     // === CLONE ===
 
     public UserProfile clone() {
@@ -120,6 +131,7 @@ public class UserProfile implements CloneableObject<UserProfile> {
         u.setCity(this.city);
         u.setZipCode(this.zipCode);
         u.setCountry(this.country);
+        u.setTimezone(this.timezone);
         if (this.customFields != null) {
             ArrayList<CustomField> cf = new ArrayList<>();
             for (CustomField c : this.customFields) {

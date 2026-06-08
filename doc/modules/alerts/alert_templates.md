@@ -11,11 +11,14 @@ are sent at the individual level, while webhooks and topics are sent using setti
 The group can also have an email, push, and SMS configuration for alerts. In this case, the group will have an alert 
 attribute that contains the necessary information.
 
-### Structure
+### Structure AlertTemplate
 
 ```json
 {
   "id": "string",                 // technical uniq identifier used inside the platform
+  "version" : "int",              // structure version for later
+  "owner" : "string",             // when a template is not global, it can be owned by a specific user, allowing user filtering
+  "global" : "boolean",           // true when the template is global and visible for all
   "name": "string",               // template name, this is the name of the template, given by the user
   "description": "string",        // template description, this is a free text description of the template, given by the user
   "parameters" : [                // list of parameters in the right order, see possible list of parameters (first)
@@ -48,8 +51,7 @@ attribute that contains the necessary information.
   ],
   "behavior" : "AlertBehavior",   // Indicate the default behavior for the alert, namely whether it is one-shot, auto-rearming with a delay, or waiting for cancellation. 
   "preferred" : ["AlertMedium"],  // Preferred medium, in execution order when user have multiple medium enabled
-  "durationMs" : "long",          // Alarm duration, the alarm is automatically closed after this duration (mode FIRE_TO_END and FIRE_UNTIL)
-
+  "durationMs" : "long"           // Alarm duration, the alarm is automatically closed after this duration (mode FIRE_TO_END and FIRE_UNTIL)
 }
 ```
 
@@ -98,7 +100,7 @@ public enum AlertParameter {
     CUSTOM_PARAM,           // alert specific : custom parameter, associated value gives the parameter name (lowercase)
     SERVICE_NAME,           // Name of the service (from configuration file)
     SERVICE_HOME,           // Service home page (from configuration file)
-    SERVICE_LINK,           // http link, associated value is the link containing {aid} to be replaced by the alert ID {did} to be replaced by device ID {pubID} for public access
+    ALERT_LINK,             // http link, associated value is the link containing {aid} to be replaced by the alert ID {did} to be replaced by device ID {pubID} for public access
     
     UNKNOWN,
 }

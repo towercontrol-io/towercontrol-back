@@ -52,4 +52,13 @@ public interface AlertTemplateRepository extends MongoRepository<AlertTemplate, 
     @Query("{ 'name': { $regex: ?0, $options: 'i' } }")
     List<AlertTemplate> findAlertTemplatesByNameLike(String name);
 
+    /**
+     * Find all templates owned by the given user or marked as global.
+     * Used by the list endpoint to return templates visible to the requesting user.
+     * @param owner - login of the requesting user
+     * @return list of templates visible to that user
+     */
+    @Query("{ $or: [ { 'owner': ?0 }, { 'global': true } ] }")
+    List<AlertTemplate> findTemplatesByOwnerOrGlobal(String owner);
+
 }

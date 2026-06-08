@@ -80,6 +80,8 @@ public class UsersRolesCache {
         "{'version':2, 'platform':true, 'name':'ROLE_FILES_ADMIN','description':'role-files-admin-desc', 'enDescription':'Files administrator', 'creationBy':'system','creationMs':0, 'assignable':true}",
         "{'version':2, 'platform':true, 'name':'ROLE_AUDIT_RD','description':'role-audit-read-desc', 'enDescription':'Ability to read the audit logs', 'creationBy':'system','creationMs':0, 'assignable':true}",
         "{'version':2, 'platform':true, 'name':'ROLE_AUDIT_RD_CLEAR','description':'role-audit-read-clear-desc', 'enDescription':'Ability to read audit log in clear text', 'creationBy':'system','creationMs':0, 'assignable':true}",
+        "{'version':2, 'platform':true, 'name':'ROLE_ALERTS_ADMIN','description':'role-alerts-admin-desc', 'enDescription':'Admin can create global alert template', 'creationBy':'system','creationMs':0, 'assignable':true}",
+        "{'version':2, 'platform':true, 'name':'ROLE_ALERTS_TEMPLATE','description':'role-alerts-template-desc', 'enDescription':'User with this role can create local alert template', 'creationBy':'system','creationMs':0, 'assignable':true}",
     };
 
     // Standard roles strings
@@ -107,7 +109,9 @@ public class UsersRolesCache {
         ROLE_FILES_WRITE("ROLE_FILES_WRITE"),
         ROLE_FILES_ADMIN("ROLE_FILES_ADMIN"),
         ROLE_AUDIT_RD("ROLE_AUDIT_RD"),
-        ROLE_AUDIT_RD_CLEAR("ROLE_AUDIT_RD_CLEAR");
+        ROLE_AUDIT_RD_CLEAR("ROLE_AUDIT_RD_CLEAR"),
+        ROLE_ALERTS_ADMIN("ROLE_ALERTS_ADMIN"),
+        ROLE_ALERTS_TEMPLATE("ROLE_ALERTS_TEMPLATE");
 
         private String roleName;
         StandardRoles(String roleName) {

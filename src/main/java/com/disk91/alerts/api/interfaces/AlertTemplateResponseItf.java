@@ -1,0 +1,138 @@
+/*
+ * Copyright (c) - Paul Pinault (aka disk91) - 2026.
+ *
+ *    Permission is hereby granted, free of charge, to any person obtaining a copy of this software
+ *    and associated documentation files (the "Software"), to deal in the Software without restriction,
+ *    including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ *    sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ *    furnished to do so, subject to the following conditions:
+ *
+ *    The above copyright notice and this permission notice shall be included in all copies or
+ *    substantial portions of the Software.
+ *
+ *    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+ *    FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS
+ *    OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ *    WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
+ *    IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+package com.disk91.alerts.api.interfaces;
+
+import com.disk91.alerts.mdb.entities.AlertTemplate;
+import com.disk91.alerts.mdb.entities.sub.AlertLocaleMessage;
+import com.disk91.alerts.mdb.entities.sub.AlertMedium;
+import com.disk91.alerts.mdb.entities.sub.AlertParameterEntry;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
+import java.util.ArrayList;
+
+/**
+ * AlertTemplateResponseItf - API response representation of a single AlertTemplate.
+ * Populated via buildFrom(AlertTemplate).
+ */
+@Tag(name = "Alert Template Response", description = "Alert template details returned by the API")
+public class AlertTemplateResponseItf {
+
+    @Schema(description = "Unique template identifier", example = "6660a1b2c3d4e5f600000001",
+            requiredMode = Schema.RequiredMode.REQUIRED)
+    protected String id;
+
+    @Schema(description = "Template name", example = "High temperature alert",
+            requiredMode = Schema.RequiredMode.REQUIRED)
+    protected String name;
+
+    @Schema(description = "Template description",
+            example = "Fired when temperature exceeds threshold",
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    protected String description;
+
+    @Schema(description = "Login of the template owner", example = "a3f2b1c9d4e5f6a7",
+            requiredMode = Schema.RequiredMode.REQUIRED)
+    protected String owner;
+
+    @Schema(description = "True when the template is globally visible to all connected users",
+            example = "false", requiredMode = Schema.RequiredMode.REQUIRED)
+    protected boolean global;
+
+    @Schema(description = "Ordered list of dynamic parameters",
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    protected ArrayList<AlertParameterEntry> parameters;
+
+    @Schema(description = "Per-locale open messages", requiredMode = Schema.RequiredMode.REQUIRED)
+    protected ArrayList<AlertLocaleMessage> open;
+
+    @Schema(description = "Per-locale close messages", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    protected ArrayList<AlertLocaleMessage> close;
+
+    @Schema(description = "Firing behavior name", example = "FIRE_FORGET",
+            requiredMode = Schema.RequiredMode.REQUIRED)
+    protected String behavior;
+
+    @Schema(description = "Preferred delivery mediums in priority order",
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    protected ArrayList<AlertMedium> preferred;
+
+    @Schema(description = "Auto-close duration in milliseconds; 0 means no expiration",
+            example = "900000", requiredMode = Schema.RequiredMode.REQUIRED)
+    protected long durationMs;
+
+    // ==========================
+    // Builder
+
+    /**
+     * Populate this response from an AlertTemplate entity.
+     * @param t - source entity
+     */
+    public void buildFrom(AlertTemplate t) {
+        this.id = t.getId();
+        this.name = t.getName();
+        this.description = t.getDescription();
+        this.owner = t.getOwner();
+        this.global = t.isGlobal();
+        this.parameters = t.getParameters();
+        this.open = t.getOpen();
+        this.close = t.getClose();
+        this.behavior = t.getBehavior() != null ? t.getBehavior().name() : null;
+        this.preferred = t.getPreferred();
+        this.durationMs = t.getDurationMs();
+    }
+
+    // ==========================
+    // Getters & Setters
+
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
+
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+
+    public String getOwner() { return owner; }
+    public void setOwner(String owner) { this.owner = owner; }
+
+    public boolean isGlobal() { return global; }
+    public void setGlobal(boolean global) { this.global = global; }
+
+    public ArrayList<AlertParameterEntry> getParameters() { return parameters; }
+    public void setParameters(ArrayList<AlertParameterEntry> parameters) { this.parameters = parameters; }
+
+    public ArrayList<AlertLocaleMessage> getOpen() { return open; }
+    public void setOpen(ArrayList<AlertLocaleMessage> open) { this.open = open; }
+
+    public ArrayList<AlertLocaleMessage> getClose() { return close; }
+    public void setClose(ArrayList<AlertLocaleMessage> close) { this.close = close; }
+
+    public String getBehavior() { return behavior; }
+    public void setBehavior(String behavior) { this.behavior = behavior; }
+
+    public ArrayList<AlertMedium> getPreferred() { return preferred; }
+    public void setPreferred(ArrayList<AlertMedium> preferred) { this.preferred = preferred; }
+
+    public long getDurationMs() { return durationMs; }
+    public void setDurationMs(long durationMs) { this.durationMs = durationMs; }
+}
+

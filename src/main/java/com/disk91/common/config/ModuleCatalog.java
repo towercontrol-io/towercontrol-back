@@ -29,6 +29,7 @@ public class ModuleCatalog {
         BILLING,
         TICKETS,
         FILES,
+        ALERTS,
         CUSTOM
     }
 
@@ -49,6 +50,8 @@ public class ModuleCatalog {
             return "tickets";
         } else if (service == ModuleCatalog.Modules.FILES) {
             return "files";
+        } else if (service == ModuleCatalog.Modules.ALERTS) {
+            return "alerts";
         } else if (service == ModuleCatalog.Modules.CUSTOM) {
             return "custom";
         }

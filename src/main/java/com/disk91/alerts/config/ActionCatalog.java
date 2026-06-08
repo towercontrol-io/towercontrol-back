@@ -21,12 +21,21 @@ package com.disk91.alerts.config;
 
 public class ActionCatalog {
     public enum Actions {
+        AUDIT_TEMPLATE_CREATION,
+        AUDIT_TEMPLATE_UPDATE,
+        AUDIT_TEMPLATE_DELETE,
 
         UNKNOWN
     }
 
     public static String getActionName(Actions action) {
         switch (action) {
+            case AUDIT_TEMPLATE_CREATION:
+                return "alerts-template-created";
+            case AUDIT_TEMPLATE_UPDATE:
+                return "alerts-template-updated";
+            case AUDIT_TEMPLATE_DELETE:
+                return "alerts-template-deleted";
 
             case UNKNOWN:
             default:

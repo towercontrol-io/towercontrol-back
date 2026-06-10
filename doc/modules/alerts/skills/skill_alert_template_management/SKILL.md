@@ -3,8 +3,8 @@ name: skill_alert_template_management
 description: A skill to manage alert templates (create, update, delete, list) as an identified user with the appropriate role.
 license: GPL-3.0
 metadata:
-    author: "disk91"
-    version: "1.0.0"
+  author: "disk91"
+  version: "1.1.0"
 ---
 
 # Alert Template Management
@@ -34,40 +34,80 @@ Only `ROLE_ALERTS_ADMIN` can mark a template as global.
 
 ## Expected behavior
 
-### List the Alert Template for edition and deletion
+### List the Alert Templates for edition and deletion
 
-A user will be able to view the list of alert templates they have access to through a table that lists their templates. 
-In general, they will be able to click one to enter a view mode, which may take them to a page similar to the edit page. 
-This will allow them to view and modify the template, and, of course, save it.  From this dashboard, he will be able, 
-provided he is the owner of this template or has an admin role, to delete the template.
+A user views a table listing templates they have access to. Each row shows the name, behavior, a **Global** badge when applicable, and the number of configured locales. Each row has **Edit** and **Delete** buttons; **Delete** is hidden when the user is neither the owner nor an admin.
 
-### Create a new Alert Template
+### Create / Edit form — overall layout
 
-From this screen, an add button will allow the user to create a new alert template, preferably on a new page.
-This page will include a common section with the information that is important for the template, namely the name and 
-description, which are free-text fields.
+The form is organized into four sections rendered as distinct cards:
 
-If the user has the `ROLE_ALERTS_ADMIN` role, they will be able to choose whether the template is global. 
+1. **General information** — name, description, behavior, duration, preferred channels, global toggle
+2. **Parameters** — ordered list of parameter slots injected as `{1}`, `{2}`, … in messages
+3. **Open messages** — at least one locale required
+4. **Close messages** — optional, visible only when behavior is `FIRE_TO_END` or `FIRE_UNTIL`
 
-The user can then define a set of parameters by adding them with a plus button, and for some parameters, specify a value corresponding 
-to that parameter. The fields that can have an additional parameter are the `CUSTOM_PARAM` field or the `ALERT_LINK` field,
-which can be free-text. The other fields do not allow additional parameters.
+---
 
-After that, the user will be able to add languages. The best approach is to have a small drop-down menu containing flags 
-representing the languages of the countries, with the corresponding language code next to each flag. By default, this 
-list must include at least French, English, Spanish, and German, and other languages can be added to the list.
+## Detailed UX guidelines
 
-When the user selects a language and clicks Add, a new tab should appear so that the user can easily switch from one 
-tab to another. If it is not the first tab, the following tables can be initialized with the values from the first tab 
-that was created.
+### Section 1 — General information
 
-In this tab, there will be a first section concerning the `open` content, in which the local field will be filled with 
-the selected country. The user will then be able to select media from the list of available media and add them. For 
-each medium, an editable text field, preferably a rich text field, will be available. If possible, this rich text field 
-should be processed so that the user can enter Markdown. The user can also add a `Close` section, and in this `Close` 
-section, they will be able to add media in the same way as before.
+- **Name**: text input, required, max 100 characters.
+- **Description**: text input, optional, max 500 characters.
+- **Behavior**: select/dropdown with four options (`FIRE_FORGET`, `FIRE_TO_END`, `FIRE_UNTIL`, `SILENT`). Required.
+- **Duration**: numeric input, visible **only** when behavior is `FIRE_TO_END` or `FIRE_UNTIL`.
+    - **Store and transmit duration as milliseconds** in the API (`durationMs`), but **display and accept the value in minutes** in the UI. Convert on load (`÷ 60000`) and on save (`× 60000`).
+- **Global toggle**: visible **only** for users with `ROLE_ALERTS_ADMIN`.
+- **Preferred channels** (ordered):
+    - The channel order is meaningful — it expresses priority. Render as a vertical ordered list with up/down reorder controls and a remove button per item.
+    - Above the list, provide a select/dropdown (filtered to channels not yet added) and an **Add** button. After adding, advance the selector to the next available option so the user can add another channel immediately.
+    - Show an empty-state message when no channel has been added.
 
-Finally, the user will be able to save the template, which will be populated with all of this information and sent to the back end.
+### Section 2 — Parameters
+
+- Render as an ordered list of rows. Each row has: a type selector, an optional value field (shown only for `CUSTOM_PARAM` and `ALERT_LINK`), up/down reorder buttons, and a remove button.
+- An **Add parameter** button appends a new row.
+- Position in the list determines the injection token: first row → `{1}`, second → `{2}`, etc.
+- Show an empty-state message when no parameter has been defined.
+
+### Section 3 & 4 — Open and Close message sections
+
+Both sections share the same structure. The differences are: Open is always visible and requires at least one locale; Close is hidden when behavior is `FIRE_FORGET` or `SILENT`.
+
+#### Language management — placement and initialization
+
+- Place the **language selector** (dropdown + Add button) in the **section header**, not in the body. This keeps the body focused on content.
+- The language dropdown must **only show locales not yet added** (filtered list). After a locale is added, advance the selector to the next available option.
+- When no locale has been added yet, display an empty-state hint in the body pointing the user to the header selector.
+- When a new locale is added (and it is not the first), **initialize its medium list** from the first existing locale: copy the same channels with empty messages, so the user only needs to fill in the text.
+
+#### Language tabs
+
+- Render locales as **tabs** using a proper tab component from the UI library (e.g., `UTabs` in Nuxt UI). Do not build custom pill buttons.
+- Each tab label shows the locale code and a **close (×) button** to remove that locale.
+    - Use the tab component's trailing-slot API (or equivalent) to embed the × button inside the tab trigger. Use `stopPropagation` on the × click so it does not trigger tab selection.
+- Track the active tab by **locale value (string)**, not by array index. This avoids stale index references after add/remove.
+- When a locale is added, make that new tab active.
+- When the active locale is removed, activate the previous locale (or the first one if it was already the first). When all locales are removed, clear the active locale.
+
+#### Channel (medium) selection
+
+- Display all available channels as **inline toggle buttons** — one button per channel, all always visible.
+- A channel is **selected** (solid / filled style) when it has been added to the current locale; **unselected** (outline / ghost style) otherwise.
+- Clicking a selected button removes that channel and its message from the locale. Clicking an unselected button adds it with an empty message.
+- Do **not** use a dropdown + Add button for channel selection; the toggle-button row gives immediate visual feedback on what is and is not active.
+
+#### Medium message card
+
+Each enabled channel renders a card containing:
+1. A **header row** with:
+    - A badge showing the channel name.
+    - **Parameter shortcut buttons**: if the template has parameters defined, show a small clickable button per parameter (`{1}`, `{2}`, …) in monospace style. Clicking one inserts the token at the current cursor position in the textarea below.
+        - Track the cursor position by listening to `blur`, `mouseup`, and `keyup` events on the textarea. Store the `selectionStart`/`selectionEnd` pair. On insert, splice the token into the message string at the stored position and advance the stored cursor past the inserted text.
+        - Only show parameter buttons when at least one parameter has been defined in Section 2.
+    - A **remove button** (trash icon), right-aligned via `margin-left: auto` / `ml-auto`, to remove this channel.
+2. A **message textarea** — support Markdown syntax (monospace font is recommended). Use `{1}`, `{2}`, … placeholders for injected parameters.
 
 ---
 
@@ -125,8 +165,8 @@ All endpoints require a valid Bearer token in the `Authorization` header.
   "description": "Fired when a sensor exceeds the threshold",
   "owner": "a3f2b1c9d4e5f6a7",
   "global": false,
-  "parameters": [ ... ],
-  "open": [ ... ],
+  "parameters": [ "..." ],
+  "open": [ "..." ],
   "close": [],
   "behavior": "FIRE_FORGET",
   "preferred": ["PUSH", "EMAIL"],
@@ -171,8 +211,7 @@ All endpoints require a valid Bearer token in the `Authorization` header.
       "owner": "a3f2b1c9d4e5f6a7",
       "global": false,
       "behavior": "FIRE_FORGET",
-      "durationMs": 0,
-      ...
+      "durationMs": 0
     }
   ],
   "total": 1
@@ -222,34 +261,56 @@ Parameters are injected into message templates as `{1}`, `{2}`, … matching the
 
 ---
 
-## Front-end workflow
+## Front-end implementation notes
 
-### List page
+### Form state
 
-1. Call `GET /alerts/1.0/template` (with optional `?search=…`) to load the list.
-2. Display `name`, `behavior`, a **Global** badge when `global === true`, and the number of locales configured.
-3. Show **Edit** and **Delete** buttons on each row; hide **Delete** when the user is not the owner and not admin.
+- `name`, `description`, `behavior`, `global`: plain strings / boolean.
+- `durationMin`: integer (minutes) in the UI only — convert to/from `durationMs` (milliseconds) at API boundary.
+- `parameters`: ordered array of `{ type, param }`.
+- `preferred`: ordered array of `AlertMedium` strings.
+- `open` / `close`: array of `{ locale: string, mediums: { medium: string, message: string }[] }`.
+- Active locale per section: **a string (the locale code)**, not an index. Derive the index when needed with a `findIndex` call.
 
-### Create / Edit form
+### Locale selector filtering
 
-1. **Header fields**: `name` (required, max 100), `description` (optional, max 500), `behavior` (select, required), `durationMs` (number, shown only for `FIRE_TO_END` / `FIRE_UNTIL`), `global` toggle (shown only for admin), `preferred` multi-select.
-2. **Parameters section**: ordered list of `{ type, param }` entries. The user adds parameters in the desired order; the position maps to `{1}`, `{2}`, … in the message body.
-3. **Open messages section**: at least one locale required; each locale must have at least one medium with a non-empty message.
-4. **Close messages section**: optional, shown only when `behavior` is `FIRE_TO_END` or `FIRE_UNTIL`.
-5. On submit, send `POST /alerts/1.0/template` with `id` included for update, absent for creation.
+Always filter the locale dropdown to exclude already-added locales. After any add or remove, reset the selector to the first still-available option so it never shows a locale that is already present.
 
-### Delete confirmation
+### Tab component integration
 
-Show a modal confirmation dialog before calling `DELETE /alerts/1.0/template/{id}`.
+Use the UI library's native tab component bound to the active locale string. When the library expects a numeric index or a separate model, adapt with a computed that converts between locale string and index. The tab trigger should embed the close button via a trailing slot, with event propagation stopped so the close click does not also select the tab.
+
+### Channel toggle logic
+
+For each channel, compute `isSelected = locale.mediums.some(m => m.medium === channel)`. A single toggle handler:
+- if selected → splice the medium out of the array by its index.
+- if not selected → push a new `{ medium, message: '' }` entry.
+
+No separate "selected medium" state variable is needed.
+
+### Parameter insertion into textarea
+
+Maintain a cursor-position store keyed by a unique string per textarea (e.g., `{section}_{locale}_{medium}`). Update on `blur`, `mouseup`, and `keyup` using `selectionStart`/`selectionEnd` from the event target. On parameter-button click, splice the token into the message string at the stored position, then advance the stored cursor past the inserted token. Avoid framework-specific element refs if possible; the native event target from the textarea's DOM events is sufficient.
+
+### i18n
+
+Use a **dedicated translations file** for this feature (e.g., `alerts.json`), separate from the application's common translations file. Register it in the i18n configuration alongside other feature-specific files.
+
+### String concatenation in templates
+
+When building strings that look like `{n}` inside framework template syntax (e.g., Vue, Angular, JSX), **avoid ES6 template literals** — use string concatenation instead (`'{' + (n + 1) + '}'`). Template literals with `${…}` may be misinterpreted by the framework's template parser.
 
 ---
 
-## Authentication requirements
+## Validation rules (client-side)
 
-- Write endpoints require `ROLE_ALERTS_ADMIN` or `ROLE_ALERTS_TEMPLATE`.
-- The list endpoint requires any authenticated user (`ROLE_LOGIN_COMPLETE`).
-- Include the Bearer token in every request: `Authorization: Bearer <token>`.
-- On `403`, display an error and do not retry.
+| Field | Rule |
+|---|---|
+| `name` | Required, max 100 characters |
+| `description` | Optional, max 500 characters |
+| `behavior` | Must be one of the four `AlertBehavior` values |
+| `open` | At least one locale required |
+| each locale in `open` | Must have at least one medium with a non-empty message |
 
 ---
 
@@ -270,4 +331,3 @@ Show a modal confirmation dialog before calling `DELETE /alerts/1.0/template/{id
 "alerts-template-not-found": "The requested alert template was not found",
 "alerts-template-deleted": "The alert template has been deleted",
 ```
-

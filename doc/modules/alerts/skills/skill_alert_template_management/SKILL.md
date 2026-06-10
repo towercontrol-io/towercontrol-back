@@ -32,6 +32,45 @@ Only `ROLE_ALERTS_ADMIN` can mark a template as global.
 
 ---
 
+## Expected behavior
+
+### List the Alert Template for edition and deletion
+
+A user will be able to view the list of alert templates they have access to through a table that lists their templates. 
+In general, they will be able to click one to enter a view mode, which may take them to a page similar to the edit page. 
+This will allow them to view and modify the template, and, of course, save it.  From this dashboard, he will be able, 
+provided he is the owner of this template or has an admin role, to delete the template.
+
+### Create a new Alert Template
+
+From this screen, an add button will allow the user to create a new alert template, preferably on a new page.
+This page will include a common section with the information that is important for the template, namely the name and 
+description, which are free-text fields.
+
+If the user has the `ROLE_ALERTS_ADMIN` role, they will be able to choose whether the template is global. 
+
+The user can then define a set of parameters by adding them with a plus button, and for some parameters, specify a value corresponding 
+to that parameter. The fields that can have an additional parameter are the `CUSTOM_PARAM` field or the `ALERT_LINK` field,
+which can be free-text. The other fields do not allow additional parameters.
+
+After that, the user will be able to add languages. The best approach is to have a small drop-down menu containing flags 
+representing the languages of the countries, with the corresponding language code next to each flag. By default, this 
+list must include at least French, English, Spanish, and German, and other languages can be added to the list.
+
+When the user selects a language and clicks Add, a new tab should appear so that the user can easily switch from one 
+tab to another. If it is not the first tab, the following tables can be initialized with the values from the first tab 
+that was created.
+
+In this tab, there will be a first section concerning the `open` content, in which the local field will be filled with 
+the selected country. The user will then be able to select media from the list of available media and add them. For 
+each medium, an editable text field, preferably a rich text field, will be available. If possible, this rich text field 
+should be processed so that the user can enter Markdown. The user can also add a `Close` section, and in this `Close` 
+section, they will be able to add media in the same way as before.
+
+Finally, the user will be able to save the template, which will be populated with all of this information and sent to the back end.
+
+---
+
 ## API Endpoints
 
 All endpoints require a valid Bearer token in the `Authorization` header.

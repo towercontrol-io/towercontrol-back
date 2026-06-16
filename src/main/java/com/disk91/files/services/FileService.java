@@ -859,6 +859,8 @@ public class FileService {
         if (lower.endsWith(".pdf"))  return "application/pdf";
         if (lower.endsWith(".txt"))  return "text/plain";
         if (lower.endsWith(".md"))  return "text/plain";
+        if (lower.endsWith(".log"))  return "text/plain";
+        if (lower.endsWith(".yaml"))  return "text/plain";
         if (lower.endsWith(".csv"))  return "text/csv";
         if (lower.endsWith(".html") || lower.endsWith(".htm")) return "text/html";
         if (lower.endsWith(".xml"))  return "text/xml";

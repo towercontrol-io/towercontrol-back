@@ -78,7 +78,7 @@ match the target template to avoid losing critical information.
 {
   "id" : "string",                 // technical uniq identifier used inside the platform
   "alertId" : "string",            // stable alert identifier, used to identify the same alert across multiple emissions, see bellow for more details
-  "alertDefRef" : "string",        // reference to the alert definition, this is used to link the alert to the source module and to the alert template
+  "alertDefRef" : "string",        // reference to the alert definition, this is used to link the alert to the source module
   "alertTemplateId" : "string",    // reference to the alert template, this is used to link the alert to the message key and parameters
   
   "state" : "AlarmState",          // Alarm state: indicates whether it is **active**, **terminated**. 
@@ -86,7 +86,15 @@ match the target template to avoid losing critical information.
   "fireMs" : "long",               // Moment the alarm has been raised (alert execution time)
   "expirationMs" : "long",         // Moment the alarm expired (rearm the alarm)
   
-  "publicId" : "string",           // Random secret to access this alert from a public page
+  "sent": [                        // Sent confirmation by medium with ack when available
+    {
+      "medium": "AlertMedium",     // what medium has been used
+      "sent": "boolean",           // alert has been sent
+      "ack": "boolean",            // sending confirmation when possible
+      "error": "string"            // in case of error keep a trace
+    }
+  ],
+  "publicAccessId" : "string"      // 24 char Random secret to access this alert from a public page
 }
 ```
 
@@ -120,14 +128,39 @@ See [Alert tamplates](./alert_templates.md) for more details on the alert templa
 ## Alert lifecycle
 
 Alerts can have several lifecycle modes.
+- PENDING : the alert has been detected and wait for being executed
+- FIRED : the alert has been proceeded 
+- RUNNING : when the alert is waiting a end signal to be rearmed
+- ENDED : when the alert is completed and ready for being deleted
 
-### One-shot alert
 
+### `SILENT` alerts
+A silent alert just keep a trace in the audit log, it goes from PENDING to ENDED.
+
+### `FIRE_FORGET` alert
 A one-shot alert is emitted once and can be sent again immediately if the source module creates a new alert instance.
+This alert will be duplicated if state is PENDING and will directly go to ENDED after that.
 
-### Active alert
+### `FIRE_TO_END` alert
 
-An active alert is associated with a condition that remains true over time.
+Once the alert is triggered, it moves to the `PENDING` state, and if a new alert of the same type is triggered, 
+it will not be taken into account.
+
+Once the alert is processed, it moves directly to the `RUNNING` state, waiting for an alert end event. 
+This wait can be an expiration or an explicit request to end the alert.
+
+During this time, the alert cannot be re-armed; any new incoming alert will be rejected. Once the end event is 
+received, the alert moves to the `ENDED` state.
+
+### `FIRE_UNTIL` alert
+
+In this mode, once the alert has been submitted, it remains in the `PENDIUNG` state until it is processed. It then 
+automatically moves to the `RUNNING` state until the alert expires. When the alert expires, it is set to the 
+`ENDED` state, and at that point, a new alert can be submitted. 
+
+### `RUNNING` state
+
+An `RUNNING` alert is associated with a condition that remains true over time.
 
 While the condition is active, the module must avoid emitting duplicate alerts every time the source module reports the 
 same state. The alert is only emitted again when the stop condition is reached and a new activation cycle starts.
@@ -138,19 +171,21 @@ Example:
 - temperature drops below the stop threshold -> alert is closed, potentially with a resolution message
 - temperature rises again -> a new alert emission is allowed
 
-### Recurrent reminder alert
+An running alert can also define an expiration period. This approach makes it possible to have an alert that is not 
+disarmed, but that can expire after a certain amount of time, so that a new alert can be triggered and generate a 
+new message.
 
-An active alert can also define a reminder interval.
+For example, if a refrigerator door is left open, the alert can be sent immediately with an expiration after 5 minutes.
+If the opening is detected again during the next 5 minutes, no additional alert is sent. But after 5 minutes, a 
+reminder is issued, and so on every 5 minutes.
 
-In that case, while the alert remains active, the module can re-emit the alert periodically. This is useful for long-lasting
-incidents, for example a high temperature condition that should be reminded every 15 minutes until it is cleared.
 
-### Expiration / deactivation
+### `RUNNING` to `ENDED` state
 
 An alert can be explicitly deactivated by its source module or automatically closed by a stop condition.
 
-When an alert uses a reminder cadence, the module must still respect the configured lifetime and must stop scheduling 
-emissions when the alert is canceled, resolved, or purged.
+When an alert uses an expiration, the module must still respect the configured lifetime and must clear the alert 
+when the alert is canceled, expired, or purged.
 
 ## Persistent storage
 
@@ -176,6 +211,9 @@ The stored alert should keep, at minimum:
 - delivery status
 - processing status
 
+Including after an alert expires, it is retained in the database for historical purposes and will be purged once 
+the `alert.max.retention.ms` duration is reached.
+
 ## Operational history
 
 The alert history is preserved through the audit log and thus the audit module so that operators can understand what was 
@@ -197,6 +235,27 @@ The audit entry should record at least:
 
 This traceability is mandatory even when the final delivery fails, because the alert activity itself is part of the system history.
 
+## Medium selection
+
+For alert communication to the user, the appropriate medium must be selected. The user has chosen possible contact alert 
+channels, and the alert template defines the priority order for those channels.
+
+We proceed by selecting the highest-priority medium from the template and checking whether the user authorizes it. 
+If so, it is selected. Otherwise, we move to the secondary medium and check whether it is active for the user, and so on.
+
+If the alert template does not define a priority for the mediums, the mediums will be processed in the following order: 
+starting with email, then SMS, and then the other systems in the order in which they are found.
+
+If none of the media defined on the template match the user’s available channels, or if no media are defined on the 
+template, we use the user’s medium, preferably the one for which a template is available.
+
+If no template is available, we prioritize email, then SMS, and then another solution.
+
+## Alert message composition
+
+The alert template provides the information needed to complete the message. A number of parameters are passed in the
+messages and must be replaced. These parameters correspond to predefined fields or custom fields that can be used, 
+depending on how the alert was created.
 
 ## Translation files
 

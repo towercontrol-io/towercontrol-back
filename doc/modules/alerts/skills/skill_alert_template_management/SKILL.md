@@ -332,3 +332,9 @@ When building strings that look like `{n}` inside framework template syntax (e.g
 "alerts-template-deleted": "The alert template has been deleted",
 "alerts-template-shortid-generation-failed": "Unable to generate a unique short identifier for the template, please retry",
 ```
+
+# Implementation reference
+
+- [types implementation](https://raw.githubusercontent.com/towercontrol-io/towercontrol-front/refs/heads/main/app/types/alerts.ts)
+- [api implementation](https://raw.githubusercontent.com/towercontrol-io/towercontrol-front/refs/heads/main/app/plugins/api.backend.alerts.ts)
+

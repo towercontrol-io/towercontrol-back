@@ -38,6 +38,13 @@ public interface AlertTemplateRepository extends MongoRepository<AlertTemplate, 
     AlertTemplate findOneAlertTemplateById(String id);
 
     /**
+     * Find an alert template by its short functional identifier.
+     * @param shortId - short functional id (6 uppercase letters)
+     * @return the AlertTemplate or null
+     */
+    AlertTemplate findOneAlertTemplateByShortId(String shortId);
+
+    /**
      * Find all alert templates matching a given behavior.
      * @param behavior - the AlertBehavior to filter on
      * @return list of matching AlertTemplate

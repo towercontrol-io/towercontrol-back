@@ -38,7 +38,8 @@ import java.util.ArrayList;
 @Document(collection = "alert_templates")
 @CompoundIndexes({
         @CompoundIndex(name = "name_idx", def = "{'name': 'hashed'}"),
-        @CompoundIndex(name = "owner_idx", def = "{'owner': 'hashed'}")
+        @CompoundIndex(name = "owner_idx", def = "{'owner': 'hashed'}"),
+        @CompoundIndex(name = "shortId_idx", def = "{'shortId': 1}", unique = true)
 })
 public class AlertTemplate implements CloneableObject<AlertTemplate> {
 
@@ -47,6 +48,9 @@ public class AlertTemplate implements CloneableObject<AlertTemplate> {
 
     @Id
     protected String id;
+
+    // Short functional identifier used by the API and front-end (6 uppercase letters, unique)
+    protected String shortId;
 
     // Structure version for future migrations
     protected int version;
@@ -121,6 +125,7 @@ public class AlertTemplate implements CloneableObject<AlertTemplate> {
     public AlertTemplate clone() {
         AlertTemplate u = new AlertTemplate();
         u.setId(id);
+        u.setShortId(shortId);
         u.setVersion(version);
         u.setName(name);
         u.setDescription(description);
@@ -172,6 +177,14 @@ public class AlertTemplate implements CloneableObject<AlertTemplate> {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public String getShortId() {
+        return shortId;
+    }
+
+    public void setShortId(String shortId) {
+        this.shortId = shortId;
     }
 
     public int getVersion() {

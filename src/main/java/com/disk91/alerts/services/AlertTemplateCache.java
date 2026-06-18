@@ -132,39 +132,38 @@ public class AlertTemplateCache {
     // ================================================================================================================
 
     /**
-     * Retrieve an AlertTemplate by its id, using the cache when enabled.
+     * Retrieve an AlertTemplate by its short functional id, using the cache when enabled.
      * Always returns a clone to prevent callers from mutating the cached instance.
-     * @param id - MongoDB document id of the AlertTemplate
+     * @param shortId - short functional identifier of the AlertTemplate
      * @return a clone of the matching AlertTemplate
-     * @throws ITNotFoundException when no template with that id exists
+     * @throws ITNotFoundException when no template with that shortId exists
      */
-    public AlertTemplate getTemplate(String id) throws ITNotFoundException {
+    public AlertTemplate getTemplateByShortId(String shortId) throws ITNotFoundException {
         if (!this.serviceEnable || alertsConfig.getTemplateCacheMaxSize() == 0) {
             // Direct database access when cache is disabled
-            Optional<AlertTemplate> t = alertTemplateRepository.findById(id);
-            if (t.isEmpty()) throw new ITNotFoundException("alerts-template-not-found");
-            return t.get().clone();
+            AlertTemplate t = alertTemplateRepository.findOneAlertTemplateByShortId(shortId);
+            if (t == null) throw new ITNotFoundException("alerts-template-not-found");
+            return t.clone();
         }
 
-        AlertTemplate t = this.templateCache.get(id);
+        AlertTemplate t = this.templateCache.get(shortId);
         if (t == null) {
             // Cache miss: load from database and populate cache
-            Optional<AlertTemplate> opt = alertTemplateRepository.findById(id);
-            if (opt.isEmpty()) throw new ITNotFoundException("alerts-template-not-found");
-            t = opt.get();
-            this.templateCache.put(t, t.getId());
+            t = alertTemplateRepository.findOneAlertTemplateByShortId(shortId);
+            if (t == null) throw new ITNotFoundException("alerts-template-not-found");
+            this.templateCache.put(t, t.getShortId());
         }
         return t.clone();
     }
 
     /**
      * Evict a stale AlertTemplate entry from the cache (e.g. after an update or deletion).
-     * @param id - MongoDB document id of the template to evict
+     * @param shortId - short functional identifier of the template to evict
      */
-    public void flushTemplate(String id) {
+    public void flushTemplate(String shortId) {
         if (this.serviceEnable && alertsConfig.getTemplateCacheMaxSize() > 0) {
-            this.templateCache.remove(id, false);
-            log.debug("[alerts] Cache flushed for template {}", id);
+            this.templateCache.remove(shortId, false);
+            log.debug("[alerts] Cache flushed for template {}", shortId);
         }
     }
 
@@ -173,9 +172,10 @@ public class AlertTemplateCache {
      * The next read will reload the fresh record from the database.
      * @param template - updated AlertTemplate entity to persist
      */
-    public void saveTemplate(AlertTemplate template) {
-        alertTemplateRepository.save(template);
-        this.flushTemplate(template.getId());
+    public AlertTemplate saveTemplate(AlertTemplate template) {
+        AlertTemplate a = alertTemplateRepository.save(template);
+        this.flushTemplate(template.getShortId());
+        return a;
     }
 
 }

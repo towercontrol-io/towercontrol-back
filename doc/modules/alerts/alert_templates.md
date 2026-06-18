@@ -16,6 +16,7 @@ attribute that contains the necessary information.
 ```json
 {
   "id": "string",                 // technical uniq identifier used inside the platform
+  "shortId" : "string",           // easier Id to be used for identification (unique, 6 a-Z randomly chosen, with non existance verification)
   "version" : "int",              // structure version for later
   "owner" : "string",             // when a template is not global, it can be owned by a specific user, allowing user filtering
   "global" : "boolean",           // true when the template is global and visible for all

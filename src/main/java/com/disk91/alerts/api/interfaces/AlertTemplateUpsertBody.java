@@ -36,11 +36,11 @@ import java.util.ArrayList;
 public class AlertTemplateUpsertBody {
 
     @Schema(
-            description = "Template id; when provided the request is an update, when absent a new template is created",
-            example = "6660a1b2c3d4e5f600000001",
+            description = "Template short functional id; when provided the request is an update, when absent a new template is created",
+            example = "abc23f",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED
     )
-    protected String id;
+    protected String shortId;
 
     @Schema(
             description = "Human-readable template name, max 100 characters",
@@ -105,8 +105,8 @@ public class AlertTemplateUpsertBody {
     // ==========================
     // Getters & Setters
 
-    public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
+    public String getShortId() { return shortId; }
+    public void setShortId(String shortId) { this.shortId = shortId; }
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }

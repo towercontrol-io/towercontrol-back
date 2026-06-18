@@ -30,6 +30,7 @@ import com.disk91.alerts.mdb.entities.sub.AlertMediumMessage;
 import com.disk91.alerts.mdb.repositories.AlertTemplateRepository;
 import com.disk91.audit.integration.AuditIntegration;
 import com.disk91.common.config.ModuleCatalog;
+import com.disk91.common.tools.RandomString;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITRightException;
@@ -60,7 +61,7 @@ public class AlertTemplateService {
 
     /**
      * Create or update an alert template, validating all required fields.
-     * When body.getId() is set the request is an update; ownership is enforced.
+     * When body.getShortId() is set the request is an update; ownership is enforced.
      * Only ROLE_ALERTS_ADMIN can create or update global templates.
      * ROLE_ALERTS_TEMPLATE can only modify their own templates.
      * @param requester - login of the requesting user
@@ -121,22 +122,22 @@ public class AlertTemplateService {
             }
         }
 
-        boolean isUpdate = body.getId() != null && !body.getId().isBlank();
+        boolean isUpdate = body.getShortId() != null && !body.getShortId().isBlank();
         AlertTemplate template;
 
         if (isUpdate) {
             // Load the existing template from cache (falls back to DB on miss)
             try {
-                template = alertTemplateCache.getTemplate(body.getId());
+                template = alertTemplateCache.getTemplateByShortId(body.getShortId());
             } catch (ITNotFoundException e) {
-                log.warn("[alerts] Template {} not found for update requested by {}", body.getId(), requester);
+                log.warn("[alerts] Template {} not found for update requested by {}", body.getShortId(), requester);
                 throw new ITNotFoundException("alerts-template-not-found");
             }
 
             // Non-admin can only update their own templates
             if (!isAdmin && !template.getOwner().equals(requester)) {
                 log.warn("[alerts] User {} attempted to update template {} owned by {}",
-                        requester, template.getId(), template.getOwner());
+                        requester, template.getShortId(), template.getOwner());
                 throw new ITRightException("alerts-template-update-forbidden");
             }
 
@@ -157,7 +158,7 @@ public class AlertTemplateService {
                     ActionCatalog.getActionName(ActionCatalog.Actions.AUDIT_TEMPLATE_UPDATE),
                     requester,
                     "Template {0} '{1}' updated (global={2})",
-                    new String[]{template.getId(), template.getName(), String.valueOf(template.isGlobal())}
+                    new String[]{template.getShortId(), template.getName(), String.valueOf(template.isGlobal())}
             );
         } else {
             // Build a new template
@@ -174,6 +175,21 @@ public class AlertTemplateService {
             template.setPreferred(body.getPreferred() != null ? body.getPreferred() : new ArrayList<>());
             template.setDurationMs(body.getDurationMs());
 
+            // Generate a unique shortId, retry up to 10 times in case of collision
+            String shortId = null;
+            for (int attempt = 0; attempt < 10; attempt++) {
+                String candidate = RandomString.getRandomString(6);
+                if (alertTemplateRepository.findOneAlertTemplateByShortId(candidate) == null) {
+                    shortId = candidate;
+                    break;
+                }
+            }
+            if (shortId == null) {
+                log.error("[alerts] Failed to generate a unique shortId for new template after 10 attempts");
+                throw new ITParseException("alerts-template-shortid-generation-failed");
+            }
+            template.setShortId(shortId);
+
             // Audit log the creation event
             auditIntegration.auditLog(
                     ModuleCatalog.Modules.ALERTS,
@@ -185,7 +201,7 @@ public class AlertTemplateService {
         }
 
         // Persist and invalidate cache entry on update
-        alertTemplateCache.saveTemplate(template);
+        template = alertTemplateCache.saveTemplate(template);
 
         AlertTemplateResponseItf response = new AlertTemplateResponseItf();
         response.buildFrom(template);
@@ -195,11 +211,11 @@ public class AlertTemplateService {
     // ================================================================================================================
 
     /**
-     * Delete an alert template by id, enforcing ownership rules.
+     * Delete an alert template by shortId, enforcing ownership rules.
      * ROLE_ALERTS_ADMIN can delete any template; ROLE_ALERTS_TEMPLATE only their own.
      * @param requester - login of the requesting user
      * @param isAdmin   - true when the requester has ROLE_ALERTS_ADMIN
-     * @param id        - template id to delete
+     * @param shortId   - short functional identifier of the template to delete
      * @param req       - HTTP request for IP tracing
      * @throws ITNotFoundException when the template does not exist
      * @throws ITRightException    when the requester does not own the template and is not admin
@@ -207,29 +223,29 @@ public class AlertTemplateService {
     public void deleteAlertTemplate(
             String requester,
             boolean isAdmin,
-            String id,
+            String shortId,
             HttpServletRequest req
     ) throws ITNotFoundException, ITRightException {
 
         // Load the existing template from cache (falls back to DB on miss)
         AlertTemplate template;
         try {
-            template = alertTemplateCache.getTemplate(id);
+            template = alertTemplateCache.getTemplateByShortId(shortId);
         } catch (ITNotFoundException e) {
-            log.warn("[alerts] Template {} not found for deletion requested by {}", id, requester);
+            log.warn("[alerts] Template {} not found for deletion requested by {}", shortId, requester);
             throw new ITNotFoundException("alerts-template-not-found");
         }
 
         // Non-admin can only delete their own templates
         if (!isAdmin && !template.getOwner().equals(requester)) {
             log.warn("[alerts] User {} attempted to delete template {} owned by {}",
-                    requester, id, template.getOwner());
+                    requester, shortId, template.getOwner());
             throw new ITRightException("alerts-template-delete-forbidden");
         }
 
         // Evict from cache before deleting from database
-        alertTemplateCache.flushTemplate(id);
-        alertTemplateRepository.deleteById(id);
+        alertTemplateCache.flushTemplate(shortId);
+        alertTemplateRepository.deleteById(template.getId());
 
         // Audit log the deletion event
         auditIntegration.auditLog(
@@ -237,7 +253,7 @@ public class AlertTemplateService {
                 ActionCatalog.getActionName(ActionCatalog.Actions.AUDIT_TEMPLATE_DELETE),
                 requester,
                 "Template {0} '{1}' deleted",
-                new String[]{id, template.getName()}
+                new String[]{shortId, template.getName()}
         );
     }
 

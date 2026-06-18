@@ -4,7 +4,7 @@ description: A skill to manage alert templates (create, update, delete, list) as
 license: GPL-3.0
 metadata:
   author: "disk91"
-  version: "1.1.0"
+  version: "1.2.0"
 ---
 
 # Alert Template Management
@@ -118,13 +118,13 @@ All endpoints require a valid Bearer token in the `Authorization` header.
 ### `POST /alerts/1.0/template` — Create or update a template
 
 - **Auth**: `ROLE_ALERTS_ADMIN` or `ROLE_ALERTS_TEMPLATE`
-- When the body contains an `id` field → **update**; when `id` is absent → **creation**.
+- When the body contains a `shortId` field → **update**; when `shortId` is absent → **creation**.
 - Returns **`201`** on creation, **`200`** on update.
 
 **Request body:**
 ```json
 {
-  "id": "6660a1b2c3d4e5f600000001",
+  "shortId": "ABCDEF",
   "name": "High temperature alert",
   "description": "Fired when a sensor exceeds the threshold",
   "global": false,
@@ -155,12 +155,12 @@ All endpoints require a valid Bearer token in the `Authorization` header.
 }
 ```
 
-**`id`** is optional — omit it to create a new template.
+**`shortId`** is optional — omit it to create a new template. On creation the server generates and returns a unique 6-letter identifier.
 
 **Response `201` / `200`:**
 ```json
 {
-  "id": "6660a1b2c3d4e5f600000001",
+  "shortId": "ABCDEF",
   "name": "High temperature alert",
   "description": "Fired when a sensor exceeds the threshold",
   "owner": "a3f2b1c9d4e5f6a7",
@@ -180,7 +180,7 @@ All endpoints require a valid Bearer token in the `Authorization` header.
 
 ---
 
-### `DELETE /alerts/1.0/template/{id}` — Delete a template
+### `DELETE /alerts/1.0/template/{shortId}` — Delete a template
 
 - **Auth**: `ROLE_ALERTS_ADMIN` or `ROLE_ALERTS_TEMPLATE`
 - `ROLE_ALERTS_ADMIN` may delete any template.
@@ -206,7 +206,7 @@ All endpoints require a valid Bearer token in the `Authorization` header.
 {
   "templates": [
     {
-      "id": "6660a1b2c3d4e5f600000001",
+      "shortId": "ABCDEF",
       "name": "High temperature alert",
       "owner": "a3f2b1c9d4e5f6a7",
       "global": false,
@@ -330,4 +330,5 @@ When building strings that look like `{n}` inside framework template syntax (e.g
 "alerts-template-delete-forbidden": "You can only delete templates that you own",
 "alerts-template-not-found": "The requested alert template was not found",
 "alerts-template-deleted": "The alert template has been deleted",
+"alerts-template-shortid-generation-failed": "Unable to generate a unique short identifier for the template, please retry",
 ```

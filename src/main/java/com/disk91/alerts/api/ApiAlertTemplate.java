@@ -88,7 +88,7 @@ public class ApiAlertTemplate {
             @RequestBody(required = true) AlertTemplateUpsertBody body
     ) {
         boolean isAdmin = request.isUserInRole("ROLE_ALERTS_ADMIN");
-        boolean isCreate = (body.getId() == null || body.getId().isBlank());
+        boolean isCreate = (body.getShortId() == null || body.getShortId().isBlank());
         try {
             AlertTemplateResponseItf result = alertTemplateService.upsertAlertTemplate(
                     request.getUserPrincipal().getName(), isAdmin, body, request
@@ -120,17 +120,17 @@ public class ApiAlertTemplate {
                             content = @Content(schema = @Schema(implementation = ActionResult.class)))
             }
     )
-    @RequestMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.DELETE)
+    @RequestMapping(value = "/{shortId}", produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.DELETE)
     @PreAuthorize("hasRole('ROLE_LOGIN_COMPLETE') and hasAnyRole('ROLE_ALERTS_ADMIN','ROLE_ALERTS_TEMPLATE')")
     // ----------------------------------------------------------------------
     public ResponseEntity<?> deleteAlertTemplate(
             HttpServletRequest request,
-            @Parameter(description = "Id of the template to delete") @PathVariable String id
+            @Parameter(description = "Short functional id of the template to delete") @PathVariable String shortId
     ) {
         boolean isAdmin = request.isUserInRole("ROLE_ALERTS_ADMIN");
         try {
             alertTemplateService.deleteAlertTemplate(
-                    request.getUserPrincipal().getName(), isAdmin, id, request
+                    request.getUserPrincipal().getName(), isAdmin, shortId, request
             );
             return new ResponseEntity<>(ActionResult.OK("alerts-template-deleted"), HttpStatus.OK);
         } catch (ITRightException | ITNotFoundException e) {

@@ -35,9 +35,9 @@ import java.util.ArrayList;
 @Tag(name = "Alert Template Response", description = "Alert template details returned by the API")
 public class AlertTemplateResponseItf {
 
-    @Schema(description = "Unique template identifier", example = "6660a1b2c3d4e5f600000001",
+    @Schema(description = "Short functional identifier of the template", example = "ABCDEF",
             requiredMode = Schema.RequiredMode.REQUIRED)
-    protected String id;
+    protected String shortId;
 
     @Schema(description = "Template name", example = "High temperature alert",
             requiredMode = Schema.RequiredMode.REQUIRED)
@@ -86,7 +86,7 @@ public class AlertTemplateResponseItf {
      * @param t - source entity
      */
     public void buildFrom(AlertTemplate t) {
-        this.id = t.getId();
+        this.shortId = t.getShortId();
         this.name = t.getName();
         this.description = t.getDescription();
         this.owner = t.getOwner();
@@ -102,8 +102,8 @@ public class AlertTemplateResponseItf {
     // ==========================
     // Getters & Setters
 
-    public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
+    public String getShortId() { return shortId; }
+    public void setShortId(String shortId) { this.shortId = shortId; }
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }

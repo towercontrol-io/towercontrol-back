@@ -64,6 +64,7 @@ public enum AlertMedium {
     SMS,            // Sent with short message
     PUSH,           // Sent with a push message on smartphone
     WHATSAPP,       // Sent over Whatsapp channel (Not Implemented)
+    POPUP,          // Display the alerts in the web application, asynchronous
     
     WEBHOOK,        // Sent with a webhook
     TOPIC,          // Sent with a mqtt / amqp topic

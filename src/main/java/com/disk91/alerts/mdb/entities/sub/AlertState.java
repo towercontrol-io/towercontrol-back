@@ -20,21 +20,15 @@
 package com.disk91.alerts.mdb.entities.sub;
 
 /**
- * AlertMedium - Supported delivery channels for alert notifications.
- * Individual channels (EMAIL, SMS, PUSH, WHATSAPP) are delivered per user.
- * Collective channels (WEBHOOK, TOPIC) are delivered using group-level settings.
- * DEFAULT is used when no specific channel is forced by the caller.
+ * AlertState - Lifecycle states of an alert instance.
+ * Transitions follow the alert behavior (FIRE_FORGET, FIRE_TO_END, FIRE_UNTIL, SILENT).
  */
-public enum AlertMedium {
-    EMAIL,      // Sent with email
-    SMS,        // Sent with short message
-    PUSH,       // Sent with a push message on smartphone
-    WHATSAPP,   // Sent over Whatsapp channel (Not Implemented)
-    POPUP,      // Display the alerts in the web application, asynchronous
+public enum AlertState {
+    PENDING,    // Alert created and stored, waiting for async processing
+    FIRED,      // Notification sent (FIRE_FORGET only, transient before ENDED)
+    RUNNING,    // Alert active, waiting for end signal or expiration (FIRE_TO_END / FIRE_UNTIL)
+    ENDING,     // End event received, close notification pending
+    ENDED,      // Alert fully processed, retained for history until purge
 
-    WEBHOOK,    // Sent with a webhook
-    TOPIC,      // Sent with a mqtt / amqp topic
-
-    DEFAULT,    // Used when the channel is not specified
+    UNKNOWN,
 }
-

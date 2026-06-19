@@ -56,5 +56,23 @@ public class AlertsConfig {
         return templateCacheLogPeriod;
     }
 
+    // ----------------------------------------------
+    // Alert lifecycle
+    // ----------------------------------------------
+
+    /** Maximum age in milliseconds for ENDED alerts before they are purged. Default: 7 days. */
+    @Value("${alerts.max.retention.ms:604800000}")
+    protected long alertsMaxRetentionMs;
+    public long getAlertsMaxRetentionMs() {
+        return alertsMaxRetentionMs;
+    }
+
+    /** Maximum number of alert processing tasks running in parallel. Default: 5. */
+    @Value("${alerts.max.parallel.processing:5}")
+    protected int alertsMaxParallelProcessing;
+    public int getAlertsMaxParallelProcessing() {
+        return alertsMaxParallelProcessing;
+    }
+
 }
 

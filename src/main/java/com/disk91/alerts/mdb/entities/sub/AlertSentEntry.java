@@ -20,21 +20,35 @@
 package com.disk91.alerts.mdb.entities.sub;
 
 /**
- * AlertMedium - Supported delivery channels for alert notifications.
- * Individual channels (EMAIL, SMS, PUSH, WHATSAPP) are delivered per user.
- * Collective channels (WEBHOOK, TOPIC) are delivered using group-level settings.
- * DEFAULT is used when no specific channel is forced by the caller.
+ * AlertSentEntry - Delivery status record for one medium in an alert instance.
+ * Stored inside the Alert document to track per-channel delivery outcome.
  */
-public enum AlertMedium {
-    EMAIL,      // Sent with email
-    SMS,        // Sent with short message
-    PUSH,       // Sent with a push message on smartphone
-    WHATSAPP,   // Sent over Whatsapp channel (Not Implemented)
-    POPUP,      // Display the alerts in the web application, asynchronous
+public class AlertSentEntry {
 
-    WEBHOOK,    // Sent with a webhook
-    TOPIC,      // Sent with a mqtt / amqp topic
+    // Delivery channel used for this entry
+    protected AlertMedium medium;
 
-    DEFAULT,    // Used when the channel is not specified
+    // True when the notification was submitted to the delivery provider
+    protected boolean sent;
+
+    // True when an acknowledgement was received from the provider (best-effort)
+    protected boolean ack;
+
+    // Error description when the delivery failed; null or empty on success
+    protected String error;
+
+    // ==========================
+    // Getters & Setters
+
+    public AlertMedium getMedium() { return medium; }
+    public void setMedium(AlertMedium medium) { this.medium = medium; }
+
+    public boolean isSent() { return sent; }
+    public void setSent(boolean sent) { this.sent = sent; }
+
+    public boolean isAck() { return ack; }
+    public void setAck(boolean ack) { this.ack = ack; }
+
+    public String getError() { return error; }
+    public void setError(String error) { this.error = error; }
 }
-

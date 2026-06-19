@@ -35,7 +35,7 @@ import java.util.ArrayList;
  * the firing behavior, the preferred delivery mediums, and an optional auto-close duration.
  * It is referenced by alert instances to render and deliver notifications.
  */
-@Document(collection = "alert_templates")
+@Document(collection = "alerts_templates")
 @CompoundIndexes({
         @CompoundIndex(name = "name_idx", def = "{'name': 'hashed'}"),
         @CompoundIndex(name = "owner_idx", def = "{'owner': 'hashed'}"),

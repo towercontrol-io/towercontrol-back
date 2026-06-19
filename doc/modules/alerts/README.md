@@ -77,6 +77,7 @@ match the target template to avoid losing critical information.
 ```json
 {
   "id" : "string",                 // technical uniq identifier used inside the platform
+  "targetedUser" : "string",       // targeted User for this alert. One alert per user.
   "alertId" : "string",            // stable alert identifier, used to identify the same alert across multiple emissions, see bellow for more details
   "alertDefRef" : "string",        // reference to the alert definition, this is used to link the alert to the source module
   "alertTemplateId" : "string",    // reference to the alert template, this is used to link the alert to the message key and parameters
@@ -131,6 +132,7 @@ Alerts can have several lifecycle modes.
 - PENDING : the alert has been detected and wait for being executed
 - FIRED : the alert has been proceeded 
 - RUNNING : when the alert is waiting a end signal to be rearmed
+- ENDING : when the alert received the end-event and waiting to be processed
 - ENDED : when the alert is completed and ready for being deleted
 
 
@@ -146,11 +148,14 @@ This alert will be duplicated if state is PENDING and will directly go to ENDED 
 Once the alert is triggered, it moves to the `PENDING` state, and if a new alert of the same type is triggered, 
 it will not be taken into account.
 
-Once the alert is processed, it moves directly to the `RUNNING` state, waiting for an alert end event. 
+Once the alert is processed, it moves directly to the `RUNNING` state, waiting for an alert end-event. 
 This wait can be an expiration or an explicit request to end the alert.
 
-During this time, the alert cannot be re-armed; any new incoming alert will be rejected. Once the end event is 
-received, the alert moves to the `ENDED` state.
+During this time, the alert cannot be re-armed; any new incoming alert will be rejected. Once the end-event is 
+received, the alert moves to `ENDING` then after being reported `ENDED` state.
+
+Expiration will not raise a message.
+
 
 ### `FIRE_UNTIL` alert
 
@@ -212,7 +217,15 @@ The stored alert should keep, at minimum:
 - processing status
 
 Including after an alert expires, it is retained in the database for historical purposes and will be purged once 
-the `alert.max.retention.ms` duration is reached.
+the `alerts.max.retention.ms` duration is reached.
+
+## Specific medium
+
+### POPUP
+In the case of a message sent via a pop-up medium, the alert is displayed when the user logs in. There may 
+be a set of historical alerts that the user may have missed, so the pop-up messages are stored in a table in order 
+to access this history. The table can be purged once the messages have been read, since the alert history is maintained 
+in the alert table, which can be consulted until the purge date is reached.
 
 ## Operational history
 

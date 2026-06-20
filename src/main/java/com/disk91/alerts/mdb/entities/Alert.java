@@ -57,7 +57,7 @@ public class Alert {
     protected String alertTemplateId;
 
     // Group identifier used as the broadcast perimeter for user fan-out
-    protected String targetedUser;
+    protected String targetedGroup;
 
     // Positional parameter values substituted into template messages ({1}, {2}, ...)
     protected List<String> parameters;
@@ -97,7 +97,7 @@ public class Alert {
             String alertId,
             String alertDefRef,
             String alertTemplateId,
-            String targtedUser,
+            String groupId,
             List<String> parameters,
             long requestMs,
             String publicAccessId
@@ -106,7 +106,7 @@ public class Alert {
         a.setAlertId(alertId);
         a.setAlertDefRef(alertDefRef);
         a.setAlertTemplateId(alertTemplateId);
-        a.setTargetedUser(targtedUser);
+        a.setTargetedGroup(groupId);
         a.setParameters(parameters != null ? parameters : new ArrayList<>());
         a.setState(AlertState.PENDING);
         a.setRequestMs(requestMs);
@@ -132,8 +132,8 @@ public class Alert {
     public String getAlertTemplateId() { return alertTemplateId; }
     public void setAlertTemplateId(String alertTemplateId) { this.alertTemplateId = alertTemplateId; }
 
-    public String getTargetedUser() { return targetedUser; }
-    public void setTargetedUser(String targetedUser) { this.targetedUser = targetedUser; }
+    public String getTargetedGroup() { return targetedGroup; }
+    public void setTargetedGroup(String targetedGroup) { this.targetedGroup = targetedGroup; }
 
     public List<String> getParameters() { return parameters; }
     public void setParameters(List<String> parameters) { this.parameters = parameters; }

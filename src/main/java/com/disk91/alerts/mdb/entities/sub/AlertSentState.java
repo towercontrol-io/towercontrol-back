@@ -19,27 +19,36 @@
  */
 package com.disk91.alerts.mdb.entities.sub;
 
-import java.util.List;
-
 /**
- * AlertSentEntry - Per-user delivery record within an alert instance.
- * One entry exists for each user targeted by the alert fan-out.
- * Each entry holds the list of channel delivery outcomes for that user.
+ * AlertSentState - Delivery outcome for a single channel within one user's alert delivery record.
+ * Nested inside AlertSentEntry, one instance per attempted medium.
  */
-public class AlertSentEntry {
+public class AlertSentState {
 
-    // Login of the user this delivery record belongs to
-    protected String userId;
+    // Delivery channel attempted for this entry
+    protected AlertMedium medium;
 
-    // Delivery outcome for each channel attempted for this user
-    protected List<AlertSentState> state;
+    // True when the notification was submitted to the delivery provider
+    protected boolean sent;
+
+    // True when an acknowledgement was received from the provider (best-effort)
+    protected boolean ack;
+
+    // Error description when the delivery failed; null or empty on success
+    protected String error;
 
     // ==========================
     // Getters & Setters
 
-    public String getUserId() { return userId; }
-    public void setUserId(String userId) { this.userId = userId; }
+    public AlertMedium getMedium() { return medium; }
+    public void setMedium(AlertMedium medium) { this.medium = medium; }
 
-    public List<AlertSentState> getState() { return state; }
-    public void setState(List<AlertSentState> state) { this.state = state; }
+    public boolean isSent() { return sent; }
+    public void setSent(boolean sent) { this.sent = sent; }
+
+    public boolean isAck() { return ack; }
+    public void setAck(boolean ack) { this.ack = ack; }
+
+    public String getError() { return error; }
+    public void setError(String error) { this.error = error; }
 }

@@ -15,13 +15,14 @@ then sends an alert intent to the alerts' module. From that point, the alerts mo
 
 ## Purpose
 
-An alert is generally attached to a group. The group is used as the broadcast perimeter, so every user associated with 
-that group can receive the alert according to the delivery channels available on their profile.
+An alert is a message sent in response to an event. It can be issued in different ways, is associated with a triggering event
+and sent to an identified group, as a consequence all users belonging to that group with alerts enabled.
 
 The same alert can be delivered through different channels:
 - email
 - SMS
 - push notification
+- ...
 
 The channel list requested by the alert is a preference list, not a strict requirement. If the preferred channel is not 
 available for a user, the module must select another usable channel as a fallback.
@@ -77,9 +78,9 @@ match the target template to avoid losing critical information.
 ```json
 {
   "id" : "string",                 // technical uniq identifier used inside the platform
-  "targetedUser" : "string",       // targeted User for this alert. One alert per user.
+  "targetedGroup" : "string",      // targeted Group for this alert
   "alertId" : "string",            // stable alert identifier, used to identify the same alert across multiple emissions, see bellow for more details
-  "alertDefRef" : "string",        // reference to the alert definition, this is used to link the alert to the source module
+  "alertDefRef" : "string",        // reference to the alert definition, ex : dev_DEVICEID to refer the device, source of the alert, grp_GROUPID for group alerts
   "alertTemplateId" : "string",    // reference to the alert template, this is used to link the alert to the message key and parameters
   
   "state" : "AlarmState",          // Alarm state: indicates whether it is **active**, **terminated**. 
@@ -89,10 +90,15 @@ match the target template to avoid losing critical information.
   
   "sent": [                        // Sent confirmation by medium with ack when available
     {
-      "medium": "AlertMedium",     // what medium has been used
-      "sent": "boolean",           // alert has been sent
-      "ack": "boolean",            // sending confirmation when possible
-      "error": "string"            // in case of error keep a trace
+      "userId" : "string",         // One for each of the targeted user
+      "state" : [
+        {
+          "medium": "AlertMedium",     // what medium has been used
+          "sent": "boolean",           // alert has been sent
+          "ack": "boolean",            // sending confirmation when possible
+          "error": "string"            // in case of error keep a trace
+        }
+      ]
     }
   ],
   "publicAccessId" : "string"      // 24 char Random secret to access this alert from a public page

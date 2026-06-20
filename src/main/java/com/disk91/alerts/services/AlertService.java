@@ -199,6 +199,8 @@ public class AlertService {
      * @param now   - current time used to set fireMs and compute expiration
      */
     private void processAlert(Alert alert, long now) {
+
+        boolean processMessage;
         switch (alert.getState()) {
 
             case PENDING_QUEUE -> {
@@ -266,7 +268,7 @@ public class AlertService {
      * @param alertId         - stable business identifier, already instantiated
      * @param alertDefRef     - source module reference key
      * @param alertTemplateId - shortId of the AlertTemplate to use
-     * @param targetedUser    - login of the target user, or group identifier for fan-out
+     * @param targetedGroup   - group identifier used as the broadcast perimeter for user fan-out
      * @param parameters      - positional substitution values ({1}, {2}, ...)
      * @param requestMs       - event detection timestamp (ms since epoch)
      * @return the persisted Alert in PENDING_QUEUE state, or null when rejected as a duplicate
@@ -276,7 +278,7 @@ public class AlertService {
             String alertId,
             String alertDefRef,
             String alertTemplateId,
-            String targetedUser,
+            String targetedGroup,
             List<String> parameters,
             long requestMs
     ) throws ITParseException {
@@ -305,15 +307,15 @@ public class AlertService {
 
         String publicAccessId = RandomString.getRandomString(24);
         // Persist first as PENDING to obtain the MongoDB id, then transition to PENDING_QUEUE
-        Alert alert = Alert.newAlert(alertId, alertDefRef, alertTemplateId, targetedUser, parameters, requestMs, publicAccessId);
+        Alert alert = Alert.newAlert(alertId, alertDefRef, alertTemplateId, targetedGroup, parameters, requestMs, publicAccessId);
         alert = alertRepository.save(alert);
-        log.debug("[alerts] Alert {} created (template={}, user={})", alertId, alertTemplateId, targetedUser);
+        log.debug("[alerts] Alert {} created (template={}, group={})", alertId, alertTemplateId, targetedGroup);
         auditIntegration.auditLog(
                 ModuleCatalog.Modules.ALERTS,
                 ActionCatalog.getActionName(ActionCatalog.Actions.AUDIT_ALERT_CREATED),
                 alertDefRef,
                 "Alert '{0}' type {1} created for tenant {2}",
-                new String[]{alertId, alertTemplateId, targetedUser}
+                new String[]{alertId, alertTemplateId, targetedGroup}
         );
 
         enqueue(alert);
@@ -339,7 +341,7 @@ public class AlertService {
                 ActionCatalog.getActionName(ActionCatalog.Actions.AUDIT_ALERT_ENDED),
                 alert.getAlertDefRef(),
                 "Alert '{0}' type {1} ended for tenant {2}",
-                new String[]{alertId, alert.getAlertTemplateId(), alert.getTargetedUser()}
+                new String[]{alertId, alert.getAlertTemplateId(), alert.getTargetedGroup()}
         );
         enqueue(alert);
     }

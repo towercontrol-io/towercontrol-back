@@ -124,17 +124,18 @@ Alerts are associated with a template that, among other things, contains the tra
 as well as the integration of the variables expected in the error message and the alert message, in order to generate 
 the text according to the different transmission channels.
 
-See [Alert tamplates](./alert_templates.md) for more details on the alert template structure and management.
+See [Alert templates](./alert_templates.md) for more details on the alert template structure and management.
 
 ## Alert lifecycle
 
 Alerts can have several lifecycle modes.
 - PENDING : the alert has been detected and wait for being executed
+- PENDING_QUEUE : the alert has been transferred to the waiting queue (technical state) ; en restart the alert in this state is reset to PENDING
 - FIRED : the alert has been proceeded 
 - RUNNING : when the alert is waiting a end signal to be rearmed
 - ENDING : when the alert received the end-event and waiting to be processed
+- ENDING_QUEUE : Same principle as PENDING_QUEUE
 - ENDED : when the alert is completed and ready for being deleted
-
 
 ### `SILENT` alerts
 A silent alert just keep a trace in the audit log, it goes from PENDING to ENDED.
@@ -155,7 +156,6 @@ During this time, the alert cannot be re-armed; any new incoming alert will be r
 received, the alert moves to `ENDING` then after being reported `ENDED` state.
 
 Expiration will not raise a message.
-
 
 ### `FIRE_UNTIL` alert
 

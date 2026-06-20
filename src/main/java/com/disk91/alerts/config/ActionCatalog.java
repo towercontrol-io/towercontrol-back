@@ -25,6 +25,9 @@ public class ActionCatalog {
         AUDIT_TEMPLATE_UPDATE,
         AUDIT_TEMPLATE_DELETE,
 
+        AUDIT_ALERT_CREATED,
+        AUDIT_ALERT_ENDED,
+
         UNKNOWN
     }
 
@@ -36,6 +39,11 @@ public class ActionCatalog {
                 return "alerts-template-updated";
             case AUDIT_TEMPLATE_DELETE:
                 return "alerts-template-deleted";
+
+            case AUDIT_ALERT_CREATED:
+                return "alerts-alert-created";
+            case AUDIT_ALERT_ENDED:
+                return "alerts-alert-ended";
 
             case UNKNOWN:
             default:

@@ -22,8 +22,10 @@ package com.disk91.alerts.config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 @Configuration
 @PropertySource(value = {"file:configuration/alerts.properties"}, ignoreResourceNotFound = true)
@@ -72,6 +74,27 @@ public class AlertsConfig {
     protected int alertsMaxParallelProcessing;
     public int getAlertsMaxParallelProcessing() {
         return alertsMaxParallelProcessing;
+    }
+
+    // ----------------------------------------------
+    // Alert worker thread pool
+    // ----------------------------------------------
+
+    /**
+     * Spring-managed thread pool for alert worker threads.
+     * Pool size is fixed to alerts.max.parallel.processing.
+     * Waits up to 15 seconds for in-flight tasks on shutdown.
+     */
+    @Bean(name = "alertTaskExecutor")
+    public ThreadPoolTaskExecutor alertTaskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(alertsMaxParallelProcessing);
+        executor.setMaxPoolSize(alertsMaxParallelProcessing);
+        executor.setThreadNamePrefix("alert-worker-");
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(15);
+        executor.initialize();
+        return executor;
     }
 
 }

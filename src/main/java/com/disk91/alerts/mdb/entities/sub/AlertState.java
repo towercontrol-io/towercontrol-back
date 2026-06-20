@@ -25,9 +25,11 @@ package com.disk91.alerts.mdb.entities.sub;
  */
 public enum AlertState {
     PENDING,    // Alert created and stored, waiting for async processing
+    PENDING_QUEUE, // Technical state, where the alert is in the queue before being processed
     FIRED,      // Notification sent (FIRE_FORGET only, transient before ENDED)
     RUNNING,    // Alert active, waiting for end signal or expiration (FIRE_TO_END / FIRE_UNTIL)
     ENDING,     // End event received, close notification pending
+    ENDING_QUEUE, // Same as Pending Queue
     ENDED,      // Alert fully processed, retained for history until purge
 
     UNKNOWN,

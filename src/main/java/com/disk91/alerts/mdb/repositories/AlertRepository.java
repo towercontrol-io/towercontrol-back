@@ -46,6 +46,14 @@ public interface AlertRepository extends MongoRepository<Alert, String> {
     List<Alert> findAlertsByState(AlertState state);
 
     /**
+     * Find all alert instances whose state is in the given list, ordered by requestMs ascending (oldest first).
+     * Used at startup to re-enqueue PENDING and ENDING alerts together in submission order.
+     * @param states - list of AlertState values to include
+     * @return list of matching Alert instances sorted oldest-first
+     */
+    List<Alert> findAlertsByStateInOrderByRequestMsAsc(List<AlertState> states);
+
+    /**
      * Find RUNNING alerts whose expiration time has passed and whose expiration is set (> 0).
      * Used by the async processor to auto-close expired alerts.
      * @param state         - expected to be AlertState.RUNNING

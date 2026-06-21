@@ -18,10 +18,6 @@
  *    IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/**
- * UserPending -  This class stores account creation requests awaiting email validation and handles confirmations.
- * Entries are automatically removed either upon activation or after a specified period.
- */
 
 package com.disk91.groups.mdb.entities;
 
@@ -88,7 +84,7 @@ public class Group implements CloneableObject<Group> {
     // The group last update date
     protected long modificationDateMs;
 
-    // The group deletion date request when the group has no more owners, keep it  bit before destorying it
+    // The group deletion date request when the group has no more owners, keep it  bit before destroying it
     protected long deletionDateMs;
 
     // The group attributes to store per module information
@@ -97,9 +93,12 @@ public class Group implements CloneableObject<Group> {
     // The group referring groups
     protected List<String> referringGroups;
 
+    // Alert Group - this group is suitable to report alerts
+    protected boolean alertGroup = false;
+
     // ========================================
     // Initialization
-    public void init(String _name,String _description, String _shortId, String _language) {
+    public void init(String _name,String _description, String _shortId, String _language, boolean _alertGroup) {
         this.setShortId(_shortId);
         this.setName(_name);
         this.setDescription(_description);
@@ -113,6 +112,7 @@ public class Group implements CloneableObject<Group> {
         this.deletionDateMs = 0;
         this.attributes = new ArrayList<>();
         this.referringGroups = new ArrayList<>();
+        this.alertGroup = _alertGroup;
     }
 
     // ========================================
@@ -138,6 +138,7 @@ public class Group implements CloneableObject<Group> {
         u.setCreationBy(creationBy);
         u.setModificationDateMs(modificationDateMs);
         u.setDeletionDateMs(deletionDateMs);
+        u.setAlertGroup(alertGroup);
         u.setAttributes(new ArrayList<>());
         for ( GroupAttribute attribute : attributes) {
             u.getAttributes().add(attribute.clone());
@@ -296,5 +297,13 @@ public class Group implements CloneableObject<Group> {
 
     public void setDeletionDateMs(long deletionDateMs) {
         this.deletionDateMs = deletionDateMs;
+    }
+
+    public boolean isAlertGroup() {
+        return alertGroup;
+    }
+
+    public void setAlertGroup(boolean alertGroup) {
+        this.alertGroup = alertGroup;
     }
 }

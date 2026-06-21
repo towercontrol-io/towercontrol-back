@@ -182,7 +182,7 @@ public class GroupsShortIdCache {
             try {
                 User u = userCache.getUser(userId);
                 Group g = new Group();
-                g.init("groups-default-group", "groups-default-group-description", shortId, u.getLanguage());
+                g.init("groups-default-group", "groups-default-group-description", shortId, u.getLanguage(),true);
                 g.setId(shortId);
                 g.setActive(u.isActive());
                 g.setVirtual(true);

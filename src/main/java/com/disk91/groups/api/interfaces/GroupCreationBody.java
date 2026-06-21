@@ -49,7 +49,12 @@ public class GroupCreationBody {
     )
     protected String parentId;
 
-
+    @Schema(
+            description = "True when this group is suitable for alerting",
+            example = "true",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    protected boolean alertGroup;
 
     // ==========================
     // Getters & Setters
@@ -77,5 +82,13 @@ public class GroupCreationBody {
 
     public void setParentId(String parentId) {
         this.parentId = parentId;
+    }
+
+    public boolean isAlertGroup() {
+        return alertGroup;
+    }
+
+    public void setAlertGroup(boolean alertGroup) {
+        this.alertGroup = alertGroup;
     }
 }

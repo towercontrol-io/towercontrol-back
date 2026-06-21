@@ -17,6 +17,7 @@ The group data structure is defined as follows:
   "deletionDateMs": "number",     // group planned deletion date in MS since epoch, 0 if not deleted, async deletion, later after beeing inactive
   
   "virtual": "boolean",           // virtual group flag, this group is a virtual group, it is not stored in the database
+  "alertGroup" : "boolean",       // Alert Group - this group is suitable to report alerts
   
   "attributes": [                 // list of attributes to be done on the group
     { "type": "string",           // An attribute can be registered to a group for being consumed by a different service

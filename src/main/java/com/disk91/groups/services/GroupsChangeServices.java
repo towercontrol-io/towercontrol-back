@@ -126,7 +126,7 @@ public class GroupsChangeServices {
         Group newGroup = new Group();
         try {
             String shortId = groupsServices.getNewShortId();
-            newGroup.init(body.getName(), body.getDescription(), shortId, user.getLanguage());
+            newGroup.init(body.getName(), body.getDescription(), shortId, user.getLanguage(),body.isAlertGroup());
             newGroup.addUnderGroup(group, groupsConfig.getGroupsMaxDepth());
             newGroup.setCreationBy(user.getLogin());
             groupsServices.flushGroup(group.getShortId());
@@ -197,7 +197,7 @@ public class GroupsChangeServices {
         Group newGroup = new Group();
         try {
             String shortId = groupsServices.getNewShortId();
-            newGroup.init(body.getName(), body.getDescription(), shortId, user.getLanguage());
+            newGroup.init(body.getName(), body.getDescription(), shortId, user.getLanguage(), body.isAlertGroup());
             newGroup.setCreationBy(user.getLogin());
             groupsServices.saveGroup(newGroup);
             auditIntegration.auditLog(

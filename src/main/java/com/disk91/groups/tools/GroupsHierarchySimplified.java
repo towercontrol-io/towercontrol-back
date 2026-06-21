@@ -68,6 +68,13 @@ public class GroupsHierarchySimplified {
     )
     protected List<String> roles;
 
+    @Schema(
+            description = "True when this group is suitable for alerting",
+            example = "true",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    protected boolean alertGroup;
+
     // ============================================================================
     // Builder
     // ============================================================================
@@ -86,6 +93,7 @@ public class GroupsHierarchySimplified {
         resp.shortId = g.getShortId();
         resp.name = g.getName();
         resp.description = g.getDescription();
+        resp.alertGroup = g.isAlertGroup();
         resp.children = new ArrayList<>();
         resp.roles = new ArrayList<>();
         if (!ghn.getChildren().isEmpty()) {
@@ -158,5 +166,13 @@ public class GroupsHierarchySimplified {
 
     public void setRoles(List<String> roles) {
         this.roles = roles;
+    }
+
+    public boolean isAlertGroup() {
+        return alertGroup;
+    }
+
+    public void setAlertGroup(boolean alertGroup) {
+        this.alertGroup = alertGroup;
     }
 }

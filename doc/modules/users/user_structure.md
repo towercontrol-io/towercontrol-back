@@ -46,7 +46,7 @@ The user data structure is defined as follows:
   
   "language": "string",           // user language (ISO country)
   
-  "alert preference": {
+  "alertPreference": {
     "email": "boolean",           // user email alert preference
     "sms": "boolean",             // user sms alert preference
     "push": "boolean"             // user push alert preference 

@@ -38,23 +38,23 @@ public class GroupHierarchyTests {
         //       |-- E
 
         Group Root = new Group();
-        Root.init("Root", "Group Root", "Root", "en");
+        Root.init("Root", "Group Root", "Root", "en",true);
         Group A = new Group();
-        A.init("A", "Group A", "A", "en");
+        A.init("A", "Group A", "A", "en",true);
         A.getReferringGroups().add(Root.getShortId());
         Group B = new Group();
-        B.init("B", "Group B", "B", "en");
+        B.init("B", "Group B", "B", "en",true);
         B.getReferringGroups().add(Root.getShortId());
         B.getReferringGroups().add(A.getShortId());
         Group C = new Group();
-        C.init("C", "Group C", "C", "en");
+        C.init("C", "Group C", "C", "en",true);
         C.getReferringGroups().add(Root.getShortId());
         C.getReferringGroups().add(A.getShortId());
         Group D = new Group();
-        D.init("D", "Group D", "D", "en");
+        D.init("D", "Group D", "D", "en",true);
         D.getReferringGroups().add(Root.getShortId());
         Group E = new Group();
-        E.init("E", "Group E", "E", "en");
+        E.init("E", "Group E", "E", "en",true);
         E.getReferringGroups().add(Root.getShortId());
         E.getReferringGroups().add(D.getShortId());
 
@@ -116,24 +116,24 @@ public class GroupHierarchyTests {
 
 
         Group Root = new Group();
-        Root.init("Root", "Group Root", "Root", "en");
+        Root.init("Root", "Group Root", "Root", "en",true);
         Group A = new Group();
-        A.init("A", "Group A", "A", "en");
+        A.init("A", "Group A", "A", "en",true);
         A.getReferringGroups().add(Root.getShortId());
         Group B = new Group();
-        B.init("B", "Group B", "B", "en");
+        B.init("B", "Group B", "B", "en",true);
         B.getReferringGroups().add(Root.getShortId());
         B.getReferringGroups().add(A.getShortId());
         Group C = new Group();
-        C.init("C", "Group C", "C", "en");
+        C.init("C", "Group C", "C", "en",true);
         C.getReferringGroups().add(Root.getShortId());
         C.getReferringGroups().add(A.getShortId());
         A.getReferringGroups().add(C.getShortId());
         Group D = new Group();
-        D.init("D", "Group D", "D", "en");
+        D.init("D", "Group D", "D", "en",true);
         D.getReferringGroups().add(Root.getShortId());
         Group E = new Group();
-        E.init("E", "Group E", "E", "en");
+        E.init("E", "Group E", "E", "en",true);
         E.getReferringGroups().add(Root.getShortId());
         E.getReferringGroups().add(D.getShortId());
 
@@ -192,28 +192,28 @@ public class GroupHierarchyTests {
         //  |-- B (dual)
 
         Group Root = new Group();
-        Root.init("Root", "Group Root", "Root", "en");
+        Root.init("Root", "Group Root", "Root", "en",true);
         Group A = new Group();
-        A.init("A", "Group A", "A", "en");
+        A.init("A", "Group A", "A", "en",true);
         A.getReferringGroups().add(Root.getShortId());
         Group B = new Group();
-        B.init("B", "Group B", "B", "en");
+        B.init("B", "Group B", "B", "en",true);
         B.getReferringGroups().add(Root.getShortId());
         B.getReferringGroups().add(A.getShortId());
         Group C = new Group();
-        C.init("C", "Group C", "C", "en");
+        C.init("C", "Group C", "C", "en",true);
         C.getReferringGroups().add(Root.getShortId());
         C.getReferringGroups().add(A.getShortId());
         Group D = new Group();
-        D.init("D", "Group D", "D", "en");
+        D.init("D", "Group D", "D", "en",true);
         D.getReferringGroups().add(Root.getShortId());
         Group E = new Group();
-        E.init("E", "Group E", "E", "en");
+        E.init("E", "Group E", "E", "en",true);
         E.getReferringGroups().add(Root.getShortId());
         E.getReferringGroups().add(D.getShortId());
 
         Group Root2 = new Group();
-        Root2.init("Root2", "Group Root2", "Root2", "en");
+        Root2.init("Root2", "Group Root2", "Root2", "en",true);
         B.getReferringGroups().add(Root2.getShortId());
 
 
@@ -277,23 +277,23 @@ public class GroupHierarchyTests {
         //       |-- B (dual)
 
         Group Root = new Group();
-        Root.init("Root", "Group Root", "Root", "en");
+        Root.init("Root", "Group Root", "Root", "en",true);
         Group A = new Group();
-        A.init("A", "Group A", "A", "en");
+        A.init("A", "Group A", "A", "en",true);
         A.getReferringGroups().add(Root.getShortId());
         Group B = new Group();
-        B.init("B", "Group B", "B", "en");
+        B.init("B", "Group B", "B", "en",true);
         B.getReferringGroups().add(Root.getShortId());
         B.getReferringGroups().add(A.getShortId());
         Group C = new Group();
-        C.init("C", "Group C", "C", "en");
+        C.init("C", "Group C", "C", "en",true);
         C.getReferringGroups().add(Root.getShortId());
         C.getReferringGroups().add(A.getShortId());
         Group D = new Group();
-        D.init("D", "Group D", "D", "en");
+        D.init("D", "Group D", "D", "en",true);
         D.getReferringGroups().add(Root.getShortId());
         Group E = new Group();
-        E.init("E", "Group E", "E", "en");
+        E.init("E", "Group E", "E", "en",true);
         E.getReferringGroups().add(Root.getShortId());
         E.getReferringGroups().add(D.getShortId());
         B.getReferringGroups().add(D.getShortId());
@@ -345,33 +345,33 @@ public class GroupHierarchyTests {
         //               |-- J
 
         Group Root1 = new Group();
-        Root1.init("Root1", "Group Root1", "Root1", "en");
+        Root1.init("Root1", "Group Root1", "Root1", "en",true);
         Group A = new Group();
-        A.init("A", "Group A", "A", "en");
+        A.init("A", "Group A", "A", "en",true);
         A.getReferringGroups().add(Root1.getShortId());
         Group C = new Group();
-        C.init("C", "Group C", "C", "en");
+        C.init("C", "Group C", "C", "en",true);
         C.getReferringGroups().add(Root1.getShortId());
         C.getReferringGroups().add(A.getShortId());
         Group D = new Group();
-        D.init("D", "Group D", "D", "en");
+        D.init("D", "Group D", "D", "en",true);
         D.getReferringGroups().add(Root1.getShortId());
         D.getReferringGroups().add(A.getShortId());
         D.getReferringGroups().add(C.getShortId());
 
         Group Root2 = new Group();
-        Root2.init("Root2", "Group Root2", "Root2", "en");
+        Root2.init("Root2", "Group Root2", "Root2", "en",true);
         Group R = new Group();
-        R.init("R", "Group R", "R", "en");
+        R.init("R", "Group R", "R", "en",true);
         R.getReferringGroups().add(Root2.getShortId());
         Group K = new Group();
-        K.init("K", "Group K", "K", "en");
+        K.init("K", "Group K", "K", "en",true);
         K.getReferringGroups().add(Root2.getShortId());
         K.getReferringGroups().add(R.getShortId());
 
 
         Group E = new Group();
-        E.init("E", "Group E", "E", "en");
+        E.init("E", "Group E", "E", "en",true);
         E.getReferringGroups().add(Root1.getShortId());
         E.getReferringGroups().add(A.getShortId());
         E.getReferringGroups().add(C.getShortId());
@@ -380,7 +380,7 @@ public class GroupHierarchyTests {
         E.getReferringGroups().add(K.getShortId());
 
         Group J = new Group();
-        J.init("J", "Group J", "J", "en");
+        J.init("J", "Group J", "J", "en",true);
         J.getReferringGroups().add(Root1.getShortId());
         J.getReferringGroups().add(A.getShortId());
         J.getReferringGroups().add(C.getShortId());
@@ -423,12 +423,12 @@ public class GroupHierarchyTests {
             assertEquals(0, gl2.getUnder("J").size());
 
             //             Root1                              A                        C                  E                       J
-            assertEquals(E,gl1.getHierarchy().getChildren().getFirst().getChildren().get(0).getChildren().get(1).getGroup());
-            assertEquals(J,gl1.getHierarchy().getChildren().getFirst().getChildren().get(0).getChildren().get(1).getChildren().get(0).getGroup());
+            assertEquals(E,gl1.getHierarchy().getChildren().getFirst().getChildren().getFirst().getChildren().get(1).getGroup());
+            assertEquals(J,gl1.getHierarchy().getChildren().getFirst().getChildren().getFirst().getChildren().get(1).getChildren().getFirst().getGroup());
 
             //             Root2                              R                        K                  E                       J
-            assertEquals(E,gl2.getHierarchy().getChildren().getFirst().getChildren().get(0).getChildren().get(0).getGroup());
-            assertEquals(J,gl2.getHierarchy().getChildren().getFirst().getChildren().get(0).getChildren().get(0).getChildren().get(0).getGroup());
+            assertEquals(E,gl2.getHierarchy().getChildren().getFirst().getChildren().getFirst().getChildren().getFirst().getGroup());
+            assertEquals(J,gl2.getHierarchy().getChildren().getFirst().getChildren().getFirst().getChildren().getFirst().getChildren().getFirst().getGroup());
 
 
         });
@@ -462,36 +462,36 @@ public class GroupHierarchyTests {
 
         assertDoesNotThrow(() -> {
             Group Root1 = new Group();
-            Root1.init("Root1", "Group Root1", "Root1", "en");
+            Root1.init("Root1", "Group Root1", "Root1", "en",true);
             Group A = new Group();
-            A.init("A", "Group A", "A", "en");
+            A.init("A", "Group A", "A", "en",true);
             A.addUnderGroup(Root1, maxDepth);
 
             Group C = new Group();
-            C.init("C", "Group C", "C", "en");
+            C.init("C", "Group C", "C", "en",true);
             C.addUnderGroup(A, maxDepth);
 
             Group D = new Group();
-            D.init("D", "Group D", "D", "en");
+            D.init("D", "Group D", "D", "en",true);
             D.addUnderGroup(C, maxDepth);
 
             Group Root2 = new Group();
-            Root2.init("Root2", "Group Root2", "Root2", "en");
+            Root2.init("Root2", "Group Root2", "Root2", "en",true);
             Group R = new Group();
-            R.init("R", "Group R", "R", "en");
+            R.init("R", "Group R", "R", "en",true);
             R.addUnderGroup(Root2, maxDepth);
 
             Group K = new Group();
-            K.init("K", "Group K", "K", "en");
+            K.init("K", "Group K", "K", "en",true);
             K.addUnderGroup(R, maxDepth);
 
             Group E = new Group();
-            E.init("E", "Group E", "E", "en");
+            E.init("E", "Group E", "E", "en",true);
             E.addUnderGroup(K, maxDepth);
             E.addUnderGroup(C, maxDepth);
 
             Group J = new Group();
-            J.init("J", "Group J", "J", "en");
+            J.init("J", "Group J", "J", "en",true);
             J.addUnderGroup(E, maxDepth);
 
             GroupsList gl1 = new GroupsList(Root1, 5);
@@ -528,7 +528,7 @@ public class GroupHierarchyTests {
 
             assertThrows(ITTooManyException.class, () -> {
                 Group L = new Group();
-                L.init("L", "Group L", "L", "en");
+                L.init("L", "Group L", "L", "en",true);
                 L.addUnderGroup(J, maxDepth);
             });
 

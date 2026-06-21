@@ -147,7 +147,7 @@ public class GroupsList implements CloneableObject<GroupsList> {
             // so we can add the group at this level. But in regard to the processing order, a sub
             // element can be considered as a candidate
             if ( ! isSub ) {
-                log.debug("step 2 - condidate group {} as child", g.getShortId());
+                log.debug("step 2 - candidate group {} as child", g.getShortId());
                 candidates.add(g);
             }
         }

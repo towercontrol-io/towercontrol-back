@@ -1,9 +1,11 @@
 package com.disk91.users.services;
 
 import com.disk91.common.tools.exceptions.ITNotFoundException;
+import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.common.tools.exceptions.ITRightException;
 import com.disk91.groups.mdb.entities.Group;
 import com.disk91.groups.services.GroupsServices;
+import com.disk91.groups.tools.GroupsList;
 import com.disk91.users.mdb.entities.User;
 import com.disk91.users.mdb.entities.sub.UserAcl;
 import com.disk91.users.mdb.entities.sub.UserApiKeys;
@@ -337,4 +339,58 @@ public class UserCommon {
         return res;
     }
 
+    /**
+     * Get a list of users with access to a group (hierarchically or not) and a given ROLE
+     * This excludes the API KEYS
+     * @param groupShortId - the group shortId used as a reference
+     * @param includeSub - when true, we scan the subgroup
+     * @param alertOnly - when true, only select groups with alertGroup true
+     * @param role - when not null, only select user with this role on the group
+     */
+    public List<User> getUsersByGroupWithRole(String groupShortId, boolean includeSub, boolean alertOnly, String role) {
+        ArrayList<User> res = new ArrayList<>();
+        ArrayList<String> groups = new ArrayList<>();
+        try {
+            // Get the group hierarchy definition
+            GroupsList gl = groupsServices.getGroupsListByShortId(groupShortId);
+
+            if ( !alertOnly || gl.getHead().isAlertGroup() ) groups.add(groupShortId);
+            if ( includeSub ) {
+                // In this case includes all the groups with shortId as referer
+                for ( Group g : gl.getList() ) {
+                    if (!alertOnly || g.isAlertGroup()) {
+                        groups.add(g.getShortId());
+                    }
+                }
+            }
+
+        } catch (ITNotFoundException e) {
+            return res;
+        }
+
+        // Find the user list associated to the list of groups
+        List<User> users = userRepository.findByGroupsMembership(groups);
+
+        // Check the rights
+        for ( User u : users ) {
+            if ( ! u.isActive() || u.isLocked() || u.isApiAccount() ) continue;
+            if ( role != null ) {
+                try {
+                    this.getUserWithRolesAndGroups(
+                            u.getLogin(),
+                            role,
+                            null,
+                            groupShortId,
+                            true
+                    );
+                    // found, we can keep this user
+                    res.add(u);
+                } catch (ITNotFoundException | ITRightException ignored) {
+                }
+            } else {
+                res.add(u);
+            }
+        }
+        return res;
+    }
 }

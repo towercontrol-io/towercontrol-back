@@ -81,5 +81,15 @@ public interface UserRepository extends MongoRepository<User,String> {
     @Query("{ 'customFields': { $elemMatch: { 'name': ?0, 'value': ?1 } } }")
     public List<User> findByCustomFieldNameAndValue(String name, String value);
 
+    /**
+     * Find all users who belong to any of the given groups, either via the groups field
+     * (direct membership) or via the acls.group field (ACL-based membership).
+     * Used by the alert fan-out when an alert targets multiple groups.
+     * @param groupShortIds - list of group shortIds to search for
+     * @return deduplicated list of users belonging to at least one of the groups
+     */
+    @Query("{ $or: [ { 'groups': { $in: ?0 } }, { 'acls.group': { $in: ?0 } } ] }")
+    public List<User> findByGroupsMembership(List<String> groupShortIds);
+
 
 }

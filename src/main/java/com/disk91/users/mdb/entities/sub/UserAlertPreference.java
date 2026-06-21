@@ -39,6 +39,16 @@ public class UserAlertPreference implements CloneableObject<UserAlertPreference>
             this.pushAlert = pushAlert;
         }
 
+        // === INT ===
+
+        public static UserAlertPreference of() {
+            UserAlertPreference pref = new UserAlertPreference();
+            pref.setEmailAlert(true);
+            pref.setSmsAlert(false);
+            pref.setPushAlert(false);
+            return pref;
+        }
+
         // === CLONE ===
 
         @Override

@@ -27,6 +27,7 @@ public class ActionCatalog {
 
         AUDIT_ALERT_CREATED,
         AUDIT_ALERT_ENDED,
+        AUDIT_ALERT_REPORT,
 
         UNKNOWN
     }
@@ -44,6 +45,9 @@ public class ActionCatalog {
                 return "alerts-alert-created";
             case AUDIT_ALERT_ENDED:
                 return "alerts-alert-ended";
+
+            case AUDIT_ALERT_REPORT:
+                return "alerts-alert-report";
 
             case UNKNOWN:
             default:

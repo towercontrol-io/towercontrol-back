@@ -12,6 +12,9 @@ The user data structure is defined as follows:
   "roles": [
      "string"                     // user role collection, role are predefined
   ],
+  "groups" : [                    // user accessible groups
+    "strings"
+  ],
   "acls": [
     { "group": "string", "localName" : "string", "roles" : [ "string"] }   // user acl collection, acl are based on groups and dynamic, name of the groupe can be changed by the user
   ],

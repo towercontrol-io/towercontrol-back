@@ -56,8 +56,8 @@ public class Alert {
     // Short functional id of the AlertTemplate used to render and deliver notifications
     protected String alertTemplateId;
 
-    // Group identifier used as the broadcast perimeter for user fan-out
-    protected String targetedGroup;
+    // Groups identifier used as the broadcast perimeter for user fan-out
+    protected List<String> targetedGroups;
 
     // Positional parameter values substituted into template messages ({1}, {2}, ...)
     protected List<String> parameters;
@@ -80,6 +80,9 @@ public class Alert {
     // 24-character random secret allowing public access to this alert via a direct link
     protected String publicAccessId;
 
+    // possible error string if the error has not been proceeded.
+    protected String error;
+
     // ========================================
 
     /**
@@ -87,7 +90,7 @@ public class Alert {
      * @param alertId         - stable business identifier (already instantiated)
      * @param alertDefRef     - source module reference
      * @param alertTemplateId - shortId of the AlertTemplate to use
-     * @param groupId         - target group identifier
+     * @param groupIds        - target group identifier
      * @param parameters      - positional substitution values
      * @param requestMs       - event detection timestamp
      * @param publicAccessId  - 24-char random secret for public page access
@@ -97,7 +100,7 @@ public class Alert {
             String alertId,
             String alertDefRef,
             String alertTemplateId,
-            String groupId,
+            List<String> groupIds,
             List<String> parameters,
             long requestMs,
             String publicAccessId
@@ -106,14 +109,15 @@ public class Alert {
         a.setAlertId(alertId);
         a.setAlertDefRef(alertDefRef);
         a.setAlertTemplateId(alertTemplateId);
-        a.setTargetedGroup(groupId);
         a.setParameters(parameters != null ? parameters : new ArrayList<>());
         a.setState(AlertState.PENDING);
         a.setRequestMs(requestMs);
         a.setFireMs(0);
         a.setExpirationMs(0);
         a.setSent(new ArrayList<>());
+        a.setTargetedGroups(groupIds != null ? groupIds : new ArrayList<>());
         a.setPublicAccessId(publicAccessId);
+        a.setError("");
         return a;
     }
 
@@ -132,8 +136,13 @@ public class Alert {
     public String getAlertTemplateId() { return alertTemplateId; }
     public void setAlertTemplateId(String alertTemplateId) { this.alertTemplateId = alertTemplateId; }
 
-    public String getTargetedGroup() { return targetedGroup; }
-    public void setTargetedGroup(String targetedGroup) { this.targetedGroup = targetedGroup; }
+    public List<String> getTargetedGroups() {
+        return targetedGroups;
+    }
+
+    public void setTargetedGroups(List<String> targetedGroups) {
+        this.targetedGroups = targetedGroups;
+    }
 
     public List<String> getParameters() { return parameters; }
     public void setParameters(List<String> parameters) { this.parameters = parameters; }
@@ -155,4 +164,12 @@ public class Alert {
 
     public String getPublicAccessId() { return publicAccessId; }
     public void setPublicAccessId(String publicAccessId) { this.publicAccessId = publicAccessId; }
+
+    public String getError() {
+        return error;
+    }
+
+    public void setError(String error) {
+        this.error = error;
+    }
 }

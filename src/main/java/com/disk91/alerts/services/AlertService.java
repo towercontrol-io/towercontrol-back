@@ -26,12 +26,24 @@ import com.disk91.alerts.mdb.entities.AlertTemplate;
 import com.disk91.alerts.mdb.entities.sub.AlertBehavior;
 import com.disk91.alerts.mdb.entities.sub.AlertState;
 import com.disk91.alerts.mdb.repositories.AlertRepository;
+import com.disk91.alerts.mdb.entities.sub.AlertLocaleMessage;
+import com.disk91.alerts.mdb.entities.sub.AlertMedium;
+import com.disk91.alerts.mdb.entities.sub.AlertMediumMessage;
+import com.disk91.alerts.mdb.entities.sub.AlertSentEntry;
+import com.disk91.alerts.mdb.entities.sub.AlertSentState;
 import com.disk91.audit.integration.AuditIntegration;
 import com.disk91.common.config.ModuleCatalog;
 import com.disk91.common.tools.Now;
 import com.disk91.common.tools.RandomString;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
+import com.disk91.groups.mdb.entities.Group;
+import com.disk91.groups.services.GroupsCache;
+import com.disk91.groups.services.GroupsServices;
+import com.disk91.users.mdb.entities.User;
+import com.disk91.users.mdb.entities.sub.UserAlertPreference;
+import com.disk91.users.mdb.repositories.UserRepository;
+import com.disk91.users.services.UserCommon;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
@@ -42,11 +54,15 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static com.disk91.users.services.UsersRolesCache.StandardRoles.ROLE_DEVICE_ALERTING;
 
 @Service
 public class AlertService {
@@ -68,6 +84,12 @@ public class AlertService {
 
     @Autowired
     protected AuditIntegration auditIntegration;
+
+    @Autowired
+    protected UserCommon userCommon;
+
+    @Autowired
+    protected GroupsServices groupsServices;
 
     // ================================================================================================================
     // WORKER INFRASTRUCTURE
@@ -192,6 +214,101 @@ public class AlertService {
     // ================================================================================================================
 
     /**
+     * Find the right locale to be used
+     *
+     */
+     private AlertLocaleMessage getRightAlertLocaleMessage(
+             String prefLocale,
+             List<AlertLocaleMessage> templates
+     ) {
+         // find the best language, based on what template propose and what user prefer, if no match, prefer English on
+         // select the first available in template if English not available
+
+         String userLangPrefix = (prefLocale != null && prefLocale.length() == 2) ? prefLocale : "en";
+         AlertLocaleMessage bestLocale = null;
+         AlertLocaleMessage englishFallback = null;
+         AlertLocaleMessage firstAvailable = null;
+         for (AlertLocaleMessage lm : templates) {
+             if (lm.getLocale() == null) continue;
+             if (firstAvailable == null) firstAvailable = lm;
+             String lmPrefix = lm.getLocale().length() >= 2
+                     ? lm.getLocale().substring(0, 2).toLowerCase()
+                     : lm.getLocale().toLowerCase();
+             if (lmPrefix.equals(userLangPrefix)) { bestLocale = lm; break; }
+             if (lmPrefix.equals("en") && englishFallback == null) englishFallback = lm;
+         }
+         if (bestLocale == null) bestLocale = (englishFallback != null) ? englishFallback : firstAvailable;
+         return bestLocale;
+     }
+
+    /**
+     * Find the best Medium for a given User in regard of the template preference
+     * Can return NULL when no match
+     */
+    private AlertMedium getRightMedium(User user, AlertLocaleMessage alm, AlertTemplate template) {
+
+        // find the best medium based on medium accepted by user and the medium preferred by template:
+        //     Scan the template preferred in the given order and take the first accepted by the user.
+        //     When no match between user choice and template, we select default in template when exists
+        //     When selection comes to DEFAULT, for user we try PUSH, then SMS, then EMAIL based on what user accepts
+        //     When no preferred, we can scan the available list in ale
+
+        UserAlertPreference upref = user.getAlertPreference() != null ? user.getAlertPreference() : UserAlertPreference.of();
+        boolean templateHasDefault = template.getPreferred().isEmpty() || template.getPreferred().contains(AlertMedium.DEFAULT);
+        AlertMedium selectedMedium = null;
+
+        // scan template preferred mediums in order and pick first one the user accepts
+        for (AlertMedium m : template.getPreferred()) {
+            if (m == AlertMedium.DEFAULT) continue;
+            if (m == AlertMedium.PUSH  && upref.isPushAlert())  { selectedMedium = m; break; }
+            if (m == AlertMedium.SMS   && upref.isSmsAlert())   { selectedMedium = m; break; }
+            if (m == AlertMedium.EMAIL && upref.isEmailAlert()) { selectedMedium = m; break; }
+        }
+        // if no match and template allows DEFAULT, apply user preference order: push > sms > email
+        if (selectedMedium == null && templateHasDefault) {
+            if      (upref.isPushAlert())  selectedMedium = AlertMedium.PUSH;
+            else if (upref.isSmsAlert())   selectedMedium = AlertMedium.SMS;
+            else if (upref.isEmailAlert()) selectedMedium = AlertMedium.EMAIL;
+        }
+        // No match, search the user & existing patch with that order of preference (PUSH, SMS, EMAIL)
+        if ( selectedMedium == null ) {
+            if ( upref.isPushAlert() ) {
+                for ( AlertMediumMessage amm : alm.getMediums() ) {
+                    if ( amm.getMedium() == AlertMedium.PUSH ) { selectedMedium = AlertMedium.PUSH; break; }
+                }
+            }
+            if ( upref.isSmsAlert() && selectedMedium == null) {
+                for ( AlertMediumMessage amm : alm.getMediums() ) {
+                    if ( amm.getMedium() == AlertMedium.SMS ) { selectedMedium = AlertMedium.SMS; break; }
+                }
+            }
+            if ( upref.isEmailAlert() && selectedMedium == null) {
+                for ( AlertMediumMessage amm : alm.getMediums() ) {
+                    if ( amm.getMedium() == AlertMedium.EMAIL ) { selectedMedium = AlertMedium.EMAIL; break; }
+                }
+            }
+        }
+        return selectedMedium;
+    }
+
+
+    /**
+     * Find the best Medium for a given User in regard of the template preference
+     * Can return NULL when no match
+     */
+    private AlertMediumMessage getRightMedium(AlertLocaleMessage bestLocale, AlertMedium selectedMedium) {
+        // find the message variant for the selected medium in the chosen locale; fall back to DEFAULT variant
+        AlertMediumMessage messageVariant = null;
+        AlertMediumMessage defaultVariant = null;
+        for (AlertMediumMessage mm : bestLocale.getMediums()) {
+            if (mm.getMedium() == AlertMedium.DEFAULT) defaultVariant = mm;
+            if (mm.getMedium() == selectedMedium) { messageVariant = mm; break; }
+        }
+        if (messageVariant == null) messageVariant = defaultVariant;
+        return messageVariant;
+    }
+
+    /**
      * Process one alert dequeued by a worker, dispatching on its current state.
      * PENDING_QUEUE: fire open notification and transition to RUNNING or ENDED per template behavior.
      * ENDING_QUEUE:  fire close notification and transition to ENDED.
@@ -200,27 +317,161 @@ public class AlertService {
      */
     private void processAlert(Alert alert, long now) {
 
-        boolean processMessage;
+        // Get the template message
+        AlertTemplate template = null;
+        try {
+            template = alertTemplateCache.getTemplateByShortId(alert.getAlertTemplateId());
+        } catch (ITNotFoundException e) {
+            log.error("[alerts] Template {} not found for alert {}, moving to ENDED",
+                    alert.getAlertTemplateId(), alert.getAlertId());
+            alert.setState(AlertState.ENDED);
+            alert.setError("alerts-template-not-found");
+            alertRepository.save(alert);
+            return;
+        }
+
+        // Get the targeted Users / or Silent
+        if ( alert.getState() == AlertState.PENDING && template.getBehavior() == AlertBehavior.SILENT ) {
+            // Silent Alarm - create message based on app default language
+
+
+
+        } else {
+            // We need to determine the targeted user list, the conditions are the following
+            // - Select the user with ROLE_DEVICE_ALERTING (global or ACL) in groups where alertGroup is true
+            if ( alert.getTargetedGroups() == null ) {
+                alert.setState(AlertState.ENDED);
+                alert.setError("alerts-target-not-found");
+                alertRepository.save(alert);
+                return;
+
+            }
+            HashMap<String, User> targets = new HashMap<>();
+            for ( String group : alert.getTargetedGroups() ) {
+                try {
+                    Group g = groupsServices.getGroupByShortId(group);
+                    if ( g.isAlertGroup() ) {
+                        // Find users in this group
+                        List<User> users = userCommon.getUsersByGroupWithRole(
+                                g.getShortId(),
+                                false,  // prefer to not go to sub to avoid spamming the group managers
+                                true,
+                                ROLE_DEVICE_ALERTING.getRoleName()
+                        );
+                        // Add users
+                        for ( User user : users ) {
+                            targets.put(user.getLogin(),user);
+                        }
+                    }
+                } catch (ITNotFoundException ignored) {}
+            }
+
+            // We have the list of Users, and we have it only once.
+
+            // select open or close message list depending on whether this is a firing or ending event
+            List<AlertLocaleMessage> localeMessages = (alert.getState() == AlertState.ENDING_QUEUE)
+                    ? template.getClose()
+                    : template.getOpen();
+
+            List<AlertSentEntry> sentList = new ArrayList<>();
+
+            // for each
+            for (User user : targets.values()) {
+
+                // Get the locale to be used
+                AlertLocaleMessage bestLocale = this.getRightAlertLocaleMessage(
+                        user.getLanguage(),
+                        localeMessages
+                );
+                if (bestLocale == null) {
+                    log.warn("[alerts] No locale message for alert {} user {}, skipping", alert.getAlertId(), user.getLogin());
+                    continue;
+                }
+
+                // Get the preferred Medium
+                AlertMedium selectedMedium = getRightMedium(user, bestLocale, template);
+
+                if (selectedMedium == null) {
+                    log.warn("[alerts] No compatible medium for alert {} user {}, skipping", alert.getAlertId(), user.getLogin());
+                    continue;
+                }
+
+                // Find the associated AlertMediumMessage
+                AlertMediumMessage messageVariant = getRightMedium(bestLocale, selectedMedium);
+                if (messageVariant == null) {
+                    log.warn("[alerts] No message variant for medium {} alert {} user {}, skipping",
+                            selectedMedium, alert.getAlertId(), user.getLogin());
+                    continue;
+                }
+
+                // >>>>>>>>> @TODO 
+                // generated the message based on this choice language / medium avec la bonne complétion d'information.
+                String renderedMessage = renderMessage(messageVariant.getMessage(), alert.getParameters());
+
+                // @TODO: deliver renderedMessage via selectedMedium for this user
+
+                List<AlertSentState> states = new ArrayList<>();
+                AlertSentState primaryState = new AlertSentState();
+                primaryState.setMedium(selectedMedium);
+                primaryState.setSent(false);  // updated by the delivery layer
+                primaryState.setAck(false);
+                states.add(primaryState);
+
+                // on genere en plus un message popup si POPUP est dans la liste du template, on utilise la meme langue que précédemment.
+                if (template.getPreferred().contains(AlertMedium.POPUP)) {
+                    // @TODO: persist popup entry in the popup history table
+                    AlertSentState popupState = new AlertSentState();
+                    popupState.setMedium(AlertMedium.POPUP);
+                    popupState.setSent(false);
+                    popupState.setAck(false);
+                    states.add(popupState);
+                }
+
+                AlertSentEntry entry = new AlertSentEntry();
+                entry.setUserId(user.getLogin());
+                entry.setState(states);
+                sentList.add(entry);
+
+
+
+                // verify if user personal data are accessible (if not skip this one)
+                if (!user.isPersonalDataAccessible()) {
+                    log.debug("[alerts] Skipping user {} - personal data not accessible", user.getLogin());
+
+
+
+                    continue;
+                }
+
+
+            }
+
+            alert.setSent(sentList);
+        }
+
+
+
+
+
+
+
+
         switch (alert.getState()) {
 
             case PENDING_QUEUE -> {
-                AlertTemplate template;
-                try {
-                    template = alertTemplateCache.getTemplateByShortId(alert.getAlertTemplateId());
-                } catch (ITNotFoundException e) {
-                    log.error("[alerts] Template {} not found for alert {}, moving to ENDED",
-                            alert.getAlertTemplateId(), alert.getAlertId());
-                    alert.setState(AlertState.ENDED);
-                    alertRepository.save(alert);
-                    return;
-                }
-
                 alert.setFireMs(now);
                 AlertBehavior behavior = template.getBehavior();
-
                 switch (behavior) {
                     case SILENT -> {
                         // Audit trace only — no notification sent
+                        // @TODO - besoin du message sinon ca sert à rien
+                        auditIntegration.auditLog(
+                                ModuleCatalog.Modules.ALERTS,
+                                ActionCatalog.getActionName(ActionCatalog.Actions.AUDIT_ALERT_REPORT),
+                                alert.getAlertDefRef(),
+                                "Alert '{0}' type {1} created for tenant {2}",
+                                new String[]{alert.getAlertId(), alert.getAlertTemplateId(), alert.getTargetedGroups()}
+                        );
                         log.info("[alerts] SILENT alert {} processed", alert.getAlertId());
                         alert.setState(AlertState.ENDED);
                     }
@@ -255,6 +506,22 @@ public class AlertService {
             default -> log.warn("[alerts] Worker dequeued alert {} in unexpected state {}",
                     alert.getAlertId(), alert.getState());
         }
+    }
+
+    /**
+     * Substitute positional parameters into a message template.
+     * Placeholders are 1-based: {1} is replaced by parameters.get(0), {2} by parameters.get(1), etc.
+     * @param messageTemplate - raw message string with {n} placeholders
+     * @param parameters      - ordered list of values to inject
+     * @return the rendered message with all placeholders replaced
+     */
+    private String renderMessage(String messageTemplate, List<String> parameters) {
+        if (parameters == null || parameters.isEmpty()) return messageTemplate;
+        String result = messageTemplate;
+        for (int i = 0; i < parameters.size(); i++) {
+            result = result.replace("{" + (i + 1) + "}", parameters.get(i));
+        }
+        return result;
     }
 
     // ================================================================================================================
@@ -341,7 +608,7 @@ public class AlertService {
                 ActionCatalog.getActionName(ActionCatalog.Actions.AUDIT_ALERT_ENDED),
                 alert.getAlertDefRef(),
                 "Alert '{0}' type {1} ended for tenant {2}",
-                new String[]{alertId, alert.getAlertTemplateId(), alert.getTargetedGroup()}
+                new String[]{alertId, alert.getAlertTemplateId(), alert.getTargetedGroups()}
         );
         enqueue(alert);
     }

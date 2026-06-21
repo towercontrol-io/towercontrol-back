@@ -60,14 +60,14 @@ attribute that contains the necessary information.
 
 ```java
 public enum AlertMedium {
-    EMAIL,          // Sent with email
-    SMS,            // Sent with short message
-    PUSH,           // Sent with a push message on smartphone
-    WHATSAPP,       // Sent over Whatsapp channel (Not Implemented)
-    POPUP,          // Display the alerts in the web application, asynchronous
+    EMAIL,          // Sent with email (user level)
+    SMS,            // Sent with short message (user level)
+    PUSH,           // Sent with a push message on smartphone (user level)
+    WHATSAPP,       // Sent over Whatsapp channel (Not Implemented) (user level)
+    POPUP,          // Display the alerts in the web application, asynchronous (user level) - always on
     
-    WEBHOOK,        // Sent with a webhook
-    TOPIC,          // Sent with a mqtt / amqp topic
+    WEBHOOK,        // Sent with a webhook (group level)
+    TOPIC,          // Sent with a mqtt / amqp topic (group level)
         
     DEFAULT,        // Used when the channel is not specified
 }

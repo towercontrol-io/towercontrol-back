@@ -16,7 +16,7 @@ then sends an alert intent to the alerts' module. From that point, the alerts mo
 ## Purpose
 
 An alert is a message sent in response to an event. It can be issued in different ways, is associated with a triggering event
-and sent to an identified group, as a consequence all users belonging to that group with alerts enabled.
+and sent to an identified group, as a consequence all users belonging to that group with alerts enabled and having `ROLE_DEVICE_ALERTING`
 
 The same alert can be delivered through different channels:
 - email
@@ -78,7 +78,7 @@ match the target template to avoid losing critical information.
 ```json
 {
   "id" : "string",                 // technical uniq identifier used inside the platform
-  "targetedGroup" : "string",      // targeted Group for this alert
+  "targetedGroups" : ["string"],   // targeted Groups for this alert
   "alertId" : "string",            // stable alert identifier, used to identify the same alert across multiple emissions, see bellow for more details
   "alertDefRef" : "string",        // reference to the alert definition, ex : dev_DEVICEID to refer the device, source of the alert, grp_GROUPID for group alerts
   "alertTemplateId" : "string",    // reference to the alert template, this is used to link the alert to the message key and parameters
@@ -87,6 +87,7 @@ match the target template to avoid losing critical information.
   "requestMs" : "long",            // Moment the alarm has been raised (event time)
   "fireMs" : "long",               // Moment the alarm has been raised (alert execution time)
   "expirationMs" : "long",         // Moment the alarm expired (rearm the alarm)
+  "error" : "string",              // In case of error making alert impossible to process
   
   "sent": [                        // Sent confirmation by medium with ack when available
     {

@@ -102,7 +102,7 @@ public enum AlertParameter {
     CUSTOM_PARAM,           // alert specific : custom parameter, associated value gives the parameter name (lowercase) to search in user, device, group associated
     SERVICE_NAME,           // Name of the service (from configuration file)
     SERVICE_HOME,           // Service home page (from configuration file)
-    ALERT_LINK,             // http link, associated value is the link containing {aid} to be replaced by the alert ID {did} to be replaced by device ID {pubID} for public access
+    ALERT_LINK,             // http link, associated value is the link containing {aid} to be replaced by the alert ID {did} to be replaced by device ID {pubid} for public access
     
     UNKNOWN,
 }

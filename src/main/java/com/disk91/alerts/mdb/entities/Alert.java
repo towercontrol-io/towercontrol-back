@@ -19,6 +19,7 @@
  */
 package com.disk91.alerts.mdb.entities;
 
+import com.disk91.alerts.mdb.entities.sub.AlertMedium;
 import com.disk91.alerts.mdb.entities.sub.AlertSentEntry;
 import com.disk91.alerts.mdb.entities.sub.AlertState;
 import org.springframework.data.annotation.Id;
@@ -56,10 +57,13 @@ public class Alert {
     // Short functional id of the AlertTemplate used to render and deliver notifications
     protected String alertTemplateId;
 
+    // Associated device Id
+    protected String deviceId;
+
     // Groups identifier used as the broadcast perimeter for user fan-out
     protected List<String> targetedGroups;
 
-    // Positional parameter values substituted into template messages ({1}, {2}, ...)
+    // To be later used, alert parameter (not the static parameter replacement)
     protected List<String> parameters;
 
     // Current lifecycle state of this alert instance
@@ -100,6 +104,7 @@ public class Alert {
             String alertId,
             String alertDefRef,
             String alertTemplateId,
+            String deviceId,
             List<String> groupIds,
             List<String> parameters,
             long requestMs,
@@ -109,6 +114,7 @@ public class Alert {
         a.setAlertId(alertId);
         a.setAlertDefRef(alertDefRef);
         a.setAlertTemplateId(alertTemplateId);
+        a.setDeviceId(deviceId);
         a.setParameters(parameters != null ? parameters : new ArrayList<>());
         a.setState(AlertState.PENDING);
         a.setRequestMs(requestMs);
@@ -119,6 +125,26 @@ public class Alert {
         a.setPublicAccessId(publicAccessId);
         a.setError("");
         return a;
+    }
+
+    // ========================================
+    // Sent report
+    public void upsertSent(String userId, AlertMedium medium, boolean sent, boolean ack, String error) {
+        if ( this.sent == null ) this.sent = new ArrayList<>();
+        boolean found = false;
+        for ( AlertSentEntry entry : this.sent) {
+            if ( userId.equals(entry.getUserLogin()) ) {
+                entry.upsertState(medium, sent, ack, error);
+                found = true;
+            }
+        }
+        if ( !found ) {
+            AlertSentEntry entry = new AlertSentEntry();
+            entry.setUserLogin(userId);
+            entry.setState(new ArrayList<>());
+            entry.upsertState(medium, sent, ack, error);
+            this.sent.add(entry);
+        }
     }
 
     // ========================================
@@ -171,5 +197,13 @@ public class Alert {
 
     public void setError(String error) {
         this.error = error;
+    }
+
+    public String getDeviceId() {
+        return deviceId;
+    }
+
+    public void setDeviceId(String deviceId) {
+        this.deviceId = deviceId;
     }
 }

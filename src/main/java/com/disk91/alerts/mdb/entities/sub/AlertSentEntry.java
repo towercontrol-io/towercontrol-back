@@ -19,6 +19,9 @@
  */
 package com.disk91.alerts.mdb.entities.sub;
 
+import com.disk91.common.tools.Now;
+
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -29,16 +32,46 @@ import java.util.List;
 public class AlertSentEntry {
 
     // Login of the user this delivery record belongs to
-    protected String userId;
+    protected String userLogin;
 
     // Delivery outcome for each channel attempted for this user
     protected List<AlertSentState> state;
 
     // ==========================
+    // upsert State
+
+    public void upsertState(AlertMedium medium, boolean sent, boolean ack, String error) {
+        if (state == null) state = new ArrayList<>();
+        boolean found = false;
+        for (AlertSentState s : state) {
+            if (s.getMedium().equals(medium)) {
+                // update
+                s.setMedium(medium);
+                s.setSent(sent);
+                if ( sent ) s.setSentMs(Now.NowUtcMs());
+                s.setAck(ack);
+                if ( ack ) s.setAckMs(Now.NowUtcMs());
+                s.setError(error);
+                found = true;
+            }
+        }
+        if (!found) {
+            AlertSentState s = new AlertSentState();
+            s.setMedium(medium);
+            s.setSent(sent);
+            if ( sent ) s.setSentMs(Now.NowUtcMs());
+            s.setAck(ack);
+            if ( ack ) s.setAckMs(Now.NowUtcMs());
+            s.setError(error);
+            state.add(s);
+        }
+    }
+
+    // ==========================
     // Getters & Setters
 
-    public String getUserId() { return userId; }
-    public void setUserId(String userId) { this.userId = userId; }
+    public String getUserLogin() { return userLogin; }
+    public void setUserLogin(String userLogin) { this.userLogin = userLogin; }
 
     public List<AlertSentState> getState() { return state; }
     public void setState(List<AlertSentState> state) { this.state = state; }

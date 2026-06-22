@@ -31,8 +31,14 @@ public class AlertSentState {
     // True when the notification was submitted to the delivery provider
     protected boolean sent;
 
+    // Sent timestamps
+    protected long sentMs;
+
     // True when an acknowledgement was received from the provider (best-effort)
     protected boolean ack;
+
+    // Ack Timestamp
+    protected long ackMs;
 
     // Error description when the delivery failed; null or empty on success
     protected String error;
@@ -51,4 +57,20 @@ public class AlertSentState {
 
     public String getError() { return error; }
     public void setError(String error) { this.error = error; }
+
+    public long getSentMs() {
+        return sentMs;
+    }
+
+    public void setSentMs(long sentMs) {
+        this.sentMs = sentMs;
+    }
+
+    public long getAckMs() {
+        return ackMs;
+    }
+
+    public void setAckMs(long ackMs) {
+        this.ackMs = ackMs;
+    }
 }

@@ -242,20 +242,20 @@ Returns **`204`** (no body) when no templates are found.
 
 ### AlertParameter types
 
-| Type | Description | `param` field |
-|---|---|---|
-| `DEVICE_ID` | Technical device identifier | — |
-| `DEVICE_NAME` | Human-readable device name | — |
-| `GROUP_NAME` | Name of the associated group | — |
-| `USER_FIRSTNAME` | First name of the recipient | — |
-| `USER_LASTNAME` | Last name of the recipient | — |
-| `USER_GENDER` | Gender of the recipient | — |
-| `ALERT_TIME` | Alert time, e.g. `18:45` | — |
-| `ALERT_DATE_TIME` | Full UTC date-time, e.g. `2026-06-08 18:45` | — |
-| `CUSTOM_PARAM` | Custom parameter | parameter name (lowercase) |
-| `SERVICE_NAME` | Platform service name from configuration | — |
-| `SERVICE_HOME` | Platform home URL from configuration | — |
-| `ALERT_LINK` | Deep link URL | URL template with `{aid}`, `{did}`, `{pubID}` |
+| Type | Description | `param` field                                 |
+|---|---|-----------------------------------------------|
+| `DEVICE_ID` | Technical device identifier | —                                             |
+| `DEVICE_NAME` | Human-readable device name | —                                             |
+| `GROUP_NAME` | Name of the associated group | —                                             |
+| `USER_FIRSTNAME` | First name of the recipient | —                                             |
+| `USER_LASTNAME` | Last name of the recipient | —                                             |
+| `USER_GENDER` | Gender of the recipient | —                                             |
+| `ALERT_TIME` | Alert time, e.g. `18:45` | —                                             |
+| `ALERT_DATE_TIME` | Full UTC date-time, e.g. `2026-06-08 18:45` | —                                             |
+| `CUSTOM_PARAM` | Custom parameter | parameter name (lowercase)                    |
+| `SERVICE_NAME` | Platform service name from configuration | —                                             |
+| `SERVICE_HOME` | Platform home URL from configuration | —                                             |
+| `ALERT_LINK` | Deep link URL | URL template with `{aid}`, `{did}`, `{pubid}` |
 
 Parameters are injected into message templates as `{1}`, `{2}`, … matching their position in the `parameters` array.
 

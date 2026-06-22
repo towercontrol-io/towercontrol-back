@@ -76,6 +76,12 @@ public class AlertsConfig {
         return alertsMaxParallelProcessing;
     }
 
+    @Value("${alerts.direct.link:/alerts/!aid!/?key=!pubid!}")
+    protected String alertsDirectLink;
+    public String getAlertsDirectLink() {
+        return alertsDirectLink;
+    }
+
     // ----------------------------------------------
     // Alert worker thread pool
     // ----------------------------------------------

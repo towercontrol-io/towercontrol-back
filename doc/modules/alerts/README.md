@@ -91,12 +91,14 @@ match the target template to avoid losing critical information.
   
   "sent": [                        // Sent confirmation by medium with ack when available
     {
-      "userId" : "string",         // One for each of the targeted user
+      "userLogin" : "string",      // One for each of the targeted user
       "state" : [
         {
           "medium": "AlertMedium",     // what medium has been used
           "sent": "boolean",           // alert has been sent
+          "sentMs" : "long",           // send timestamp
           "ack": "boolean",            // sending confirmation when possible
+          "ackMs" : "long",            // ack timestamp
           "error": "string"            // in case of error keep a trace
         }
       ]
@@ -136,13 +138,13 @@ See [Alert templates](./alert_templates.md) for more details on the alert templa
 ## Alert lifecycle
 
 Alerts can have several lifecycle modes.
-- PENDING : the alert has been detected and wait for being executed
-- PENDING_QUEUE : the alert has been transferred to the waiting queue (technical state) ; en restart the alert in this state is reset to PENDING
-- FIRED : the alert has been proceeded 
-- RUNNING : when the alert is waiting a end signal to be rearmed
-- ENDING : when the alert received the end-event and waiting to be processed
-- ENDING_QUEUE : Same principle as PENDING_QUEUE
-- ENDED : when the alert is completed and ready for being deleted
+- `PENDING` : the alert has been detected and wait for being executed
+- `PENDING_QUEUE` : the alert has been transferred to the waiting queue (technical state) ; en restart the alert in this state is reset to PENDING
+- `FIRED` : the alert has been proceeded 
+- `RUNNING` : when the alert is waiting a end signal to be rearmed
+- `ENDING` : when the alert received the end-event and waiting to be processed
+- `ENDING_QUEUE` : Same principle as PENDING_QUEUE
+- `ENDED` : when the alert is completed and ready for being deleted
 
 ### `SILENT` alerts
 A silent alert just keep a trace in the audit log, it goes from PENDING to ENDED.

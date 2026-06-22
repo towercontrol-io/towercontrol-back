@@ -23,26 +23,21 @@ import com.disk91.alerts.config.ActionCatalog;
 import com.disk91.alerts.config.AlertsConfig;
 import com.disk91.alerts.mdb.entities.Alert;
 import com.disk91.alerts.mdb.entities.AlertTemplate;
-import com.disk91.alerts.mdb.entities.sub.AlertBehavior;
-import com.disk91.alerts.mdb.entities.sub.AlertState;
+import com.disk91.alerts.mdb.entities.sub.*;
 import com.disk91.alerts.mdb.repositories.AlertRepository;
-import com.disk91.alerts.mdb.entities.sub.AlertLocaleMessage;
-import com.disk91.alerts.mdb.entities.sub.AlertMedium;
-import com.disk91.alerts.mdb.entities.sub.AlertMediumMessage;
-import com.disk91.alerts.mdb.entities.sub.AlertSentEntry;
-import com.disk91.alerts.mdb.entities.sub.AlertSentState;
 import com.disk91.audit.integration.AuditIntegration;
+import com.disk91.common.config.CommonConfig;
 import com.disk91.common.config.ModuleCatalog;
+import com.disk91.common.tools.DateConverters;
 import com.disk91.common.tools.Now;
 import com.disk91.common.tools.RandomString;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
+import com.disk91.devices.services.DeviceCache;
 import com.disk91.groups.mdb.entities.Group;
-import com.disk91.groups.services.GroupsCache;
 import com.disk91.groups.services.GroupsServices;
 import com.disk91.users.mdb.entities.User;
 import com.disk91.users.mdb.entities.sub.UserAlertPreference;
-import com.disk91.users.mdb.repositories.UserRepository;
 import com.disk91.users.services.UserCommon;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -58,6 +53,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -76,6 +72,9 @@ public class AlertService {
     protected AlertTemplateCache alertTemplateCache;
 
     @Autowired
+    protected CommonConfig commonConfig;
+
+    @Autowired
     protected AlertsConfig alertsConfig;
 
     @Autowired
@@ -90,6 +89,9 @@ public class AlertService {
 
     @Autowired
     protected GroupsServices groupsServices;
+
+    @Autowired
+    protected DeviceCache deviceCache;
 
     // ================================================================================================================
     // WORKER INFRASTRUCTURE
@@ -347,6 +349,7 @@ public class AlertService {
 
             }
             HashMap<String, User> targets = new HashMap<>();
+            HashMap<String, Group> groups = new HashMap<>();
             for ( String group : alert.getTargetedGroups() ) {
                 try {
                     Group g = groupsServices.getGroupByShortId(group);
@@ -361,6 +364,7 @@ public class AlertService {
                         // Add users
                         for ( User user : users ) {
                             targets.put(user.getLogin(),user);
+                            groups.put(user.getLogin(), g);
                         }
                     }
                 } catch (ITNotFoundException ignored) {}
@@ -372,8 +376,6 @@ public class AlertService {
             List<AlertLocaleMessage> localeMessages = (alert.getState() == AlertState.ENDING_QUEUE)
                     ? template.getClose()
                     : template.getOpen();
-
-            List<AlertSentEntry> sentList = new ArrayList<>();
 
             // for each
             for (User user : targets.values()) {
@@ -404,20 +406,57 @@ public class AlertService {
                     continue;
                 }
 
-                // >>>>>>>>> @TODO 
-                // generated the message based on this choice language / medium avec la bonne complétion d'information.
-                String renderedMessage = renderMessage(messageVariant.getMessage(), alert.getParameters());
+                // generated the message based on this choice language / medium
+                String renderedMessage = renderMessage(
+                        alert,
+                        template,
+                        messageVariant.getMessage(),
+                        groups.get(user.getLogin()),
+                        user
+                );
 
-                // @TODO: deliver renderedMessage via selectedMedium for this user
+                alert.upsertSent(user.getLogin(),selectedMedium,false,false,"alert-not-sent");
+                alertRepository.save(alert);
 
-                List<AlertSentState> states = new ArrayList<>();
-                AlertSentState primaryState = new AlertSentState();
-                primaryState.setMedium(selectedMedium);
-                primaryState.setSent(false);  // updated by the delivery layer
-                primaryState.setAck(false);
-                states.add(primaryState);
+                switch (selectedMedium) {
+                    case EMAIL -> {
+                        // @TODO
+                        alert.upsertSent(user.getLogin(),selectedMedium,true,false,"");
+                        alertRepository.save(alert);
+                    }
+                    case SMS -> {
+                        // @TODO
+                        alert.upsertSent(user.getLogin(),selectedMedium,false,false,"SMS Not yet implemented");
+                        alertRepository.save(alert);
+                        log.warn("[alerts] SMS not yet implemented");
+                    }
+                    case PUSH -> {
+                        // @TODO
+                        alert.upsertSent(user.getLogin(),selectedMedium,true,false,"");
+                        alertRepository.save(alert);
+                    }
+                    case WHATSAPP -> {
+                        // @TODO
+                        alert.upsertSent(user.getLogin(),selectedMedium,false,false,"WHATSAPP Not yet implemented");
+                        alertRepository.save(alert);
+                        log.warn("[alerts] WHATSAPP not yet implemented");
+                    }
+                    case TOPIC -> {
+                        // @TODO
+                        alert.upsertSent(user.getLogin(),selectedMedium,false,false,"TOPIC Not yet implemented");
+                        alertRepository.save(alert);
+                        log.warn("[alerts] TOPIC not yet implemented");
+                    }
+                    case WEBHOOK -> {
+                        // @TODO
+                        alert.upsertSent(user.getLogin(),selectedMedium,false,false,"WEBHOOK Not yet implemented");
+                        alertRepository.save(alert);
+                        log.warn("[alerts] WEBHOOK not yet implemented");
+                    }
+                }
 
-                // on genere en plus un message popup si POPUP est dans la liste du template, on utilise la meme langue que précédemment.
+                // >>>> @TODO
+                // In case we have POPUP as a medium, we process it separately
                 if (template.getPreferred().contains(AlertMedium.POPUP)) {
                     // @TODO: persist popup entry in the popup history table
                     AlertSentState popupState = new AlertSentState();
@@ -427,17 +466,14 @@ public class AlertService {
                     states.add(popupState);
                 }
 
-                AlertSentEntry entry = new AlertSentEntry();
-                entry.setUserId(user.getLogin());
-                entry.setState(states);
-                sentList.add(entry);
+                // mettre à jour l'etat de l'alerte en fontion de son type...
 
 
 
                 // verify if user personal data are accessible (if not skip this one)
                 if (!user.isPersonalDataAccessible()) {
                     log.debug("[alerts] Skipping user {} - personal data not accessible", user.getLogin());
-
+                    // @TODO ... à remonter plus haut ..
 
 
                     continue;
@@ -446,7 +482,6 @@ public class AlertService {
 
             }
 
-            alert.setSent(sentList);
         }
 
 
@@ -470,7 +505,7 @@ public class AlertService {
                                 ActionCatalog.getActionName(ActionCatalog.Actions.AUDIT_ALERT_REPORT),
                                 alert.getAlertDefRef(),
                                 "Alert '{0}' type {1} created for tenant {2}",
-                                new String[]{alert.getAlertId(), alert.getAlertTemplateId(), alert.getTargetedGroups()}
+                                new String[]{alert.getAlertId(), alert.getAlertTemplateId(), String.join(", ", alert.getTargetedGroups())}
                         );
                         log.info("[alerts] SILENT alert {} processed", alert.getAlertId());
                         alert.setState(AlertState.ENDED);
@@ -511,12 +546,101 @@ public class AlertService {
     /**
      * Substitute positional parameters into a message template.
      * Placeholders are 1-based: {1} is replaced by parameters.get(0), {2} by parameters.get(1), etc.
-     * @param messageTemplate - raw message string with {n} placeholders
-     * @param parameters      - ordered list of values to inject
+     * @param alert - the alert
+     * @param template - the related alert template
+     * @param messageTemplate - the right message template
+     * @param group - the user associated group
+     * @param user - the targeted user
      * @return the rendered message with all placeholders replaced
      */
-    private String renderMessage(String messageTemplate, List<String> parameters) {
-        if (parameters == null || parameters.isEmpty()) return messageTemplate;
+    private String renderMessage(
+            Alert alert,
+            AlertTemplate template,
+            String messageTemplate,
+            Group group,
+            User user
+    ) {
+        // compose the parameter list based on the template
+        ArrayList<String> parameters = new ArrayList<>();
+        user.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
+        for (AlertParameterEntry p : template.getParameters() ) {
+            switch (p.getType()) {
+                case DEVICE_ID -> parameters.add(alert.getDeviceId());
+                case DEVICE_NAME -> {
+                    try {
+                        com.disk91.devices.mdb.entities.Device d = deviceCache.getDevice(alert.getDeviceId());
+                        parameters.add(d.getName());
+                    } catch (ITNotFoundException x) {
+                        parameters.add("Unknown");
+                    }
+                }
+                case GROUP_NAME ->  parameters.add(group.getName());
+                case USER_FIRSTNAME -> {
+                    try {
+                        parameters.add(user.getEncProfileFirstName());
+                    } catch (ITParseException x) {
+                        parameters.add("");
+                    }
+                }
+                case USER_LASTNAME -> {
+                    try {
+                        parameters.add(user.getEncProfileLastName());
+                    } catch (ITParseException x) {
+                        parameters.add("");
+                    }
+                }
+                case USER_GENDER -> {
+                    try {
+                        parameters.add(user.getEncProfileGender());
+                    } catch (ITParseException x) {
+                        parameters.add("");
+                    }
+                }
+                case ALERT_TIME -> {
+                    try {
+                        String tzId = user.getEncProfileTimezone();
+                        TimeZone tz = (tzId != null && !tzId.isBlank()) ? TimeZone.getTimeZone(tzId) : null;
+                        parameters.add(DateConverters.timestampToTime(alert.getFireMs(), tz));
+                    } catch (ITParseException x) {
+                        parameters.add(DateConverters.timestampToTime(alert.getFireMs(), null));
+                    }
+                }
+                case ALERT_DATE_TIME -> {
+                    try {
+                        String tzId = user.getEncProfileTimezone();
+                        TimeZone tz = (tzId != null && !tzId.isBlank()) ? TimeZone.getTimeZone(tzId) : null;
+                        parameters.add(DateConverters.timestampToDateTime(alert.getFireMs(), tz));
+                    } catch (ITParseException x) {
+                        parameters.add(DateConverters.timestampToDateTime(alert.getFireMs(), null));
+                    }
+                }
+                case CUSTOM_PARAM -> parameters.add(p.getParam());
+                case SERVICE_NAME -> parameters.add(commonConfig.getCommonServiceName());
+                case SERVICE_HOME -> parameters.add(commonConfig.getCommonServiceFrontBaseUrl());
+                case ALERT_LINK -> {
+                    String url;
+                    if ( p.getParam() != null && !p.getParam().isEmpty()) {
+                        // prefer the user provided url (fully qualified when starts by http)
+                        if ( p.getParam().startsWith("http") ) {
+                            url = p.getParam();
+                        } else {
+                            url = commonConfig.getCommonServiceFrontBaseUrl() + p.getParam();
+                        }
+                        url = url.replace("{aid}", alert.getAlertId());
+                        url = url.replace("{did}", alert.getDeviceId());
+                        url = url.replace("{pubid}", alert.getPublicAccessId());
+                    } else {
+                        url = commonConfig.getCommonServiceFrontBaseUrl() + alertsConfig.getAlertsDirectLink();
+                        url = url.replace("!aid!", alert.getAlertId());
+                        url = url.replace("!did!", alert.getDeviceId());
+                        url = url.replace("!pubid!", alert.getPublicAccessId());
+                    }
+                    parameters.add(url);
+                }
+            }
+        }
+
+        // Now replace the parameters in the mesage
         String result = messageTemplate;
         for (int i = 0; i < parameters.size(); i++) {
             result = result.replace("{" + (i + 1) + "}", parameters.get(i));
@@ -535,7 +659,7 @@ public class AlertService {
      * @param alertId         - stable business identifier, already instantiated
      * @param alertDefRef     - source module reference key
      * @param alertTemplateId - shortId of the AlertTemplate to use
-     * @param targetedGroup   - group identifier used as the broadcast perimeter for user fan-out
+     * @param targetedGroups  - list of group identifiers used as the broadcast perimeter for user fan-out
      * @param parameters      - positional substitution values ({1}, {2}, ...)
      * @param requestMs       - event detection timestamp (ms since epoch)
      * @return the persisted Alert in PENDING_QUEUE state, or null when rejected as a duplicate
@@ -545,7 +669,7 @@ public class AlertService {
             String alertId,
             String alertDefRef,
             String alertTemplateId,
-            String targetedGroup,
+            List<String> targetedGroups,
             List<String> parameters,
             long requestMs
     ) throws ITParseException {
@@ -574,15 +698,15 @@ public class AlertService {
 
         String publicAccessId = RandomString.getRandomString(24);
         // Persist first as PENDING to obtain the MongoDB id, then transition to PENDING_QUEUE
-        Alert alert = Alert.newAlert(alertId, alertDefRef, alertTemplateId, targetedGroup, parameters, requestMs, publicAccessId);
+        Alert alert = Alert.newAlert(alertId, alertDefRef, alertTemplateId, targetedGroups, parameters, requestMs, publicAccessId);
         alert = alertRepository.save(alert);
-        log.debug("[alerts] Alert {} created (template={}, group={})", alertId, alertTemplateId, targetedGroup);
+        log.debug("[alerts] Alert {} created (template={}, groups={})", alertId, alertTemplateId, targetedGroups);
         auditIntegration.auditLog(
                 ModuleCatalog.Modules.ALERTS,
                 ActionCatalog.getActionName(ActionCatalog.Actions.AUDIT_ALERT_CREATED),
                 alertDefRef,
                 "Alert '{0}' type {1} created for tenant {2}",
-                new String[]{alertId, alertTemplateId, targetedGroup}
+                new String[]{alertId, alertTemplateId, String.join(", ", targetedGroups)}
         );
 
         enqueue(alert);
@@ -608,7 +732,7 @@ public class AlertService {
                 ActionCatalog.getActionName(ActionCatalog.Actions.AUDIT_ALERT_ENDED),
                 alert.getAlertDefRef(),
                 "Alert '{0}' type {1} ended for tenant {2}",
-                new String[]{alertId, alert.getAlertTemplateId(), alert.getTargetedGroups()}
+                new String[]{alertId, alert.getAlertTemplateId(), String.join(", ", alert.getTargetedGroups())}
         );
         enqueue(alert);
     }

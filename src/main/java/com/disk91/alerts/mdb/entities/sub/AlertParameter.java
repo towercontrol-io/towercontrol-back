@@ -22,7 +22,7 @@ package com.disk91.alerts.mdb.entities.sub;
 /**
  * AlertParameter - Enumeration of all supported dynamic parameters injectable into an alert message.
  * CUSTOM_PARAM entries carry an associated string value giving the custom parameter name.
- * ALERT_LINK carries an associated URL template where {aid}, {did}, {pubID} are replaced at render time.
+ * ALERT_LINK carries an associated URL template where {aid}, {did}, {pubid} are replaced at render time.
  */
 public enum AlertParameter {
     DEVICE_ID,
@@ -36,7 +36,7 @@ public enum AlertParameter {
     CUSTOM_PARAM,       // alert specific: custom parameter, associated value gives the parameter name (lowercase)
     SERVICE_NAME,       // Name of the service (from configuration file)
     SERVICE_HOME,       // Service home page (from configuration file)
-    ALERT_LINK,         // http link, associated value is the link containing {aid} {did} {pubID} placeholders
+    ALERT_LINK,         // http link, associated value is the link containing {aid} {did} {pubid} placeholders
 
     UNKNOWN,
 }

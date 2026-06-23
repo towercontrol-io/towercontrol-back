@@ -402,122 +402,141 @@ public class AlertService {
                     continue;
                 }
 
-                // Find the associated AlertMediumMessage
-                AlertMediumMessage messageVariant = getRightMedium(bestLocale, selectedMedium);
-                if (messageVariant == null) {
-                    log.warn("[alerts] No message variant for medium {} alert {} user {}, skipping",
-                            selectedMedium, alert.getAlertId(), user.getLogin());
-                    continue;
-                }
+                if (user.isPersonalDataAccessible()) {
 
-                // generated the message based on this choice language / medium
-                String renderedMessage = renderMessage(
-                        alert,
-                        template,
-                        messageVariant.getMessage(),
-                        groups.get(user.getLogin()),
-                        user
-                );
-
-                alert.upsertSent(user.getLogin(), selectedMedium, false, false, "alerts-alert-not-sent");
-                alertRepository.save(alert);
-
-                switch (selectedMedium) {
-                    case EMAIL -> {
-                        user.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
-                        try {
-                            emailTools.send(
-                                    user.getEncEmail(),
-                                    renderedMessage,
-                                    "",
-                                    (alertsConfig.getAlertsMailSender().isEmpty()) ? commonConfig.getCommonMailSender() : alertsConfig.getAlertsMailSender()
-                            );
-                            alert.upsertSent(user.getLogin(), selectedMedium, true, false, "");
-                        } catch (ITParseException x) {
-                            alert.upsertSent(user.getLogin(), selectedMedium, false, false, "alerts-failed-to-get-email");
-                        }
-                        user.cleanKeys();
-                        alertRepository.save(alert);
+                    // Find the associated AlertMediumMessage
+                    AlertMediumMessage messageVariant = getRightMedium(bestLocale, selectedMedium);
+                    if (messageVariant == null) {
+                        log.warn("[alerts] No message variant for medium {} alert {} user {}, skipping",
+                                selectedMedium, alert.getAlertId(), user.getLogin());
+                        continue;
                     }
-                    case SMS -> {
-                        // @TODO
-                        alert.upsertSent(user.getLogin(), selectedMedium, false, false, "SMS Not yet implemented");
-                        alertRepository.save(alert);
-                        log.warn("[alerts] SMS not yet implemented");
+
+                    // generated the message based on this choice language / medium
+                    String renderedMessage = renderMessage(
+                            alert,
+                            template,
+                            messageVariant.getMessage(),
+                            groups.get(user.getLogin()),
+                            user
+                    );
+                    String renderedTitle = "";
+                    if (messageVariant.getTitle() != null) {
+                        renderedTitle = renderMessage(
+                                alert,
+                                template,
+                                messageVariant.getTitle(),
+                                groups.get(user.getLogin()),
+                                user
+                        );
                     }
-                    case PUSH -> {
-                        user.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
-                        try {
-                            if (user.getPushAddress() == null) {
-                                alert.upsertSent(user.getLogin(), selectedMedium, false, false, "alerts-failed-no-push-address");
-                            } else {
-                                firebaseTools.sendPush(
-                                        user.getEncPushAddress(),
-                                        "",
-                                        renderedMessage
+
+                    alert.upsertSent(user.getLogin(), selectedMedium, false, false, "alerts-alert-not-sent");
+                    alertRepository.save(alert);
+
+                    switch (selectedMedium) {
+                        case EMAIL -> {
+                            user.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
+                            try {
+                                emailTools.send(
+                                        user.getEncEmail(),
+                                        renderedMessage,
+                                        renderedTitle,
+                                        (alertsConfig.getAlertsMailSender().isEmpty()) ? commonConfig.getCommonMailSender() : alertsConfig.getAlertsMailSender()
                                 );
                                 alert.upsertSent(user.getLogin(), selectedMedium, true, false, "");
+                            } catch (ITParseException x) {
+                                alert.upsertSent(user.getLogin(), selectedMedium, false, false, "alerts-failed-to-get-email");
                             }
-                        } catch (ITParseException x) {
-                            alert.upsertSent(user.getLogin(), selectedMedium, false, false, "alerts-failed-send-push");
+                            user.cleanKeys();
+                            alertRepository.save(alert);
                         }
-                        user.cleanKeys();
-                        alertRepository.save(alert);
+                        case SMS -> {
+                            // @TODO
+                            alert.upsertSent(user.getLogin(), selectedMedium, false, false, "SMS Not yet implemented");
+                            alertRepository.save(alert);
+                            log.warn("[alerts] SMS not yet implemented");
+                        }
+                        case PUSH -> {
+                            user.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
+                            try {
+                                if (user.getPushAddress() == null) {
+                                    alert.upsertSent(user.getLogin(), selectedMedium, false, false, "alerts-failed-no-push-address");
+                                } else {
+                                    firebaseTools.sendPush(
+                                            user.getEncPushAddress(),
+                                            renderedTitle,
+                                            renderedMessage
+                                    );
+                                    alert.upsertSent(user.getLogin(), selectedMedium, true, false, "");
+                                }
+                            } catch (ITParseException x) {
+                                alert.upsertSent(user.getLogin(), selectedMedium, false, false, "alerts-failed-send-push");
+                            }
+                            user.cleanKeys();
+                            alertRepository.save(alert);
+                        }
+                        case WHATSAPP -> {
+                            // @TODO
+                            alert.upsertSent(user.getLogin(), selectedMedium, false, false, "WHATSAPP Not yet implemented");
+                            alertRepository.save(alert);
+                            log.warn("[alerts] WHATSAPP not yet implemented");
+                        }
+                        case TOPIC -> {
+                            // @TODO
+                            alert.upsertSent(user.getLogin(), selectedMedium, false, false, "TOPIC Not yet implemented");
+                            alertRepository.save(alert);
+                            log.warn("[alerts] TOPIC not yet implemented");
+                        }
+                        case WEBHOOK -> {
+                            // @TODO
+                            alert.upsertSent(user.getLogin(), selectedMedium, false, false, "WEBHOOK Not yet implemented");
+                            alertRepository.save(alert);
+                            log.warn("[alerts] WEBHOOK not yet implemented");
+                        }
                     }
-                    case WHATSAPP -> {
-                        // @TODO
-                        alert.upsertSent(user.getLogin(), selectedMedium, false, false, "WHATSAPP Not yet implemented");
-                        alertRepository.save(alert);
-                        log.warn("[alerts] WHATSAPP not yet implemented");
-                    }
-                    case TOPIC -> {
-                        // @TODO
-                        alert.upsertSent(user.getLogin(), selectedMedium, false, false, "TOPIC Not yet implemented");
-                        alertRepository.save(alert);
-                        log.warn("[alerts] TOPIC not yet implemented");
-                    }
-                    case WEBHOOK -> {
-                        // @TODO
-                        alert.upsertSent(user.getLogin(), selectedMedium, false, false, "WEBHOOK Not yet implemented");
-                        alertRepository.save(alert);
-                        log.warn("[alerts] WEBHOOK not yet implemented");
-                    }
+                } else {
+                    alert.upsertSent(user.getLogin(), selectedMedium, false, false, "alerts-user-no-personal-data");
+                    alertRepository.save(alert);
                 }
-/*
-                // >>>> @TODO
-                // In case we have POPUP as a medium, we process it separately
+
+                // Manage the POPUP
                 if (template.getPreferred().contains(AlertMedium.POPUP)) {
-                    // @TODO: persist popup entry in the popup history table
-                    AlertSentState popupState = new AlertSentState();
-                    popupState.setMedium(AlertMedium.POPUP);
-                    popupState.setSent(false);
-                    popupState.setAck(false);
-                    states.add(popupState);
+
+                    AlertMediumMessage messageVariant = getRightMedium(bestLocale, AlertMedium.POPUP);
+                    if (messageVariant != null) {
+
+                        // generated the message based on this choice language / medium
+                        String renderedMessage = renderMessage(
+                                alert,
+                                template,
+                                messageVariant.getMessage(),
+                                groups.get(user.getLogin()),
+                                user
+                        );
+
+                        // write the alert event in the popup table
+                        // @TODO
+
+                        // Update state
+
+                        alert.upsertSent(user.getLogin(), AlertMedium.POPUP, true, true, "");
+                    } else {
+                        alert.upsertSent(user.getLogin(), AlertMedium.POPUP, false, false, "alerts-no-popup-config");
+                    }
+
                 }
 
-                // mettre à jour l'etat de l'alerte en fontion de son type...
 
+            } // loop on users
 
-
-                // verify if user personal data are accessible (if not skip this one)
-                if (!user.isPersonalDataAccessible()) {
-                    log.debug("[alerts] Skipping user {} - personal data not accessible", user.getLogin());
-                    // @TODO ... à remonter plus haut ..
-
-
-                    continue;
-                }
-
-
-            }
-
-        }
+            // Now, we update the alert behavior
 
 
 
 
 
-
+/*
 
 
         switch (alert.getState()) {
@@ -570,7 +589,7 @@ public class AlertService {
             default -> log.warn("[alerts] Worker dequeued alert {} in unexpected state {}",
                     alert.getAlertId(), alert.getState());
         */
-            }
+
         }
     }
 

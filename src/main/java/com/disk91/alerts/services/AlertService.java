@@ -28,9 +28,7 @@ import com.disk91.alerts.mdb.repositories.AlertRepository;
 import com.disk91.audit.integration.AuditIntegration;
 import com.disk91.common.config.CommonConfig;
 import com.disk91.common.config.ModuleCatalog;
-import com.disk91.common.tools.DateConverters;
-import com.disk91.common.tools.Now;
-import com.disk91.common.tools.RandomString;
+import com.disk91.common.tools.*;
 import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.devices.services.DeviceCache;
@@ -92,6 +90,12 @@ public class AlertService {
 
     @Autowired
     protected DeviceCache deviceCache;
+
+    @Autowired
+    protected EmailTools emailTools;
+
+    @Autowired
+    protected FirebaseTools firebaseTools;
 
     // ================================================================================================================
     // WORKER INFRASTRUCTURE
@@ -415,46 +419,71 @@ public class AlertService {
                         user
                 );
 
-                alert.upsertSent(user.getLogin(),selectedMedium,false,false,"alert-not-sent");
+                alert.upsertSent(user.getLogin(), selectedMedium, false, false, "alerts-alert-not-sent");
                 alertRepository.save(alert);
 
                 switch (selectedMedium) {
                     case EMAIL -> {
-                        // @TODO
-                        alert.upsertSent(user.getLogin(),selectedMedium,true,false,"");
+                        user.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
+                        try {
+                            emailTools.send(
+                                    user.getEncEmail(),
+                                    renderedMessage,
+                                    "",
+                                    (alertsConfig.getAlertsMailSender().isEmpty()) ? commonConfig.getCommonMailSender() : alertsConfig.getAlertsMailSender()
+                            );
+                            alert.upsertSent(user.getLogin(), selectedMedium, true, false, "");
+                        } catch (ITParseException x) {
+                            alert.upsertSent(user.getLogin(), selectedMedium, false, false, "alerts-failed-to-get-email");
+                        }
+                        user.cleanKeys();
                         alertRepository.save(alert);
                     }
                     case SMS -> {
                         // @TODO
-                        alert.upsertSent(user.getLogin(),selectedMedium,false,false,"SMS Not yet implemented");
+                        alert.upsertSent(user.getLogin(), selectedMedium, false, false, "SMS Not yet implemented");
                         alertRepository.save(alert);
                         log.warn("[alerts] SMS not yet implemented");
                     }
                     case PUSH -> {
-                        // @TODO
-                        alert.upsertSent(user.getLogin(),selectedMedium,true,false,"");
+                        user.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
+                        try {
+                            if (user.getPushAddress() == null) {
+                                alert.upsertSent(user.getLogin(), selectedMedium, false, false, "alerts-failed-no-push-address");
+                            } else {
+                                firebaseTools.sendPush(
+                                        user.getEncPushAddress(),
+                                        "",
+                                        renderedMessage
+                                );
+                                alert.upsertSent(user.getLogin(), selectedMedium, true, false, "");
+                            }
+                        } catch (ITParseException x) {
+                            alert.upsertSent(user.getLogin(), selectedMedium, false, false, "alerts-failed-send-push");
+                        }
+                        user.cleanKeys();
                         alertRepository.save(alert);
                     }
                     case WHATSAPP -> {
                         // @TODO
-                        alert.upsertSent(user.getLogin(),selectedMedium,false,false,"WHATSAPP Not yet implemented");
+                        alert.upsertSent(user.getLogin(), selectedMedium, false, false, "WHATSAPP Not yet implemented");
                         alertRepository.save(alert);
                         log.warn("[alerts] WHATSAPP not yet implemented");
                     }
                     case TOPIC -> {
                         // @TODO
-                        alert.upsertSent(user.getLogin(),selectedMedium,false,false,"TOPIC Not yet implemented");
+                        alert.upsertSent(user.getLogin(), selectedMedium, false, false, "TOPIC Not yet implemented");
                         alertRepository.save(alert);
                         log.warn("[alerts] TOPIC not yet implemented");
                     }
                     case WEBHOOK -> {
                         // @TODO
-                        alert.upsertSent(user.getLogin(),selectedMedium,false,false,"WEBHOOK Not yet implemented");
+                        alert.upsertSent(user.getLogin(), selectedMedium, false, false, "WEBHOOK Not yet implemented");
                         alertRepository.save(alert);
                         log.warn("[alerts] WEBHOOK not yet implemented");
                     }
                 }
-
+/*
                 // >>>> @TODO
                 // In case we have POPUP as a medium, we process it separately
                 if (template.getPreferred().contains(AlertMedium.POPUP)) {
@@ -540,6 +569,8 @@ public class AlertService {
 
             default -> log.warn("[alerts] Worker dequeued alert {} in unexpected state {}",
                     alert.getAlertId(), alert.getState());
+        */
+            }
         }
     }
 
@@ -640,6 +671,8 @@ public class AlertService {
             }
         }
 
+        user.cleanKeys();
+
         // Now replace the parameters in the mesage
         String result = messageTemplate;
         for (int i = 0; i < parameters.size(); i++) {
@@ -669,6 +702,7 @@ public class AlertService {
             String alertId,
             String alertDefRef,
             String alertTemplateId,
+            String deviceId,
             List<String> targetedGroups,
             List<String> parameters,
             long requestMs
@@ -698,7 +732,7 @@ public class AlertService {
 
         String publicAccessId = RandomString.getRandomString(24);
         // Persist first as PENDING to obtain the MongoDB id, then transition to PENDING_QUEUE
-        Alert alert = Alert.newAlert(alertId, alertDefRef, alertTemplateId, targetedGroups, parameters, requestMs, publicAccessId);
+        Alert alert = Alert.newAlert(alertId, alertDefRef, alertTemplateId, deviceId, targetedGroups, parameters, requestMs, publicAccessId);
         alert = alertRepository.save(alert);
         log.debug("[alerts] Alert {} created (template={}, groups={})", alertId, alertTemplateId, targetedGroups);
         auditIntegration.auditLog(

@@ -87,6 +87,9 @@ public class User implements CloneableObject<User> {
     // base64 + encrypted user email
     protected String email;
 
+    // encrypted push address
+    protected String pushAddress;
+
     // encryption salt
     protected byte[] salt;
 
@@ -506,6 +509,7 @@ public class User implements CloneableObject<User> {
                 String _getBillingCountryCode = (this.billingProfile.getCountryCode()!= null )?this.getEncBillingCountryCode():null;
                 String _getBillingVatNumber = (this.billingProfile.getVatNumber() != null )?this.getEncBillingVatNumber():null;
                 String _getTwoFASecret = (this.twoFASecret != null )?this.getEncTwoFASecret():null;
+                String _getPushAddress = (this.pushAddress != null)?this.getEncPushAddress():null;
 
                 // Re-encrypt all data
                 this.password = bcryptPassword;
@@ -536,6 +540,7 @@ public class User implements CloneableObject<User> {
                 if ( _getBillingCountryCode != null) this.setEncBillingCountryCode(_getBillingCountryCode);
                 if ( _getBillingVatNumber != null) this.setEncBillingVatNumber(_getBillingVatNumber);
                 if ( _getTwoFASecret != null) this.setEncTwoFASecret(_getTwoFASecret);
+                if ( _getPushAddress != null) this.setEncPushAddress(_getPushAddress);
 
                 return true;
 
@@ -555,6 +560,7 @@ public class User implements CloneableObject<User> {
                 }
                 if ( this.getRegistrationIP() != null) this.setRegistrationIP(null);
                 this.setCustomFields(new ArrayList<>());
+                this.setPushAddress(null);
 
                 if ( this.getProfile() != null ) {
                     if (this.getProfile().getGender() != null) this.getProfile().setGender(null);
@@ -718,6 +724,26 @@ public class User implements CloneableObject<User> {
      */
     public void setEncEmail(String _email)  throws ITParseException {
         this.email = EncryptionHelper.encrypt(_email, IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+    }
+
+    // --- Push address
+
+    /**
+     * Decrypt the pushAddress
+     * @return
+     * @throws ITParseException
+     */
+    public String getEncPushAddress() throws ITParseException {
+        return EncryptionHelper.decrypt(this.pushAddress, IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
+    }
+
+    /**
+     * Encrypt the pushAddress
+     * @param _pushAddress
+     * @throws ITParseException
+     */
+    public void setEncPushAddress(String _pushAddress)  throws ITParseException {
+        this.pushAddress = EncryptionHelper.encrypt(_pushAddress, IV, HexCodingTools.bytesToHex(this.getEncryptionKey()));
     }
 
     // --- Registration IP
@@ -1212,6 +1238,7 @@ public class User implements CloneableObject<User> {
         u.setLogin(this.login);
         u.setPassword(this.password);
         u.setEmail(this.email);
+        u.setPushAddress(this.pushAddress);
 
         // Clone the salt element by element of the Array
         byte[] _salt = new byte[this.salt.length];
@@ -1589,5 +1616,13 @@ public class User implements CloneableObject<User> {
 
     public void setGroups(ArrayList<String> groups) {
         this.groups = groups;
+    }
+
+    public String getPushAddress() {
+        return pushAddress;
+    }
+
+    public void setPushAddress(String pushAddress) {
+        this.pushAddress = pushAddress;
     }
 }

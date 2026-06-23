@@ -34,6 +34,7 @@ attribute that contains the necessary information.
       "mediums" : [
         { 
           "medium" : "AlertMedium",    // target medium for this alarm (sms, email, push, webhook, topic)
+          "title" : "string",          // Title to be used for message type EMAIL, PUSH, DEFAULT
           "message" : "string"         // Generic message to be sent, markdown format parameter excaped with {1} for 1st parameter
         }
       ]
@@ -45,6 +46,7 @@ attribute that contains the necessary information.
       "mediums" : [
         {
           "medium" : "AlertMedium",    // target medium for this alarm (sms, email, push, webhook, topic)
+          "title" : "string",          // Title to be used for message type EMAIL, PUSH, DEFAULT
           "message" : "string"         // Generic message to be sent, markdown format parameter excaped with {1} for 1st parameter
         }
       ]

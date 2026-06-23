@@ -82,6 +82,18 @@ public class AlertsConfig {
         return alertsDirectLink;
     }
 
+    @Value("${alerts.mail.sender:}")
+    protected String alertsMailSender;
+    public String getAlertsMailSender() {
+        return alertsMailSender;
+    }
+
+    @Value("${alerts.sms.sender:}")
+    protected String alertsSmsSender;
+    public String getAlertsSmsSender() {
+        return alertsSmsSender;
+    }
+
     // ----------------------------------------------
     // Alert worker thread pool
     // ----------------------------------------------

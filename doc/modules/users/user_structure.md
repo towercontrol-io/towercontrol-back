@@ -9,6 +9,7 @@ The user data structure is defined as follows:
   "userSearch": ["string" ],      // Hashes of the 3 first letter of the email + domain for search optimization, can be later extended with other keywords
   "password": "string",           // password hash with hash-type exemple {sha256}hashvalue of {bcrypt}hashvalue, default is sha256 and should move to bcrypt on login
   "email": "string",              // user email [Base64(encrypted)]
+  "pushAddress": "string",        // Id for smartphone push (encrypted)
   "roles": [
      "string"                     // user role collection, role are predefined
   ],

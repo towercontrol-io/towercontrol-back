@@ -136,15 +136,15 @@ All endpoints require a valid Bearer token in the `Authorization` header.
     {
       "locale": "en",
       "mediums": [
-        { "medium": "EMAIL", "message": "**{1}** reported a temperature of **{2}°C**." },
-        { "medium": "PUSH",  "message": "{1}: temperature {2}°C" }
+        { "medium": "EMAIL", "message": "**{1}** reported a temperature of **{2}°C**.", "title": "New alert reported on {1}" },
+        { "medium": "PUSH",  "message": "{1}: temperature {2}°C", "title": "{1} Alert !" }
       ]
     },
     {
       "locale": "fr",
       "mediums": [
-        { "medium": "EMAIL", "message": "**{1}** a signalé une température de **{2}°C**." },
-        { "medium": "PUSH",  "message": "{1} : température {2}°C" }
+        { "medium": "EMAIL", "message": "**{1}** a signalé une température de **{2}°C**.", "title": "Une nouvelle alerte sur {1}" },
+        { "medium": "PUSH",  "message": "{1} : température {2}°C", "title": "{1} Alerte !" }
       ]
     }
   ],
@@ -331,6 +331,7 @@ When building strings that look like `{n}` inside framework template syntax (e.g
 "alerts-template-not-found": "The requested alert template was not found",
 "alerts-template-deleted": "The alert template has been deleted",
 "alerts-template-shortid-generation-failed": "Unable to generate a unique short identifier for the template, please retry",
+"alerts-template-message-title-required" : "The title is required for EMAIL, PUSH, DEFAULT medium",
 ```
 
 # Implementation reference

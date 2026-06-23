@@ -106,6 +106,8 @@ public class EncryptionHelper {
      */
     public static String decrypt(String tobeDecrypted, String iv, String encKey) {
 
+        if ( iv == null || encKey == null ) return null;
+
         byte[] _iv = HexCodingTools.getBytesFromInt(HexCodingTools.getIntArrayFromHexString(iv));
         try {
             IvParameterSpec iv_ = new IvParameterSpec(_iv);

@@ -47,6 +47,14 @@ public class AlertMediumMessage implements CloneableObject<AlertMediumMessage> {
     )
     protected String message;
 
+    // Message title in markdown format; parameters escaped as {1}, {2}, ...
+    @Schema(
+            description = "Message title in markdown format; use {1}, {2}... to inject parameters",
+            example = "Alert Temperature on device  {1}",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    protected String title;
+
     // === CREATE ===
 
     /**
@@ -55,10 +63,11 @@ public class AlertMediumMessage implements CloneableObject<AlertMediumMessage> {
      * @param message - message body with {n} parameter placeholders
      * @return new AlertMediumMessage instance
      */
-    public static AlertMediumMessage of(AlertMedium medium, String message) {
+    public static AlertMediumMessage of(AlertMedium medium, String title, String message) {
         AlertMediumMessage m = new AlertMediumMessage();
         m.setMedium(medium);
         m.setMessage(message);
+        m.setTitle(title);
         return m;
     }
 
@@ -68,6 +77,7 @@ public class AlertMediumMessage implements CloneableObject<AlertMediumMessage> {
         AlertMediumMessage u = new AlertMediumMessage();
         u.setMedium(medium);
         u.setMessage(message);
+        u.setTitle(title);
         return u;
     }
 
@@ -87,6 +97,14 @@ public class AlertMediumMessage implements CloneableObject<AlertMediumMessage> {
 
     public void setMessage(String message) {
         this.message = message;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
     }
 }
 

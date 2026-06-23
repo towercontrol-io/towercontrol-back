@@ -26,6 +26,7 @@ import com.disk91.alerts.config.ActionCatalog;
 import com.disk91.alerts.mdb.entities.AlertTemplate;
 import com.disk91.alerts.mdb.entities.sub.AlertBehavior;
 import com.disk91.alerts.mdb.entities.sub.AlertLocaleMessage;
+import com.disk91.alerts.mdb.entities.sub.AlertMedium;
 import com.disk91.alerts.mdb.entities.sub.AlertMediumMessage;
 import com.disk91.alerts.mdb.repositories.AlertTemplateRepository;
 import com.disk91.audit.integration.AuditIntegration;
@@ -118,6 +119,11 @@ public class AlertTemplateService {
             for (AlertMediumMessage mm : locale.getMediums()) {
                 if (mm.getMessage() == null || mm.getMessage().isBlank()) {
                     throw new ITParseException("alerts-template-message-required");
+                }
+                if ( (mm.getTitle() == null || mm.getTitle().isBlank())
+                    && ( mm.getMedium() == AlertMedium.EMAIL || mm.getMedium() == AlertMedium.PUSH || mm.getMedium() == AlertMedium.DEFAULT )
+                ) {
+                    throw new ITParseException("alerts-template-message-title-required");
                 }
             }
         }

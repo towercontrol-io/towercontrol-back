@@ -69,6 +69,16 @@ public interface AlertPopupRepository extends JpaRepository<AlertPopup, UUID> {
     int markAllViewedByUser(@Param("userLogin") String userLogin, @Param("nowMs") long nowMs);
 
     /**
+     * Returns popups newer than the given timestamp for a user, ordered oldest first.
+     * Used by the toaster polling mechanism to detect new arrivals since last check.
+     * Does not affect the viewed/unread state.
+     * @param userLogin - target user
+     * @param sinceMs - lower bound timestamp (exclusive)
+     * @return list of new popups ordered by timeMs ascending
+     */
+    List<AlertPopup> findByUserLoginAndTimeMsGreaterThanOrderByTimeMsAsc(String userLogin, long sinceMs);
+
+    /**
      * Deletes all popup entries older than the given cutoff timestamp.
      * @param cutoffMs - entries with timeMs before this value are removed
      */

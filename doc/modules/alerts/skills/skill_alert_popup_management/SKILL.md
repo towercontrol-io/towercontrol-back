@@ -1,58 +1,80 @@
 ---
 name: skill_alert_popup_management
-description: A skill to display in-app popup notifications (bell icon, badge, overlay list) for the authenticated user.
+description: A skill to display in-app popup notifications (bell icon, badge, overlay list, toaster) for the authenticated user.
 license: GPL-3.0
 metadata:
   author: "disk91"
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 # Alert Popup Management
 
 ## Overview
 
-This skill covers the in-app popup notification feature: the bell icon with an unread badge, the slide-in overlay listing 
-recent notifications, and the toaster for newly arriving alerts.
+This skill covers the in-app popup notification feature. It is split into two independent circuits that share the same
+underlying data but serve different UX goals:
 
-Popups are created by the backend when an alert is delivered via the `POPUP` medium. The front-end polls (or subscribes) 
-to detect new entries and displays them in real time.
+| Circuit | Purpose | API | State impact |
+|---|---|---|---|
+| **Bell / history** | Badge counter + overlay list of recent notifications | `GET /count`, `GET /`, `PUT /viewed` | Marks entries as viewed |
+| **Toaster / live** | Real-time toaster for newly arrived alerts | `GET /new?since=<ts>` | None — read-only |
 
-## When to use this skill
-
-When you need to implement the notification bell component in the application shell, including:
-- the badge counter driven by unread popup count
-- the overlay list shown when the user clicks the bell
-- the toaster for newly arrived alerts
-- the "mark as viewed" action that clears the badge
+The two circuits are completely independent: the toaster polling does not affect the badge or the history list, and
+opening the history overlay does not affect the toaster's `since` pointer.
 
 ---
 
-## Expected behavior
+## Circuit 1 — Bell / history
 
 ### Bell icon and badge
 
-- A bell icon is placed in the upper-right corner of the application shell (persistent across pages).
-- A red badge overlaying the bell shows the **count of unread popups**.
+- A bell icon lives in the upper-right corner of the application shell, persistent across pages.
+- A red badge shows the **count of unread popup notifications**.
 - The badge is hidden when the count is zero.
-- On mount and periodically, the front-end calls `GET /alerts/1.0/popup/count` to refresh the badge.
+- Poll `GET /alerts/1.0/popup/count` every 30 seconds to refresh the badge.
 
 ### Overlay list
 
-- Clicking the bell opens an overlay panel on the right side of the screen.
-- The overlay calls `GET /alerts/1.0/popup` to load up to 10 entries (unread + last two days).
-- Entries are stacked vertically, newest first, separated by a thin divider.
-- Each entry shows: criticality badge (color-coded), message text, relative time (e.g. "2 hours ago").
-- Unread entries (viewedMs = 0) are visually highlighted (e.g. bold text or colored left border).
-- When the overlay opens, `PUT /alerts/1.0/popup/viewed` is called to mark all entries as viewed and clear the badge.
+- Clicking the bell opens a slide-in overlay on the right side of the screen.
+- On open, call `GET /alerts/1.0/popup` to load the history (up to `alerts.popup.max.displayed` entries:
+  all unread ones + read ones within the last `alerts.popup.max.displayed.ms` window, newest first).
+- Entries are stacked vertically, separated by a thin divider.
+- Each entry shows: criticality badge (color-coded), message text, relative timestamp (e.g. "2 hours ago").
+- **Immediately after the overlay opens**, call `PUT /alerts/1.0/popup/viewed` to mark all entries as viewed
+  and clear the badge. Update `unreadCount` to 0 locally as an optimistic update.
 
-### Toaster for new alerts
+---
 
-- A background mechanism (polling `GET /alerts/1.0/popup/count` every 30 seconds, or SSE/WebSocket) detects new unread popups.
-- When the count increases, a toaster notification appears at the top right with the message from the newest unread entry.
-- The toaster auto-dismisses after a few seconds.
-- The badge is updated immediately.
+## Circuit 2 — Toaster / live
 
-### Criticality color mapping
+### Design principle
+
+The toaster mechanism is driven by a dedicated endpoint that accepts a client-managed timestamp (`since`).
+The server returns every popup whose `timeMs > since`. The response includes the full popup data
+(message, criticality, timeMs), so the toaster can render immediately **without a second API call**.
+
+This endpoint has **no side effects**: it never touches `viewedMs`, never changes the badge count, and
+does not interfere with the history overlay.
+
+### Client-side `since` pointer
+
+- Initialise `since` to `Date.now()` (the page-load timestamp) when the component mounts.
+- After each non-empty response, update `since` to the highest `timeMs` value received.
+- After an empty response, keep `since` unchanged.
+
+### Polling flow
+
+1. Every N seconds (recommended: 30 s), call `GET /alerts/1.0/popup/new?since=<since>`.
+2. If the response list is non-empty:
+   - Show a toaster for each entry (or only the most recent one if UX prefers a single toaster).
+   - Update `since` to `Math.max(...entries.map(e => e.timeMs))`.
+   - Increment the local `unreadCount` by the number of new entries (optimistic badge update, avoids
+     an extra call to `/count`).
+3. If the response is empty, do nothing.
+
+---
+
+## Criticality color mapping
 
 | Criticality | Color suggestion |
 |---|---|
@@ -67,32 +89,33 @@ When you need to implement the notification bell component in the application sh
 
 All endpoints require a valid Bearer token in the `Authorization` header and `ROLE_LOGIN_COMPLETE`.
 
-### `GET /alerts/1.0/popup` — Get popup list
+---
 
-Returns up to 10 popup notifications for the authenticated user: all unread entries plus read entries from the last two days, ordered by time descending.
+### `GET /alerts/1.0/popup` — History list (bell circuit)
+
+Returns up to `alerts.popup.max.displayed` entries for the authenticated user:
+all unread ones plus read ones from the last `alerts.popup.max.displayed.ms` milliseconds,
+ordered newest first.
 
 **Response `200`:**
 ```json
 [
   {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
     "alertId": "alert-temperature-high-123456",
     "message": "Temperature exceeded threshold on sensor A3",
     "criticality": "WARNING",
-    "timeMs": 1749600000000,
-    "viewedMs": 0
+    "timeMs": 1749600000000
   }
 ]
 ```
 
-- `viewedMs = 0` means the entry has not been viewed yet.
-- Returns **`204`** (no body) when there are no entries to show.
+Returns `200` with an empty array when there are no entries.
 
 ---
 
-### `GET /alerts/1.0/popup/count` — Get unread count (badge)
+### `GET /alerts/1.0/popup/count` — Unread count / badge (bell circuit)
 
-Returns the count of unread popup notifications for the authenticated user.
+Returns the number of unread popup notifications for the authenticated user.
 
 **Response `200`:**
 ```json
@@ -103,37 +126,95 @@ Returns the count of unread popup notifications for the authenticated user.
 
 ---
 
-### `PUT /alerts/1.0/popup/viewed` — Mark all as viewed
+### `PUT /alerts/1.0/popup/viewed` — Mark all as viewed (bell circuit)
 
-Marks all unread popup notifications as viewed. Call this when the overlay is opened to clear the badge.
+Marks all unread popup notifications as viewed. Call this immediately when the overlay opens.
 
-**Response `200`:** empty body on success.
+**Response `200`:** empty body.
+
+---
+
+### `GET /alerts/1.0/popup/new?since=<ts>` — New arrivals since timestamp (toaster circuit)
+
+Returns all popup notifications with `timeMs > since`, ordered oldest first.
+The response is self-contained: all data needed to render the toaster is included.
+**No server state is modified.**
+
+**Query parameter:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `since` | long (ms) | Yes | Exclusive lower bound; use `Date.now()` on mount, then the highest `timeMs` seen |
+
+**Response `200`:**
+```json
+[
+  {
+    "alertId": "alert-temperature-high-123456",
+    "message": "Temperature exceeded threshold on sensor A3",
+    "criticality": "WARNING",
+    "timeMs": 1749600000000
+  }
+]
+```
+
+Returns `200` with an empty array when no new entries exist since `since`.
+
+**Error responses:**
+- `400` — `since` parameter missing or not a valid long.
+
+---
+
+## Front-end state
+
+```ts
+// Bell circuit
+let unreadCount = 0           // drives the badge
+let popups: AlertPopup[] = [] // loaded on overlay open
+let overlayOpen = false
+
+// Toaster circuit  (independent)
+let since = Date.now()        // client-managed pointer, never sent to the bell endpoints
+```
 
 ---
 
 ## Front-end implementation notes
 
-### Polling strategy
+### Two independent polling intervals
 
-Poll `GET /alerts/1.0/popup/count` every 30 seconds. Compare the returned `unreadCount` with the last known count. If it has increased, fetch `GET /alerts/1.0/popup` to get the new entries and show a toaster for the most recent unread one.
+Run two separate `setInterval` calls (or composables):
 
-### State
+1. **Bell badge** — calls `GET /count` every 30 s to keep the badge accurate while the overlay is closed.
+   Stop or pause this interval while the overlay is open (badge is already cleared).
+2. **Toaster** — calls `GET /new?since=<since>` every 30 s regardless of overlay state.
 
-- `unreadCount: number` — drives the badge display.
-- `popups: AlertPopup[]` — the list displayed in the overlay.
-- `overlayOpen: boolean` — controls overlay visibility.
+### Overlay open sequence
 
-### Mark-as-viewed timing
+```
+overlayOpen = true
+→ GET /alerts/1.0/popup           (load history)
+→ PUT /alerts/1.0/popup/viewed    (mark viewed, no await needed)
+→ unreadCount = 0                 (optimistic)
+```
 
-Call `PUT /alerts/1.0/popup/viewed` immediately when the overlay opens (before the user scrolls). This clears the server-side unread state. Set `unreadCount` to 0 locally as an optimistic update.
+### Toaster on new entry
+
+```
+response = GET /alerts/1.0/popup/new?since=<since>
+if response.length > 0:
+  show toaster(response[response.length - 1])   // most recent
+  since = max(response.map(e => e.timeMs))
+  unreadCount += response.length                // optimistic badge increment
+```
 
 ### Relative timestamps
 
-Use a lightweight relative-time formatter (e.g. `Intl.RelativeTimeFormat` or a date library) to display "2 hours ago" instead of raw timestamps. Recompute on a 1-minute interval while the overlay is open.
+Use `Intl.RelativeTimeFormat` or an equivalent date library. Recompute every minute while the overlay is open.
 
 ### i18n
 
-Use a dedicated translations file (e.g. `alerts.json`) separate from the common translations.
+Use a dedicated translations file (e.g. `alerts.json`) separate from the common translations file.
 
 ---
 

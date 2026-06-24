@@ -105,6 +105,28 @@ public class AlertPopupService {
     }
 
     /**
+     * Return popups created after the given timestamp for the requesting user.
+     * Used by the toaster polling mechanism: the response contains all data needed
+     * to display the toaster without a second API call.
+     * Does not affect the viewed/unread state of any entry.
+     * @param userLogin - requesting user login
+     * @param sinceMs - lower bound timestamp (exclusive), client-managed
+     * @return list of new popup entries ordered oldest first
+     */
+    public List<AlertPopupResponseItf> getNewPopupsSince(String userLogin, long sinceMs) {
+        List<AlertPopup> popups = alertPopupRepository
+                .findByUserLoginAndTimeMsGreaterThanOrderByTimeMsAsc(userLogin, sinceMs);
+
+        List<AlertPopupResponseItf> result = new ArrayList<>();
+        for (AlertPopup p : popups) {
+            AlertPopupResponseItf r = new AlertPopupResponseItf();
+            r.buildFrom(p);
+            result.add(r);
+        }
+        return result;
+    }
+
+    /**
      * Mark all unread popups as viewed for the requesting user.
      * @param userLogin - requesting user login
      */

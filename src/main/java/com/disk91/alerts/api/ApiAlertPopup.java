@@ -38,6 +38,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.web.bind.annotation.RequestParam;
+
 import java.util.List;
 
 @Tag(name = "Alert popup API", description = "In-app popup notification management for the authenticated user")
@@ -94,6 +96,40 @@ public class ApiAlertPopup {
         String userLogin = request.getUserPrincipal().getName();
         AlertPopupCountResponseItf count = alertPopupService.getUnreadCount(userLogin);
         return new ResponseEntity<>(count, HttpStatus.OK);
+    }
+
+    /**
+     * Poll for new popup notifications since a given client-side timestamp.
+     * Returns all popups created after sinceMs, ordered oldest first.
+     * The response contains full popup data so the toaster can render without a second call.
+     * Does not affect the viewed/unread state; independent of the bell/badge mechanism.
+     */
+    @Operation(
+            summary = "Poll for new popup notifications since a given timestamp",
+            description = "Returns all popup notifications created after the given timestamp (sinceMs), " +
+                    "ordered oldest first. The response includes full message data so the toaster can " +
+                    "render immediately without a second request. " +
+                    "Does NOT affect the viewed/unread state and is independent of the bell/badge circuit. " +
+                    "The client must supply its own sinceMs pointer, initialized to the page-load time " +
+                    "and updated to the highest timeMs received after each non-empty response. " +
+                    "Requires full authentication.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "List of new popups (may be empty)",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = AlertPopupResponseItf.class)))),
+                    @ApiResponse(responseCode = "400", description = "Missing or invalid since parameter", content = @Content(schema = @Schema(implementation = ActionResult.class))),
+                    @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content(schema = @Schema(implementation = ActionResult.class)))
+            }
+    )
+    @RequestMapping(value = "/new", produces = "application/json", method = RequestMethod.GET)
+    @PreAuthorize("hasRole('ROLE_LOGIN_COMPLETE')")
+    // ----------------------------------------------------------------------
+    public ResponseEntity<?> getNewPopups(
+            HttpServletRequest request,
+            @RequestParam(value = "since", required = true) long since
+    ) {
+        String userLogin = request.getUserPrincipal().getName();
+        List<AlertPopupResponseItf> popups = alertPopupService.getNewPopupsSince(userLogin, since);
+        return new ResponseEntity<>(popups, HttpStatus.OK);
     }
 
     /**

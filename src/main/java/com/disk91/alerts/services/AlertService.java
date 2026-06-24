@@ -97,6 +97,9 @@ public class AlertService {
     @Autowired
     protected FirebaseTools firebaseTools;
 
+    @Autowired
+    protected AlertPopupService alertPopupService;
+
     // ================================================================================================================
     // WORKER INFRASTRUCTURE
     // ================================================================================================================
@@ -337,15 +340,23 @@ public class AlertService {
         }
 
         // Get the targeted Users / or Silent
-        if ( alert.getState() == AlertState.PENDING && template.getBehavior() == AlertBehavior.SILENT ) {
+        if ( alert.getState() == AlertState.PENDING_QUEUE && template.getBehavior() == AlertBehavior.SILENT ) {
             // Silent Alarm - create message based on app default language
+            auditIntegration.auditLog(
+                    ModuleCatalog.Modules.ALERTS,
+                    ActionCatalog.getActionName(ActionCatalog.Actions.AUDIT_ALERT_REPORT),
+                    alert.getAlertDefRef(),
+                    "Alert '{0}' type {1} created for tenant {2}",
+                    new String[]{alert.getAlertId(), alert.getAlertTemplateId(), String.join(", ", alert.getTargetedGroups())}
+            );
+            log.info("[alerts] SILENT alert {} processed", alert.getAlertId());
 
 
 
         } else {
             // We need to determine the targeted user list, the conditions are the following
             // - Select the user with ROLE_DEVICE_ALERTING (global or ACL) in groups where alertGroup is true
-            if ( alert.getTargetedGroups() == null ) {
+            if (alert.getTargetedGroups() == null) {
                 alert.setState(AlertState.ENDED);
                 alert.setError("alerts-target-not-found");
                 alertRepository.save(alert);
@@ -354,10 +365,10 @@ public class AlertService {
             }
             HashMap<String, User> targets = new HashMap<>();
             HashMap<String, Group> groups = new HashMap<>();
-            for ( String group : alert.getTargetedGroups() ) {
+            for (String group : alert.getTargetedGroups()) {
                 try {
                     Group g = groupsServices.getGroupByShortId(group);
-                    if ( g.isAlertGroup() ) {
+                    if (g.isAlertGroup()) {
                         // Find users in this group
                         List<User> users = userCommon.getUsersByGroupWithRole(
                                 g.getShortId(),
@@ -366,12 +377,13 @@ public class AlertService {
                                 ROLE_DEVICE_ALERTING.getRoleName()
                         );
                         // Add users
-                        for ( User user : users ) {
-                            targets.put(user.getLogin(),user);
+                        for (User user : users) {
+                            targets.put(user.getLogin(), user);
                             groups.put(user.getLogin(), g);
                         }
                     }
-                } catch (ITNotFoundException ignored) {}
+                } catch (ITNotFoundException ignored) {
+                }
             }
 
             // We have the list of Users, and we have it only once.
@@ -516,10 +528,15 @@ public class AlertService {
                         );
 
                         // write the alert event in the popup table
-                        // @TODO
+                        alertPopupService.createPopup(
+                                user.getLogin(),
+                                alert.getAlertId(),
+                                renderedMessage,
+                                template.getCriticality(),
+                                alert.getRequestMs()
+                        );
 
                         // Update state
-
                         alert.upsertSent(user.getLogin(), AlertMedium.POPUP, true, true, "");
                     } else {
                         alert.upsertSent(user.getLogin(), AlertMedium.POPUP, false, false, "alerts-no-popup-config");
@@ -527,49 +544,22 @@ public class AlertService {
 
                 }
 
-
             } // loop on users
+        }
 
-            // Now, we update the alert behavior
-
-
-
-
-
-/*
-
-
+        // Now, we update the alert behavior
         switch (alert.getState()) {
 
             case PENDING_QUEUE -> {
                 alert.setFireMs(now);
                 AlertBehavior behavior = template.getBehavior();
                 switch (behavior) {
-                    case SILENT -> {
-                        // Audit trace only — no notification sent
-                        // @TODO - besoin du message sinon ca sert à rien
-                        auditIntegration.auditLog(
-                                ModuleCatalog.Modules.ALERTS,
-                                ActionCatalog.getActionName(ActionCatalog.Actions.AUDIT_ALERT_REPORT),
-                                alert.getAlertDefRef(),
-                                "Alert '{0}' type {1} created for tenant {2}",
-                                new String[]{alert.getAlertId(), alert.getAlertTemplateId(), String.join(", ", alert.getTargetedGroups())}
-                        );
-                        log.info("[alerts] SILENT alert {} processed", alert.getAlertId());
-                        alert.setState(AlertState.ENDED);
-                    }
-                    case FIRE_FORGET -> {
-                        // @TODO: deliver open notification via configured channels
-                        log.info("[alerts] FIRE_FORGET alert {} fired", alert.getAlertId());
-                        alert.setState(AlertState.ENDED);
-                    }
+                    case SILENT, FIRE_FORGET -> alert.setState(AlertState.ENDED);
                     case FIRE_TO_END, FIRE_UNTIL -> {
-                        // @TODO: deliver open notification via configured channels
-                        log.info("[alerts] {} alert {} fired, now RUNNING", behavior, alert.getAlertId());
                         alert.setState(AlertState.RUNNING);
                         if (template.getDurationMs() > 0) {
                             alert.setExpirationMs(now + template.getDurationMs());
-                        }
+                        } else alert.setExpirationMs(now + 10*Now.ONE_MINUTE);
                     }
                     default -> {
                         log.warn("[alerts] Unknown behavior {} for alert {}, moving to ENDED", behavior, alert.getAlertId());
@@ -580,16 +570,14 @@ public class AlertService {
             }
 
             case ENDING_QUEUE -> {
-                // @TODO: deliver close notification via configured channels (FIRE_TO_END only)
-                log.info("[alerts] Alert {} close-notification processed, moving to ENDED", alert.getAlertId());
+                log.debug("[alerts] Alert {} close-notification processed, moving to ENDED", alert.getAlertId());
                 alert.setState(AlertState.ENDED);
                 alertRepository.save(alert);
             }
 
-            default -> log.warn("[alerts] Worker dequeued alert {} in unexpected state {}",
-                    alert.getAlertId(), alert.getState());
-        */
-
+            default -> {
+                log.warn("[alerts] Worker dequeued alert {} in unexpected state {}", alert.getAlertId(), alert.getState());
+            }
         }
     }
 

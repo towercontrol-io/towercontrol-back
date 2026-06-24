@@ -341,17 +341,41 @@ public class AlertService {
 
         // Get the targeted Users / or Silent
         if ( alert.getState() == AlertState.PENDING_QUEUE && template.getBehavior() == AlertBehavior.SILENT ) {
-            // Silent Alarm - create message based on app default language
+
+            // Resolve the first available group for context (GROUP_NAME parameter, etc.)
+            Group platformGroup = null;
+            if (alert.getTargetedGroups() != null && !alert.getTargetedGroups().isEmpty()) {
+                try {
+                    platformGroup = groupsServices.getGroupByShortId(alert.getTargetedGroups().getFirst());
+                } catch (ITNotFoundException ignored) {}
+            }
+
+            // Render the message using the platform default language
+            String renderedMessage = "";
+            AlertLocaleMessage bestLocale = getRightAlertLocaleMessage(
+                    commonConfig.getCommonLangDefault(), template.getOpen()
+            );
+            if (bestLocale != null) {
+                // Prefer DEFAULT medium, then POPUP, then first available in the locale
+                AlertMediumMessage messageVariant = getRightMedium(bestLocale, AlertMedium.DEFAULT);
+                if (messageVariant == null) messageVariant = getRightMedium(bestLocale, AlertMedium.POPUP);
+                if (messageVariant == null && !bestLocale.getMediums().isEmpty()) {
+                    messageVariant = bestLocale.getMediums().getFirst();
+                }
+                if (messageVariant != null) {
+                    renderedMessage = renderMessage(alert, template, messageVariant.getMessage(), platformGroup, null);
+                }
+            }
+            // @TODO - we only have an audit type REPORT when the alert is SILENT / is that what we want ?
+            //         we have audit on create for all by the way but not the message (not really a problem)
             auditIntegration.auditLog(
                     ModuleCatalog.Modules.ALERTS,
                     ActionCatalog.getActionName(ActionCatalog.Actions.AUDIT_ALERT_REPORT),
                     alert.getAlertDefRef(),
-                    "Alert '{0}' type {1} created for tenant {2}",
-                    new String[]{alert.getAlertId(), alert.getAlertTemplateId(), String.join(", ", alert.getTargetedGroups())}
+                    "Silent alert '{0}' type {1} for tenant {2}: {3}",
+                    new String[]{alert.getAlertId(), alert.getAlertTemplateId(), String.join(", ", alert.getTargetedGroups()), renderedMessage}
             );
             log.info("[alerts] SILENT alert {} processed", alert.getAlertId());
-
-
 
         } else {
             // We need to determine the targeted user list, the conditions are the following
@@ -600,7 +624,7 @@ public class AlertService {
     ) {
         // compose the parameter list based on the template
         ArrayList<String> parameters = new ArrayList<>();
-        user.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
+        if (user != null) user.setKeys(commonConfig.getEncryptionKey(), commonConfig.getApplicationKey());
         for (AlertParameterEntry p : template.getParameters() ) {
             switch (p.getType()) {
                 case DEVICE_ID -> parameters.add(alert.getDeviceId());
@@ -612,8 +636,9 @@ public class AlertService {
                         parameters.add("Unknown");
                     }
                 }
-                case GROUP_NAME ->  parameters.add(group.getName());
+                case GROUP_NAME -> parameters.add(group != null ? group.getName() : "");
                 case USER_FIRSTNAME -> {
+                    if (user == null) { parameters.add(""); break; }
                     try {
                         parameters.add(user.getEncProfileFirstName());
                     } catch (ITParseException x) {
@@ -621,6 +646,7 @@ public class AlertService {
                     }
                 }
                 case USER_LASTNAME -> {
+                    if (user == null) { parameters.add(""); break; }
                     try {
                         parameters.add(user.getEncProfileLastName());
                     } catch (ITParseException x) {
@@ -628,6 +654,7 @@ public class AlertService {
                     }
                 }
                 case USER_GENDER -> {
+                    if (user == null) { parameters.add(""); break; }
                     try {
                         parameters.add(user.getEncProfileGender());
                     } catch (ITParseException x) {
@@ -636,7 +663,7 @@ public class AlertService {
                 }
                 case ALERT_TIME -> {
                     try {
-                        String tzId = user.getEncProfileTimezone();
+                        String tzId = (user != null) ? user.getEncProfileTimezone() : null;
                         TimeZone tz = (tzId != null && !tzId.isBlank()) ? TimeZone.getTimeZone(tzId) : null;
                         parameters.add(DateConverters.timestampToTime(alert.getFireMs(), tz));
                     } catch (ITParseException x) {
@@ -645,7 +672,7 @@ public class AlertService {
                 }
                 case ALERT_DATE_TIME -> {
                     try {
-                        String tzId = user.getEncProfileTimezone();
+                        String tzId = (user != null) ? user.getEncProfileTimezone() : null;
                         TimeZone tz = (tzId != null && !tzId.isBlank()) ? TimeZone.getTimeZone(tzId) : null;
                         parameters.add(DateConverters.timestampToDateTime(alert.getFireMs(), tz));
                     } catch (ITParseException x) {
@@ -678,7 +705,7 @@ public class AlertService {
             }
         }
 
-        user.cleanKeys();
+        if (user != null) user.cleanKeys();
 
         // Now replace the parameters in the mesage
         String result = messageTemplate;

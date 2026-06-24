@@ -94,6 +94,27 @@ public class AlertsConfig {
         return alertsSmsSender;
     }
 
+    /** Maximum age in milliseconds for popup entries before they are purged. Default: 30 days. */
+    @Value("${alerts.max.history.ms:2592000000}")
+    protected long alertsMaxHistoryMs;
+    public long getAlertsMaxHistoryMs() {
+        return alertsMaxHistoryMs;
+    }
+
+    /** Maximum number of popup entries returned per user in the popup list endpoint. Default: 10. */
+    @Value("${alerts.popup.max.displayed:10}")
+    protected int alertsPopupMaxDisplayed;
+    public int getAlertsPopupMaxDisplayed() {
+        return alertsPopupMaxDisplayed;
+    }
+
+    /** Time window in milliseconds for which read popups remain visible. Default: 2 days. */
+    @Value("${alerts.popup.max.displayed.ms:172800000}")
+    protected long alertsPopupMaxDisplayedMs;
+    public long getAlertsPopupMaxDisplayedMs() {
+        return alertsPopupMaxDisplayedMs;
+    }
+
     // ----------------------------------------------
     // Alert worker thread pool
     // ----------------------------------------------

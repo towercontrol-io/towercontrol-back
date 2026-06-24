@@ -251,7 +251,7 @@ When the user is connected in the platform he can show the number of alerts sinc
 popup box (Usually a bell icon in the upper-right corner of the screen) as a red badge with number of pending alerts. 
 In the user profile, we will store the timestamp of the last time the user viewed the alert history. This alert history 
 is accessed by clicking the bell icon in the upper-right corner, which requests the various alerts and displays them. 
-The bell will show either all unread alerts or the alerts from the last two days. The badge will disappear once the alerts have been viewed.
+The bell will show either all unread alerts or the alerts from the last two days with a max of 10 popup. The badge will disappear once the alerts have been viewed.
 
 Alerts are displayed as a menu that appears in an overlay on the right-hand side, with the list of alerts stacked 
 one below the other and a small separator between each one. If a new alert appears, it is displayed as a toaster that 

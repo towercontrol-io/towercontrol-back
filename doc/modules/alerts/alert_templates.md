@@ -22,6 +22,7 @@ attribute that contains the necessary information.
   "global" : "boolean",           // true when the template is global and visible for all
   "name": "string",               // template name, this is the name of the template, given by the user
   "description": "string",        // template description, this is a free text description of the template, given by the user
+  "criticality": "AlertCriticality",  // alert level (used for decoration in certain medium)
   "parameters" : [                // list of parameters in the right order, see possible list of parameters (first)
     {
       "type" : "AlertParameter",  // category of the parameter

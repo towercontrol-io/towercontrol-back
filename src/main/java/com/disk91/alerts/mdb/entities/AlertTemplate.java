@@ -85,6 +85,10 @@ public class AlertTemplate implements CloneableObject<AlertTemplate> {
     // Duration in milliseconds before the alert is automatically closed (FIRE_TO_END and FIRE_UNTIL modes); 0 means no expiration
     protected long durationMs;
 
+    // Criticality level
+    protected AlertCriticality criticality;
+
+
     // ========================================
 
     /**
@@ -113,6 +117,7 @@ public class AlertTemplate implements CloneableObject<AlertTemplate> {
         t.setBehavior(behavior);
         t.setPreferred(new ArrayList<>());
         t.setDurationMs(0);
+        t.setCriticality(AlertCriticality.DEFAULT);
         return t;
     }
 
@@ -131,6 +136,7 @@ public class AlertTemplate implements CloneableObject<AlertTemplate> {
         u.setDescription(description);
         u.setOwner(owner);
         u.setGlobal(global);
+        u.setCriticality(criticality);
 
         // Deep copy of ordered parameter list
         u.setParameters(new ArrayList<>());
@@ -273,6 +279,14 @@ public class AlertTemplate implements CloneableObject<AlertTemplate> {
 
     public void setGlobal(boolean global) {
         this.global = global;
+    }
+
+    public AlertCriticality getCriticality() {
+        return criticality;
+    }
+
+    public void setCriticality(AlertCriticality criticality) {
+        this.criticality = criticality;
     }
 }
 

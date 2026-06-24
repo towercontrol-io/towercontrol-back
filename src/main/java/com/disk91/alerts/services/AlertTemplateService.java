@@ -157,6 +157,7 @@ public class AlertTemplateService {
             template.setBehavior(body.getBehavior());
             template.setPreferred(body.getPreferred() != null ? body.getPreferred() : new ArrayList<>());
             template.setDurationMs(body.getDurationMs());
+            template.setCriticality(body.getCriticality());
 
             // Audit log the update event
             auditIntegration.auditLog(
@@ -180,6 +181,7 @@ public class AlertTemplateService {
             template.setClose(body.getClose() != null ? body.getClose() : new ArrayList<>());
             template.setPreferred(body.getPreferred() != null ? body.getPreferred() : new ArrayList<>());
             template.setDurationMs(body.getDurationMs());
+            template.setCriticality(body.getCriticality());
 
             // Generate a unique shortId, retry up to 10 times in case of collision
             String shortId = null;

@@ -132,6 +132,7 @@ All endpoints require a valid Bearer token in the `Authorization` header.
     { "type": "DEVICE_NAME", "param": "" },
     { "type": "CUSTOM_PARAM", "param": "temperature" }
   ],
+  "criticality": "INFO",
   "open": [
     {
       "locale": "en",
@@ -165,6 +166,7 @@ All endpoints require a valid Bearer token in the `Authorization` header.
   "description": "Fired when a sensor exceeds the threshold",
   "owner": "a3f2b1c9d4e5f6a7",
   "global": false,
+  "criticality": "INFO", 
   "parameters": [ "..." ],
   "open": [ "..." ],
   "close": [],
@@ -223,6 +225,10 @@ Returns **`204`** (no body) when no templates are found.
 ---
 
 ## Reference: enum values
+
+### AlertCriticality
+
+`INFO`, `WARNING`, `DANGER`
 
 ### AlertBehavior
 

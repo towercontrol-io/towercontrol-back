@@ -236,6 +236,31 @@ be a set of historical alerts that the user may have missed, so the pop-up messa
 to access this history. The table can be purged once the messages have been read, since the alert history is maintained 
 in the alert table, which can be consulted until the purge date is reached.
 
+```json
+{
+  "id" : "string",          // Technical ID unique
+  "userLogin:" : "string",  // User login (indexed)
+  "alertId" : "string",     // Ref to the Alert (this stucture can be purged, so take care of it.
+  "message" : "string",     // Corresponding message (translated, enriched)
+  "criticality" : "AlertCriticality", // The alert level
+  "timeMs": "long"          // Alert time (indexed)
+}
+```
+
+When the user is connected in the platform he can show the number of alerts since the last time he clicks on alert
+popup box (Usually a bell icon in the upper-right corner of the screen) as a red badge with number of pending alerts. 
+In the user profile, we will store the timestamp of the last time the user viewed the alert history. This alert history 
+is accessed by clicking the bell icon in the upper-right corner, which requests the various alerts and displays them. 
+The bell will show either all unread alerts or the alerts from the last two days. The badge will disappear once the alerts have been viewed.
+
+Alerts are displayed as a menu that appears in an overlay on the right-hand side, with the list of alerts stacked 
+one below the other and a small separator between each one. If a new alert appears, it is displayed as a toaster that 
+appears at the top right, and, of course, the rest of the behavior with the badge still applies.
+
+This means that, on the front end, a mechanism must be put in place to detect the appearance of new alerts.
+
+A mechanism will purge pop-up older than the value specified by the `alerts.max.history.ms` parameter in the configuration file. 
+
 ## Operational history
 
 The alert history is preserved through the audit log and thus the audit module so that operators can understand what was 

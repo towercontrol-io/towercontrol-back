@@ -20,6 +20,7 @@
 package com.disk91.alerts.api.interfaces;
 
 import com.disk91.alerts.mdb.entities.AlertTemplate;
+import com.disk91.alerts.mdb.entities.sub.AlertCriticality;
 import com.disk91.alerts.mdb.entities.sub.AlertLocaleMessage;
 import com.disk91.alerts.mdb.entities.sub.AlertMedium;
 import com.disk91.alerts.mdb.entities.sub.AlertParameterEntry;
@@ -78,6 +79,10 @@ public class AlertTemplateResponseItf {
             example = "900000", requiredMode = Schema.RequiredMode.REQUIRED)
     protected long durationMs;
 
+    @Schema(description = "Criticality Level",
+            example = "INFO", requiredMode = Schema.RequiredMode.REQUIRED)
+    protected AlertCriticality criticality;
+
     // ==========================
     // Builder
 
@@ -97,6 +102,7 @@ public class AlertTemplateResponseItf {
         this.behavior = t.getBehavior() != null ? t.getBehavior().name() : null;
         this.preferred = t.getPreferred();
         this.durationMs = t.getDurationMs();
+        this.criticality = t.getCriticality();
     }
 
     // ==========================
@@ -134,5 +140,13 @@ public class AlertTemplateResponseItf {
 
     public long getDurationMs() { return durationMs; }
     public void setDurationMs(long durationMs) { this.durationMs = durationMs; }
+
+    public AlertCriticality getCriticality() {
+        return criticality;
+    }
+
+    public void setCriticality(AlertCriticality criticality) {
+        this.criticality = criticality;
+    }
 }
 

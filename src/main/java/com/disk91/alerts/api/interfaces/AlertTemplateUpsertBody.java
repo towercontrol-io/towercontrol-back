@@ -19,10 +19,7 @@
  */
 package com.disk91.alerts.api.interfaces;
 
-import com.disk91.alerts.mdb.entities.sub.AlertBehavior;
-import com.disk91.alerts.mdb.entities.sub.AlertLocaleMessage;
-import com.disk91.alerts.mdb.entities.sub.AlertMedium;
-import com.disk91.alerts.mdb.entities.sub.AlertParameterEntry;
+import com.disk91.alerts.mdb.entities.sub.*;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
@@ -102,6 +99,10 @@ public class AlertTemplateUpsertBody {
     )
     protected long durationMs;
 
+    @Schema(description = "Criticality Level",
+            example = "INFO", requiredMode = Schema.RequiredMode.REQUIRED)
+    protected AlertCriticality criticality;
+
     // ==========================
     // Getters & Setters
 
@@ -134,5 +135,13 @@ public class AlertTemplateUpsertBody {
 
     public long getDurationMs() { return durationMs; }
     public void setDurationMs(long durationMs) { this.durationMs = durationMs; }
+
+    public AlertCriticality getCriticality() {
+        return criticality;
+    }
+
+    public void setCriticality(AlertCriticality criticality) {
+        this.criticality = criticality;
+    }
 }
 

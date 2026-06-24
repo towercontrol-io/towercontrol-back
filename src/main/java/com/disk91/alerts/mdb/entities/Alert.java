@@ -41,7 +41,9 @@ import java.util.List;
         @CompoundIndex(name = "state_idx", def = "{'state': 1}"),
         @CompoundIndex(name = "requestMs_idx", def = "{'requestMs': 1}"),
         // Compound index used by the expiration check on RUNNING alerts
-        @CompoundIndex(name = "state_expirationMs_idx", def = "{'state': 1, 'expirationMs': 1}")
+        @CompoundIndex(name = "state_expirationMs_idx", def = "{'state': 1, 'expirationMs': 1}"),
+        // Index on sent array user login + date for user history queries
+        @CompoundIndex(name = "sent_userLogin_requestMs_idx", def = "{'sent.userLogin': 1, 'requestMs': -1}")
 })
 public class Alert {
 

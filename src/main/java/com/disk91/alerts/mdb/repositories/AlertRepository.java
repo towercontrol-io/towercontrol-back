@@ -21,6 +21,8 @@ package com.disk91.alerts.mdb.repositories;
 
 import com.disk91.alerts.mdb.entities.Alert;
 import com.disk91.alerts.mdb.entities.sub.AlertState;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -80,4 +82,25 @@ public interface AlertRepository extends MongoRepository<Alert, String> {
      * @param cutoffMs  - any alert with requestMs before this value is deleted
      */
     void deleteByStateAndRequestMsBefore(AlertState state, long cutoffMs);
+
+    /**
+     * Return a paginated list of alerts where the given user appears in the sent array.
+     * Results are ordered by requestMs descending via the Pageable sort.
+     * @param userLogin - user login to match in sent.userLogin
+     * @param pageable  - pagination and sort descriptor
+     * @return page of matching Alert instances
+     */
+    @Query("{ 'sent.userLogin': ?0 }")
+    Page<Alert> findByUserInSent(String userLogin, Pageable pageable);
+
+    /**
+     * Return a paginated list of alerts where the given user appears in the sent array,
+     * filtered to a specific set of alertTemplateIds.
+     * @param userLogin   - user login to match in sent.userLogin
+     * @param templateIds - list of alertTemplateId values to filter on
+     * @param pageable    - pagination and sort descriptor
+     * @return page of matching Alert instances
+     */
+    @Query("{ 'sent.userLogin': ?0, 'alertTemplateId': { $in: ?1 } }")
+    Page<Alert> findByUserInSentAndTemplateIdIn(String userLogin, List<String> templateIds, Pageable pageable);
 }

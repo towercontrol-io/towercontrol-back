@@ -47,6 +47,14 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
+import com.disk91.alerts.api.interfaces.AlertUserHistoryListResponseItf;
+import com.disk91.alerts.api.interfaces.AlertUserHistoryResponseItf;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -596,6 +604,7 @@ public class AlertService {
             case ENDING_QUEUE -> {
                 log.debug("[alerts] Alert {} close-notification processed, moving to ENDED", alert.getAlertId());
                 alert.setState(AlertState.ENDED);
+                alert.setExpirationMs(now);
                 alertRepository.save(alert);
             }
 
@@ -803,6 +812,49 @@ public class AlertService {
                 new String[]{alertId, alert.getAlertTemplateId(), String.join(", ", alert.getTargetedGroups())}
         );
         enqueue(alert);
+    }
+
+    /**
+     * Return a paginated list of alerts for the requesting user, ordered newest first.
+     * Only the user's own delivery record is included in each entry; no cross-user data is exposed.
+     * @param userLogin   - requesting user login
+     * @param page        - 0-based page number
+     * @param size        - page size, 1–100
+     * @param templateIds - optional list of alertTemplateId values to filter on; null or empty means no filter
+     * @return paginated history response
+     * @throws ITParseException when page or size are out of range
+     */
+    public AlertUserHistoryListResponseItf getUserAlertHistory(
+            String userLogin,
+            int page,
+            int size,
+            List<String> templateIds
+    ) throws ITParseException {
+        if (size < 1 || size > 100) throw new ITParseException("alerts-history-invalid-page-size");
+        if (page < 0) throw new ITParseException("alerts-history-invalid-page");
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "requestMs"));
+
+        Page<Alert> alertPage;
+        if (templateIds != null && !templateIds.isEmpty()) {
+            alertPage = alertRepository.findByUserInSentAndTemplateIdIn(userLogin, templateIds, pageable);
+        } else {
+            alertPage = alertRepository.findByUserInSent(userLogin, pageable);
+        }
+
+        List<AlertUserHistoryResponseItf> items = new ArrayList<>();
+        for (Alert alert : alertPage.getContent()) {
+            AlertUserHistoryResponseItf r = new AlertUserHistoryResponseItf();
+            r.buildFrom(alert, userLogin);
+            items.add(r);
+        }
+
+        AlertUserHistoryListResponseItf response = new AlertUserHistoryListResponseItf();
+        response.setTotal(alertPage.getTotalElements());
+        response.setPage(page);
+        response.setSize(size);
+        response.setAlerts(items);
+        return response;
     }
 
     // ================================================================================================================

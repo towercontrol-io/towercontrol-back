@@ -103,4 +103,13 @@ public interface AlertRepository extends MongoRepository<Alert, String> {
      */
     @Query("{ 'sent.userLogin': ?0, 'alertTemplateId': { $in: ?1 } }")
     Page<Alert> findByUserInSentAndTemplateIdIn(String userLogin, List<String> templateIds, Pageable pageable);
+
+    /**
+     * Return a paginated list of all alerts filtered to a specific set of alertTemplateIds.
+     * Used by admin queries where no user filter is applied.
+     * @param templateIds - list of alertTemplateId values to filter on
+     * @param pageable    - pagination and sort descriptor
+     * @return page of matching Alert instances
+     */
+    Page<Alert> findByAlertTemplateIdIn(List<String> templateIds, Pageable pageable);
 }

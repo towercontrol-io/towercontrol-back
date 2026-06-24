@@ -65,6 +65,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.disk91.users.services.UsersRolesCache.StandardRoles.ROLE_DEVICE_ALERTING;
+import static com.disk91.users.services.UsersRolesCache.StandardRoles.ROLE_GOD_ADMIN;
 
 @Service
 public class AlertService {
@@ -815,37 +816,54 @@ public class AlertService {
     }
 
     /**
-     * Return a paginated list of alerts for the requesting user, ordered newest first.
-     * Only the user's own delivery record is included in each entry; no cross-user data is exposed.
+     * Return a paginated list of alerts for the requesting user, ordered by requestMs descending.
+     * The role is resolved internally: ROLE_GOD_ADMIN users receive all alerts (unfiltered by user)
+     * with full sent list and targetedGroups; regular users receive only alerts they appear in,
+     * with their own delivery entry and empty targetedGroups.
      * @param userLogin   - requesting user login
      * @param page        - 0-based page number
      * @param size        - page size, 1–100
      * @param templateIds - optional list of alertTemplateId values to filter on; null or empty means no filter
      * @return paginated history response
-     * @throws ITParseException when page or size are out of range
+     * @throws ITParseException  when page or size are out of range
+     * @throws ITNotFoundException when the requesting user cannot be found
      */
     public AlertUserHistoryListResponseItf getUserAlertHistory(
             String userLogin,
             int page,
             int size,
             List<String> templateIds
-    ) throws ITParseException {
+    ) throws ITParseException, ITNotFoundException {
         if (size < 1 || size > 100) throw new ITParseException("alerts-history-invalid-page-size");
         if (page < 0) throw new ITParseException("alerts-history-invalid-page");
+
+        // Resolve role: load the user and check for GOD_ADMIN
+        User requester = userCommon.getUser(userLogin);
+        boolean isAdmin = requester.isInRole(ROLE_GOD_ADMIN);
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "requestMs"));
 
         Page<Alert> alertPage;
-        if (templateIds != null && !templateIds.isEmpty()) {
-            alertPage = alertRepository.findByUserInSentAndTemplateIdIn(userLogin, templateIds, pageable);
+        if (isAdmin) {
+            // Admin sees all alerts, optionally filtered by template
+            if (templateIds != null && !templateIds.isEmpty()) {
+                alertPage = alertRepository.findByAlertTemplateIdIn(templateIds, pageable);
+            } else {
+                alertPage = alertRepository.findAll(pageable);
+            }
         } else {
-            alertPage = alertRepository.findByUserInSent(userLogin, pageable);
+            // Regular user sees only alerts where they appear in the sent array
+            if (templateIds != null && !templateIds.isEmpty()) {
+                alertPage = alertRepository.findByUserInSentAndTemplateIdIn(userLogin, templateIds, pageable);
+            } else {
+                alertPage = alertRepository.findByUserInSent(userLogin, pageable);
+            }
         }
 
         List<AlertUserHistoryResponseItf> items = new ArrayList<>();
         for (Alert alert : alertPage.getContent()) {
             AlertUserHistoryResponseItf r = new AlertUserHistoryResponseItf();
-            r.buildFrom(alert, userLogin);
+            r.buildFrom(alert, userLogin, isAdmin);
             items.add(r);
         }
 

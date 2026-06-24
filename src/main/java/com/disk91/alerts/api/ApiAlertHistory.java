@@ -22,6 +22,7 @@ package com.disk91.alerts.api;
 import com.disk91.alerts.api.interfaces.AlertUserHistoryListResponseItf;
 import com.disk91.alerts.services.AlertService;
 import com.disk91.common.api.interfaces.ActionResult;
+import com.disk91.common.tools.exceptions.ITNotFoundException;
 import com.disk91.common.tools.exceptions.ITParseException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -60,13 +61,12 @@ public class ApiAlertHistory {
             summary = "Get the authenticated user's personal alert history",
             description = "Returns a paginated list of alerts where the authenticated user has a delivery record. " +
                     "Results are ordered by event time descending (newest first). " +
-                    "Sensitive fields (id, publicAccessId, targetedGroups) are excluded. " +
-                    "The sent field contains only the requesting user's own delivery record. " +
-                    "Page size is capped at 100. Requires full authentication.",
+                    "ROLE_GOD_ADMIN receives the full sent list and targetedGroups. " +
+                    "Regular users receive only their own delivery entry and empty targetedGroups. " +
+                    "id and publicAccessId are never exposed. Page size is capped at 100. Requires full authentication.",
             responses = {
-                    @ApiResponse(responseCode = "200", description = "Paginated alert history",
+                    @ApiResponse(responseCode = "200", description = "Paginated alert history (empty list when no results)",
                             content = @Content(schema = @Schema(implementation = AlertUserHistoryListResponseItf.class))),
-                    @ApiResponse(responseCode = "204", description = "No alerts found"),
                     @ApiResponse(responseCode = "400", description = "Invalid page or size parameter",
                             content = @Content(schema = @Schema(implementation = ActionResult.class))),
                     @ApiResponse(responseCode = "403", description = "Forbidden",
@@ -90,10 +90,9 @@ public class ApiAlertHistory {
             AlertUserHistoryListResponseItf result = alertService.getUserAlertHistory(
                     userLogin, page, size, templateId
             );
-            if (result.getTotal() == 0) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
             return new ResponseEntity<>(result, HttpStatus.OK);
+        } catch (ITNotFoundException x) {
+            return new ResponseEntity<>(ActionResult.BADREQUEST(x.getMessage()), HttpStatus.BAD_REQUEST);
         } catch (ITParseException x) {
             return new ResponseEntity<>(ActionResult.BADREQUEST(x.getMessage()), HttpStatus.BAD_REQUEST);
         }

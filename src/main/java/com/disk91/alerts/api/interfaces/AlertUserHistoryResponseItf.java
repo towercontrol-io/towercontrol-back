@@ -25,6 +25,9 @@ import com.disk91.alerts.mdb.entities.sub.AlertState;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * AlertUserHistoryResponseItf - One alert entry in the user's personal alert history.
  * Sensitive fields (id, publicAccessId, targetedGroups) are excluded.
@@ -69,19 +72,25 @@ public class AlertUserHistoryResponseItf {
             example = "", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     protected String error;
 
-    @Schema(description = "Delivery record for the requesting user only",
+    @Schema(description = "Targeted group identifiers; populated for ROLE_GOD_ADMIN only, empty list for regular users",
+            requiredMode = Schema.RequiredMode.REQUIRED)
+    protected List<String> targetedGroups;
+
+    @Schema(description = "Delivery records; all users for ROLE_GOD_ADMIN, only the requesting user for regular users",
             requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-    protected AlertSentEntry sent;
+    protected List<AlertSentEntry> sent;
 
     // ==========================
     // Builder
 
     /**
-     * Populate this response from an Alert entity, keeping only the requesting user's sent entry.
+     * Populate this response from an Alert entity.
+     * Admin receives full sent list and targetedGroups; regular user receives only their own sent entry and empty targetedGroups.
      * @param alert - source entity
-     * @param userLogin - requesting user login used to filter the sent array
+     * @param userLogin - requesting user login used to filter the sent array when not admin
+     * @param isAdmin - when true, expose full sent list and targetedGroups
      */
-    public void buildFrom(Alert alert, String userLogin) {
+    public void buildFrom(Alert alert, String userLogin, boolean isAdmin) {
         this.alertId = alert.getAlertId();
         this.alertDefRef = alert.getAlertDefRef();
         this.alertTemplateId = alert.getAlertTemplateId();
@@ -92,12 +101,20 @@ public class AlertUserHistoryResponseItf {
         this.expirationMs = alert.getExpirationMs();
         this.error = alert.getError();
 
-        // Keep only this user's delivery record; discard all other users' entries
-        if (alert.getSent() != null) {
-            for (AlertSentEntry entry : alert.getSent()) {
-                if (userLogin.equals(entry.getUserLogin())) {
-                    this.sent = entry;
-                    break;
+        if (isAdmin) {
+            // Admin sees the full delivery list and the targeted groups
+            this.targetedGroups = alert.getTargetedGroups() != null ? alert.getTargetedGroups() : new ArrayList<>();
+            this.sent = alert.getSent() != null ? alert.getSent() : new ArrayList<>();
+        } else {
+            // Regular user sees only their own delivery entry and no group information
+            this.targetedGroups = new ArrayList<>();
+            this.sent = new ArrayList<>();
+            if (alert.getSent() != null) {
+                for (AlertSentEntry entry : alert.getSent()) {
+                    if (userLogin.equals(entry.getUserLogin())) {
+                        this.sent.add(entry);
+                        break;
+                    }
                 }
             }
         }
@@ -133,6 +150,9 @@ public class AlertUserHistoryResponseItf {
     public String getError() { return error; }
     public void setError(String error) { this.error = error; }
 
-    public AlertSentEntry getSent() { return sent; }
-    public void setSent(AlertSentEntry sent) { this.sent = sent; }
+    public List<String> getTargetedGroups() { return targetedGroups; }
+    public void setTargetedGroups(List<String> targetedGroups) { this.targetedGroups = targetedGroups; }
+
+    public List<AlertSentEntry> getSent() { return sent; }
+    public void setSent(List<AlertSentEntry> sent) { this.sent = sent; }
 }

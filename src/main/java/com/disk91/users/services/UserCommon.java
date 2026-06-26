@@ -371,6 +371,15 @@ public class UserCommon {
         // Find the user list associated to the list of groups
         List<User> users = userRepository.findByGroupsMembership(groups);
 
+        // check if we have some virtual group in the list to add the users
+        for ( String g : groups ) {
+            try {
+                if (Group.isVirtualGroup(g)) {
+                    users.add(userCache.getUser(Group.getVirtualGroupOwner(g)));
+                }
+            } catch (ITNotFoundException ignored) {}
+        }
+
         // Check the rights
         for ( User u : users ) {
             if ( ! u.isActive() || u.isLocked() || u.isApiAccount() ) continue;

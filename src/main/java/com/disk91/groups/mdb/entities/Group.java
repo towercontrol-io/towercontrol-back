@@ -120,6 +120,10 @@ public class Group implements CloneableObject<Group> {
         return groupId.startsWith("user_");
     }
 
+    public static String getVirtualGroupOwner(String groupId) {
+        return groupId.substring(5);
+    }
+
     public static String getVirutalGroup(String userLogin) {
         return "user_"+userLogin;
     }

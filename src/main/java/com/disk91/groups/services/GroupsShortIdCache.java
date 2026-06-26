@@ -189,6 +189,7 @@ public class GroupsShortIdCache {
                 g.setCreationDateMs(u.getRegistrationDate());
                 g.setCreationBy(u.getLogin());
                 g.setModificationDateMs(u.getRegistrationDate());
+                g.setAlertGroup(true);
                 return new GroupsList(g,groupsConfig.getGroupsMaxDepth());
             } catch (ITNotFoundException x) {
                 // Group does not exist

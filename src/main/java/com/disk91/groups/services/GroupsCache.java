@@ -169,6 +169,7 @@ public class GroupsCache {
                 g.setModificationDateMs(u.getRegistrationDate());
                 g.setAttributes(new ArrayList<>());
                 g.setReferringGroups(new ArrayList<>());
+                g.setAlertGroup(true);
                 return g;
             } catch (ITNotFoundException x) {
                 // Group does not exist

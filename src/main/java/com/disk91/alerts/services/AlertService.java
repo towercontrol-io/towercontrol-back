@@ -399,6 +399,7 @@ public class AlertService {
             HashMap<String, User> targets = new HashMap<>();
             HashMap<String, Group> groups = new HashMap<>();
             for (String group : alert.getTargetedGroups()) {
+                log.debug("[alerts] targeted group {} found", group);
                 try {
                     Group g = groupsServices.getGroupByShortId(group);
                     if (g.isAlertGroup()) {
@@ -414,8 +415,11 @@ public class AlertService {
                             targets.put(user.getLogin(), user);
                             groups.put(user.getLogin(), g);
                         }
+                    } else {
+                        log.debug("[alerts] group skipped {} : not an alert group", group);
                     }
                 } catch (ITNotFoundException ignored) {
+                    log.debug("[alerts] group {} not found", group);
                 }
             }
 
@@ -428,6 +432,7 @@ public class AlertService {
 
             // for each
             for (User user : targets.values()) {
+                log.debug("[alerts] targeted user {}", user.getLogin());
 
                 // Get the locale to be used
                 AlertLocaleMessage bestLocale = this.getRightAlertLocaleMessage(
@@ -437,7 +442,7 @@ public class AlertService {
                 if (bestLocale == null) {
                     log.warn("[alerts] No locale message for alert {} user {}, skipping", alert.getAlertId(), user.getLogin());
                     continue;
-                }
+                } else log.debug("[alerts] Selected locale {} for user  {} found", bestLocale.getLocale(), user.getLogin());
 
                 // Get the preferred Medium
                 AlertMedium selectedMedium = getRightMedium(user, bestLocale, template);
@@ -445,7 +450,7 @@ public class AlertService {
                 if (selectedMedium == null) {
                     log.warn("[alerts] No compatible medium for alert {} user {}, skipping", alert.getAlertId(), user.getLogin());
                     continue;
-                }
+                } else log.debug("[alerts] Selected medium {} for user  {} found", selectedMedium, user.getLogin());
 
                 if (user.isPersonalDataAccessible()) {
 
@@ -541,6 +546,7 @@ public class AlertService {
                         }
                     }
                 } else {
+                    log.debug("[alerts] User {} presonal data not accesible",  user.getLogin());
                     alert.upsertSent(user.getLogin(), selectedMedium, false, false, "alerts-user-no-personal-data");
                     alertRepository.save(alert);
                 }

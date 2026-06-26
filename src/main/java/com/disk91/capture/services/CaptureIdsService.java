@@ -86,11 +86,11 @@ public class CaptureIdsService {
     // FRONT-END API / Insert New IDs
     // =====================================================================================================
 
-    public String encrypteField(String value) {
+    public String encrypteField(String value) throws ITParseException{
         return "enc_"+ EncryptionHelper.encrypt(value, Capture.__iv, commonConfig.getEncryptionKey());
     }
 
-    public String decrypteField(String value) {
+    public String decrypteField(String value) throws ITParseException {
         if ( value != null && value.startsWith("enc_") ) {
             return EncryptionHelper.decrypt(value.substring(4), Capture.__iv, commonConfig.getEncryptionKey());
         } else return value;
@@ -222,8 +222,15 @@ public class CaptureIdsService {
                                 if ( mf != null ) {
                                     if ( mf.isValueValid( values[i] ) ) {
                                         if ( mf.isEncrypted() ) {
-                                            String encryptedValue = encrypteField( values[i] );
-                                            values[i] = encryptedValue;
+                                            try {
+                                                if (values[i] == null) values[i] = "";
+                                                String encryptedValue = encrypteField(values[i]);
+                                                values[i] = encryptedValue;
+                                            } catch ( ITParseException x) {
+                                                if ( ret.getErrorFirstLine() == 0 ) { ret.setStatus(ENCRYPTION_FAILURE); ret.setErrorFirstLine(cLine); }
+                                                errorCount++;
+                                                break;
+                                            }
                                         }
                                         _id.getCustomConfig().add(CustomField.of(mf.getName(), values[i]));
 

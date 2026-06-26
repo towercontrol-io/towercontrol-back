@@ -20,6 +20,7 @@
 package com.disk91.common.tools;
 
 
+import com.disk91.common.tools.exceptions.ITParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,24 +55,21 @@ public class EncryptionHelper {
      * @param encKey
      * @return
      */
-    public static String encrypt(String tobeEncrypted, String iv, String encKey ) {
+    public static String encrypt(String tobeEncrypted, String iv, String encKey ) throws ITParseException {
+
+        if ( iv == null || encKey == null || tobeEncrypted == null ) throw new ITParseException("common-encryption-with-null-paramaters");
 
         byte [] byteToEncrytp;
-        try {
-            byte [] byteToEncrytpLen = tobeEncrypted.getBytes("UTF-8");
-            int pad = (16 - (byteToEncrytpLen.length & 0x0F) );
-            if ( pad == 16 ) pad = 0;
-            pad += byteToEncrytpLen.length;
-            byteToEncrytp = new byte[pad];
-            for ( int i = 0 ; i < byteToEncrytpLen.length ; i++ ) {
-                byteToEncrytp[i] = byteToEncrytpLen[i];
-            }
-            for ( int i = byteToEncrytpLen.length ; i < pad ; i ++ ) {
-                byteToEncrytp[i] = 0;
-            }
-        } catch ( UnsupportedEncodingException e ) {
-            log.error(e.getLocalizedMessage());
-            return null;
+        byte [] byteToEncrytpLen = tobeEncrypted.getBytes(StandardCharsets.UTF_8);
+        int pad = (16 - (byteToEncrytpLen.length & 0x0F) );
+        if ( pad == 16 ) pad = 0;
+        pad += byteToEncrytpLen.length;
+        byteToEncrytp = new byte[pad];
+        for ( int i = 0 ; i < byteToEncrytpLen.length ; i++ ) {
+            byteToEncrytp[i] = byteToEncrytpLen[i];
+        }
+        for ( int i = byteToEncrytpLen.length ; i < pad ; i ++ ) {
+            byteToEncrytp[i] = 0;
         }
 
         byte[] _iv = HexCodingTools.getBytesFromInt(HexCodingTools.getIntArrayFromHexString(iv));
@@ -104,9 +102,9 @@ public class EncryptionHelper {
      * @param encKey
      * @return
      */
-    public static String decrypt(String tobeDecrypted, String iv, String encKey) {
+    public static String decrypt(String tobeDecrypted, String iv, String encKey) throws ITParseException {
 
-        if ( iv == null || encKey == null ) return null;
+        if ( iv == null || encKey == null || tobeDecrypted == null ) throw new ITParseException("common-decryption-with-null-paramaters");
 
         byte[] _iv = HexCodingTools.getBytesFromInt(HexCodingTools.getIntArrayFromHexString(iv));
         try {

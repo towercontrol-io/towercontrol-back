@@ -320,7 +320,11 @@ public class LoraWanHeliumChirpstackV4Driver extends AbstractProtocol {
                         locs.add( new Location(loc.getLatitude(), loc.getLongitude(), 300, ri.getRssi()) );
                     }
                     if (encryptionRequired && h3 != null) {
-                        loc.setHexagonId("$"+EncryptionHelper.encrypt(h3.latLngToCellAddress(loc.getLatitude(), loc.getLongitude(), 15), IV, commonConfig.getEncryptionKey()));
+                        try {
+                            loc.setHexagonId("$" + EncryptionHelper.encrypt(h3.latLngToCellAddress(loc.getLatitude(), loc.getLongitude(), 15), IV, commonConfig.getEncryptionKey()));
+                        } catch (ITParseException x) {
+                            loc.setHexagonId(null);
+                        }
                         loc.setLatitude(0.0);
                         loc.setLongitude(0.0);
                         loc.setEncrypted(true);

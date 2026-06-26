@@ -26,6 +26,7 @@ package com.disk91.common.services;
 
 import com.disk91.common.config.CommonConfig;
 import com.disk91.common.tools.EncryptionHelper;
+import com.disk91.common.tools.exceptions.ITParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,12 +47,12 @@ public class EncryptionService {
      * @param tobeEncrypted
      * @return
      */
-    public String encryptStringWithServerKey(String tobeEncrypted) {
+    public String encryptStringWithServerKey(String tobeEncrypted) throws ITParseException {
         return EncryptionHelper.encrypt(tobeEncrypted, __iv, commonConfig.getEncryptionKey());
     }
 
 
-    public String decryptStringWithServerKey(String tobeDecrypted) {
+    public String decryptStringWithServerKey(String tobeDecrypted) throws ITParseException {
         return EncryptionHelper.decrypt(tobeDecrypted, __iv, commonConfig.getEncryptionKey());
     }
 

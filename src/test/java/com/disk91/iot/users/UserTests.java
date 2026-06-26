@@ -150,6 +150,9 @@ public class UserTests {
             user.setEncEmail("john.doe@foo.bar");
             assertNotEquals("john.doe@foo.bar", user.getEmail());
             assertNotNull(user.getEmail());
+            user.setEncPushAddress("12345");
+            assertNotEquals("12345", user.getPushAddress());
+            assertNotNull(user.getPushAddress());
             user.setLastLogin(regDate);
             user.setCountLogin(0);
             user.setRegistrationDate(regDate+10);
@@ -231,6 +234,7 @@ public class UserTests {
         assertNotEquals("john.doe@foo.bar", user.getLogin());
         assertNotEquals("john.doe@foo.bar", user.getEmail());
         assertNotEquals("1.1.1.1", user.getRegistrationIP());
+        assertNotEquals("12345", user.getPushAddress());
         assertEquals(1, user.getCustomFields().size());
         assertEquals("mobile", user.getCustomFields().getFirst().getName());
         assertNotEquals("0203040507", user.getCustomFields().getFirst().getValue());
@@ -267,11 +271,13 @@ public class UserTests {
         String encLastName = user.getBillingProfile().getLastName();
         String encVat = user.getBillingProfile().getVatNumber();
         String encLogin = user.getLogin();
+        String encPushAddress = user.getPushAddress();
 
         log.info("[users][test] Rekeying the user");
         assertDoesNotThrow(() -> {
             user.changePassword("john.doe@foo.bar","newTest", false);
             assertEquals(encLogin, user.getLogin());
+            assertNotEquals(encPushAddress, user.getPushAddress());
             assertNotEquals(user.getBillingProfile().getVatNumber(), encVat);
             assertNotEquals(user.getProfile().getFirstName(), encFirstName);
             assertNotEquals(user.getEmail(), encEmail);
@@ -283,6 +289,7 @@ public class UserTests {
             log.info("[users][test]  Verify rekeying");
             assertEquals("john.doe@foo.bar", user.getEncEmail());
             assertEquals("1.1.1.1", user.getEncRegistrationIP());
+            assertEquals("12345", user.getEncPushAddress());
             assertEquals(1, user.getVersion());
             assertEquals("Mr", user.getEncProfileGender());
             assertEquals("John", user.getEncProfileFirstName());

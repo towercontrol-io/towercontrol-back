@@ -11,5 +11,6 @@ public enum InsertIDsStatus {
     MISSING_DATA,           // Fields or Values missing
     MALFORMED_DATA,         // Format is not correct
     NOT_UNIQUE,             // One of the IDs already exists in DB
+    ENCRYPTION_FAILURE,     // Failed to encrypt data (technical issue)
     UNKNOWN_ERROR
 }

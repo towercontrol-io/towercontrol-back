@@ -82,11 +82,11 @@ public class CaptureEndpointService {
     // =====================================================================================================
 
 
-    public String encrypteField(String value) {
+    public String encrypteField(String value) throws ITParseException {
         return "enc_"+ EncryptionHelper.encrypt(value, Capture.__iv, commonConfig.getEncryptionKey());
     }
 
-    public String decrypteField(String value) {
+    public String decrypteField(String value) throws ITParseException {
         if ( value != null && value.startsWith("enc_") ) {
             return EncryptionHelper.decrypt(value.substring(4), Capture.__iv, commonConfig.getEncryptionKey());
         } else return value;

@@ -406,6 +406,7 @@ public class SigfoxV2Driver extends AbstractProtocol {
             String user = endpoint.getOneField("protocol-sigfox-api-user");
             String pass = captureEndpointService.decrypteField(endpoint.getOneField("protocol-sigfox-api-password"));
 
+
             DeviceWrapper deviceWrapper = new DeviceWrapper(api, user, pass);
             String sigfoxId = _id.getOneField("sigfox-id");
 
@@ -505,8 +506,8 @@ public class SigfoxV2Driver extends AbstractProtocol {
                     return null;
                 }
             }
-        } catch ( ITNotFoundException x) {
-            log.warn("[capture][sigfoxv2] Missing mandatory field for endpoint {}, stopping processing", endpoint.getRef());
+        } catch ( ITNotFoundException | ITParseException x) {
+            log.warn("[capture][sigfoxv2] Missing mandatory field for endpoint {}, stopping processing ({})", endpoint.getRef(),x.getMessage());
         }
         throw new ITOverQuotaException("capture-driver-not-implemented");
     }

@@ -25,6 +25,7 @@ import com.disk91.common.config.ModuleCatalog;
 import com.disk91.common.tools.EncryptionHelper;
 import com.disk91.common.tools.Now;
 import com.disk91.common.tools.exceptions.ITOverQuotaException;
+import com.disk91.common.tools.exceptions.ITParseException;
 import com.disk91.integration.api.interfaces.IntegrationQuery;
 import com.disk91.integration.services.IntegrationService;
 import org.slf4j.Logger;
@@ -70,9 +71,17 @@ public class AuditIntegration {
         if ( params != null ) {
             for (String param : params) {
                 if ( param != null ) {
-                    a.getParams().add(EncryptionHelper.encrypt(param, IV, commonConfig.getEncryptionKey()));
+                    try {
+                        a.getParams().add(EncryptionHelper.encrypt(param, IV, commonConfig.getEncryptionKey()));
+                    } catch (ITParseException x) {
+                        log.error("[audit] Encryption failure (1) - null parameter");
+                    }
                 } else {
-                    a.getParams().add(EncryptionHelper.encrypt("Unknown", IV, commonConfig.getEncryptionKey()));
+                    try {
+                        a.getParams().add(EncryptionHelper.encrypt("Unknown", IV, commonConfig.getEncryptionKey()));
+                    } catch (ITParseException x) {
+                        log.error("[audit] Encryption failure (2) - null parameter");
+                    }
                 }
             }
         }
@@ -93,7 +102,11 @@ public class AuditIntegration {
         ArrayList<String> _params = new ArrayList<>(a.getParams());
         if ( auditConfig.isAuditLogsDecryptionEnabled() ) {
             for ( int i = 0; i < _params.size(); i++ ) {
-                _params.set(i, EncryptionHelper.decrypt(_params.get(i), IV, commonConfig.getEncryptionKey()));
+                try {
+                    _params.set(i, EncryptionHelper.decrypt(_params.get(i), IV, commonConfig.getEncryptionKey()));
+                } catch (ITParseException x) {
+                    log.error("[audit] Encryption failure - null parameter");
+                }
             }
         }
         String _log = a.getLogStr();
@@ -122,8 +135,13 @@ public class AuditIntegration {
             String placeholder = "{" + i + "}";
             if (clearAccess) {
                 // Decrypt the parameter using the shared IV and application encryption key
-                String decrypted = EncryptionHelper.decrypt(params.get(i), IV, commonConfig.getEncryptionKey());
-                resolved = resolved.replace(placeholder, decrypted != null ? decrypted : "???");
+                try {
+                    String decrypted = EncryptionHelper.decrypt(params.get(i), IV, commonConfig.getEncryptionKey());
+                    resolved = resolved.replace(placeholder, decrypted != null ? decrypted : "???");
+                } catch (ITParseException x) {
+                    log.error("[audit] Encryption failure (3) - null parameter");
+                    resolved = "???";
+                }
             } else {
                 // Obfuscate sensitive parameters for users without clear access
                 resolved = resolved.replace(placeholder, "***");

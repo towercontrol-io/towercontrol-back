@@ -123,7 +123,7 @@ public class DeviceCache {
         log.info("[devices] DevicesCache stopped");
     }
 
-    @Scheduled(fixedRateString = "${devices.cache.log.period:PT24H}", initialDelay = 3600_000)
+    @Scheduled(fixedRateString = "${devices.cache.log.period:PT24H}", initialDelay = 3604_000)
     protected void devicesCacheStatus() {
         try {
             Duration duration = Duration.parse(deviceConfig.getDevicesCacheLogPeriod());

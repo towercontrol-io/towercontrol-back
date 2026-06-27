@@ -120,7 +120,7 @@ public class WiFiMacGeolocationService {
         log.info("[common] WiFiMacGeolocationService stopped");
     }
 
-    @Scheduled(fixedRateString = "${common.wifimac.cache.logperiod}", initialDelay = 3600_000)
+    @Scheduled(fixedRateString = "${common.wifimac.cache.logperiod}", initialDelay = 3603_000)
     protected void wifiMacLocationCacheStatus() {
         try {
             Duration duration = Duration.parse(commonConfig.getWifiMacCacheLogPeriod());

@@ -128,7 +128,7 @@ public class CaptureEndpointCache {
         log.info("[capture] CaptureEndpointCache stopped");
     }
 
-    @Scheduled(fixedRateString = "${capture.endpoint.cache.log.period:PT24H}", initialDelay = 3600_000)
+    @Scheduled(fixedRateString = "${capture.endpoint.cache.log.period:PT24H}", initialDelay = 3603_000)
     protected void cacheStatus() {
         try {
             Duration duration = Duration.parse(config.getCaptureEndpointCacheLogPeriod());

@@ -127,7 +127,7 @@ public class GroupsCache {
         log.info("[groups] GroupCache stopped");
     }
 
-    @Scheduled(fixedRateString = "${groups.cache.log.period:PT24H}", initialDelay = 3600_000)
+    @Scheduled(fixedRateString = "${groups.cache.log.period:PT24H}", initialDelay = 3607_000)
     protected void groupCacheStatus() {
         try {
             Duration duration = Duration.parse(groupsConfig.getGroupsCacheLogPeriod());

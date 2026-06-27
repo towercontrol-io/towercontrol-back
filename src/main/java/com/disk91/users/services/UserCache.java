@@ -123,7 +123,7 @@ public class UserCache {
         log.info("[users] UserCache stopped");
     }
 
-    @Scheduled(fixedRateString = "${users.cache.log.period:PT24H}", initialDelay = 3600_000)
+    @Scheduled(fixedRateString = "${users.cache.log.period:PT24H}", initialDelay = 3608_000)
     protected void userCacheStatus() {
         try {
             Duration duration = Duration.parse(usersConfig.getUsersCacheLogPeriod());
@@ -242,7 +242,7 @@ public class UserCache {
         log.info("[users] UserCache ApiKey stopped");
     }
 
-    @Scheduled(fixedRateString = "${users.cache.log.period:PT24H}", initialDelay = 3600_000)
+    @Scheduled(fixedRateString = "${users.cache.log.period:PT24H}", initialDelay = 3609_000)
     protected void userApiCacheStatus() {
         try {
             Duration duration = Duration.parse(usersConfig.getUsersCacheApiKeyLogPeriod());

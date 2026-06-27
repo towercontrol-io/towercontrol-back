@@ -117,7 +117,7 @@ public class AlertTemplateCache {
      * Periodically log cache statistics according to configured period.
      * Skips logging when period >= 24h or cache is disabled.
      */
-    @Scheduled(fixedRateString = "${alerts.template.cache.log.period:PT24H}", initialDelay = 3600_000)
+    @Scheduled(fixedRateString = "${alerts.template.cache.log.period:PT24H}", initialDelay = 3602_000)
     protected void alertTemplateCacheStatus() {
         try {
             Duration duration = Duration.parse(alertsConfig.getTemplateCacheLogPeriod());

@@ -123,7 +123,7 @@ public class FileCache {
      * Periodically log cache statistics according to configured period.
      * Skips logging when period >= 24 h or cache is disabled.
      */
-    @Scheduled(fixedRateString = "${files.cache.log.period:PT24H}", initialDelay = 3600_000)
+    @Scheduled(fixedRateString = "${files.cache.log.period:PT24H}", initialDelay = 3606_000)
     protected void fileCacheStatus() {
         try {
             Duration duration = Duration.parse(filesConfig.getFileCacheLogPeriod());

@@ -132,7 +132,7 @@ public class DevicesNwkCache {
         log.info("[devices] DevicesNwkCache stopped");
     }
 
-    @Scheduled(fixedRateString = "${devices.cache.log.period:PT24H}", initialDelay = 3600_000)
+    @Scheduled(fixedRateString = "${devices.cache.log.period:PT24H}", initialDelay = 3605_000)
     protected void devicesNwkCacheStatus() {
         try {
             Duration duration = Duration.parse(deviceConfig.getDevicesNwkIdCacheLogPeriod());

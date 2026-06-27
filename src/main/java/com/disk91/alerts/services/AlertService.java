@@ -826,7 +826,7 @@ public class AlertService {
     public void endAlert(String alertId) throws ITNotFoundException {
         List<Alert> activeAlerts = alertRepository.findNonEndedAlertsByAlertId(alertId, AlertState.ENDED);
         if (activeAlerts.isEmpty()) {
-            log.warn("[alerts] endAlert called on non-existing alert {}", alertId);
+            log.debug("[alerts] endAlert called on non-existing alert {}", alertId);
             throw new ITNotFoundException("alerts-not-running");
         }
 

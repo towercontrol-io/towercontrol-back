@@ -4,7 +4,7 @@ description: A skill to manage alert templates (create, update, delete, list) as
 license: GPL-3.0
 metadata:
   author: "disk91"
-  version: "1.2.0"
+  version: "1.3.0"
 ---
 
 # Alert Template Management
@@ -58,6 +58,9 @@ The form is organized into four sections rendered as distinct cards:
 - **Behavior**: select/dropdown with four options (`FIRE_FORGET`, `FIRE_TO_END`, `FIRE_UNTIL`, `SILENT`). Required.
 - **Duration**: numeric input, visible **only** when behavior is `FIRE_TO_END` or `FIRE_UNTIL`.
     - **Store and transmit duration as milliseconds** in the API (`durationMs`), but **display and accept the value in minutes** in the UI. Convert on load (`÷ 60000`) and on save (`× 60000`).
+- **Retry count** (`retryTimes`): integer input, visible **only** when behavior is `FIRE_TO_END`. Number of times the alert fires before a retry message is sent on a different medium. `0` disables the feature.
+- **Retry delay** (`retryMs`): numeric input, visible **only** when behavior is `FIRE_TO_END`. Duration after which a reminder is sent on a different medium when the alert is still active.
+    - **Store and transmit as milliseconds** in the API (`retryMs`), but **display and accept the value in minutes** in the UI. Convert on load (`÷ 60000`) and on save (`× 60000`). `0` disables the feature.
 - **Global toggle**: visible **only** for users with `ROLE_ALERTS_ADMIN`.
 - **Preferred channels** (ordered):
     - The channel order is meaningful — it expresses priority. Render as a vertical ordered list with up/down reorder controls and a remove button per item.
@@ -152,7 +155,9 @@ All endpoints require a valid Bearer token in the `Authorization` header.
   "close": [],
   "behavior": "FIRE_FORGET",
   "preferred": ["PUSH", "EMAIL"],
-  "durationMs": 0
+  "durationMs": 0,
+  "retryTimes": 0,
+  "retryMs": 0
 }
 ```
 
@@ -172,7 +177,9 @@ All endpoints require a valid Bearer token in the `Authorization` header.
   "close": [],
   "behavior": "FIRE_FORGET",
   "preferred": ["PUSH", "EMAIL"],
-  "durationMs": 0
+  "durationMs": 0,
+  "retryTimes": 0,
+  "retryMs": 0
 }
 ```
 
@@ -273,6 +280,8 @@ Parameters are injected into message templates as `{1}`, `{2}`, … matching the
 
 - `name`, `description`, `behavior`, `global`: plain strings / boolean.
 - `durationMin`: integer (minutes) in the UI only — convert to/from `durationMs` (milliseconds) at API boundary.
+- `retryTimes`: integer (count) — sent as-is to the API. Only meaningful when behavior is `FIRE_TO_END`; the server forces it to `0` otherwise.
+- `retryMin`: integer (minutes) in the UI only — convert to/from `retryMs` (milliseconds) at API boundary. Only meaningful when behavior is `FIRE_TO_END`.
 - `parameters`: ordered array of `{ type, param }`.
 - `preferred`: ordered array of `AlertMedium` strings.
 - `open` / `close`: array of `{ locale: string, mediums: { medium: string, message: string }[] }`.
@@ -317,6 +326,8 @@ When building strings that look like `{n}` inside framework template syntax (e.g
 | `behavior` | Must be one of the four `AlertBehavior` values |
 | `open` | At least one locale required |
 | each locale in `open` | Must have at least one medium with a non-empty message |
+| `retryTimes` | Must be ≥ 0; only shown/sent when behavior is `FIRE_TO_END` |
+| `retryMs` | Must be ≥ 0; only shown/sent when behavior is `FIRE_TO_END` |
 
 ---
 
@@ -338,6 +349,8 @@ When building strings that look like `{n}` inside framework template syntax (e.g
 "alerts-template-deleted": "The alert template has been deleted",
 "alerts-template-shortid-generation-failed": "Unable to generate a unique short identifier for the template, please retry",
 "alerts-template-message-title-required" : "The title is required for EMAIL, PUSH, DEFAULT medium",
+"alerts-template-retry-times-invalid"    : "The retry count must be zero or greater",
+"alerts-template-retry-ms-invalid"       : "The retry duration must be zero or greater",
 ```
 
 # Implementation reference

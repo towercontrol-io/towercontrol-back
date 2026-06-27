@@ -82,6 +82,8 @@ match the target template to avoid losing critical information.
   "alertId" : "string",            // stable alert identifier, used to identify the same alert across multiple emissions, see bellow for more details
   "alertDefRef" : "string",        // reference to the alert definition, ex : dev_DEVICEID to refer the device, source of the alert, grp_GROUPID for group alerts
   "alertTemplateId" : "string",    // reference to the alert template, this is used to link the alert to the message key and parameters
+  "fires" : "int",                 // Number of time the alert has been raised during running period, this can trigger a backup contact way
+  "retryMs" : "long",              // after this moment, a second message is sent on a different medium (not implemented)
   
   "state" : "AlarmState",          // Alarm state: indicates whether it is **active**, **terminated**. 
   "requestMs" : "long",            // Moment the alarm has been raised (event time)
@@ -193,6 +195,15 @@ For example, if a refrigerator door is left open, the alert can be sent immediat
 If the opening is detected again during the next 5 minutes, no additional alert is sent. But after 5 minutes, a 
 reminder is issued, and so on every 5 minutes.
 
+### Retry
+
+For `FIRE_TO_END` behaviors, there is a retry mechanism that has **not yet been implemented**. It will 
+allow the alarm message to be resent using a different medium. This will be triggered if the first waiting period expires, 
+and/or if the number of new **Fire** alarms exceeds the defined threshold.
+
+For example, if the priority medium is `PUSH`, then a push notification will be sent when the alarm is created. If, 
+after the timeout expires, the alarm has not been completed, a reminder will be triggered and sent through the second 
+type of medium, for example, an `SMS`.
 
 ### `RUNNING` to `ENDED` state
 

@@ -105,6 +105,14 @@ public class AlertTemplateService {
             throw new ITParseException("alerts-template-behavior-required");
         }
 
+        // Validate retry fields (only meaningful in FIRE_TO_END mode, but must be non-negative)
+        if (body.getRetryTimes() < 0) {
+            throw new ITParseException("alerts-template-retry-times-invalid");
+        }
+        if (body.getRetryMs() < 0) {
+            throw new ITParseException("alerts-template-retry-ms-invalid");
+        }
+
         // Validate that at least one open locale is provided with at least one medium message
         if (body.getOpen() == null || body.getOpen().isEmpty()) {
             throw new ITParseException("alerts-template-open-required");
@@ -158,6 +166,10 @@ public class AlertTemplateService {
             template.setPreferred(body.getPreferred() != null ? body.getPreferred() : new ArrayList<>());
             template.setDurationMs(body.getDurationMs());
             template.setCriticality(body.getCriticality());
+            // retryTimes and retryMs are only meaningful in FIRE_TO_END mode; zero them out otherwise
+            boolean isFireToEnd = body.getBehavior() == AlertBehavior.FIRE_TO_END;
+            template.setRetryTimes(isFireToEnd ? body.getRetryTimes() : 0);
+            template.setRetryMs(isFireToEnd ? body.getRetryMs() : 0);
 
             // Audit log the update event
             auditIntegration.auditLog(
@@ -182,6 +194,10 @@ public class AlertTemplateService {
             template.setPreferred(body.getPreferred() != null ? body.getPreferred() : new ArrayList<>());
             template.setDurationMs(body.getDurationMs());
             template.setCriticality(body.getCriticality());
+            // retryTimes and retryMs are only meaningful in FIRE_TO_END mode; zero them out otherwise
+            boolean isFireToEnd = body.getBehavior() == AlertBehavior.FIRE_TO_END;
+            template.setRetryTimes(isFireToEnd ? body.getRetryTimes() : 0);
+            template.setRetryMs(isFireToEnd ? body.getRetryMs() : 0);
 
             // Generate a unique shortId, retry up to 10 times in case of collision
             String shortId = null;

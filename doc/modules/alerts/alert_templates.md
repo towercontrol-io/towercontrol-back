@@ -55,7 +55,9 @@ attribute that contains the necessary information.
   ],
   "behavior" : "AlertBehavior",   // Indicate the default behavior for the alert, namely whether it is one-shot, auto-rearming with a delay, or waiting for cancellation. 
   "preferred" : ["AlertMedium"],  // Preferred medium, in execution order when user have multiple medium enabled
-  "durationMs" : "long"           // Alarm duration, the alarm is automatically closed after this duration (mode FIRE_TO_END and FIRE_UNTIL)
+  "durationMs" : "long",          // Alarm duration, the alarm is automatically closed after this duration (mode FIRE_TO_END and FIRE_UNTIL)
+  "retryTimes" : "int",           // After a number of fire, a second message is sent on a different medium (not implemented) (mode FIRE_TO_END) (disabled on 0)
+  "retryMs" : "long"              // Duration for the retry period in Ms, after this duration a reminder will be sent on a different medium (mode FIRE_TO_END) (disabled on 0)
 }
 ```
 

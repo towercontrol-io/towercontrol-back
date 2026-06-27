@@ -88,6 +88,11 @@ public class AlertTemplate implements CloneableObject<AlertTemplate> {
     // Criticality level
     protected AlertCriticality criticality;
 
+    // After a number of fire, a second message is sent on a different medium (not implemented) (mode FIRE_TO_END) (0 disable)
+    protected int retryTimes;
+
+    // Duration for the retry period in Ms, after this duration a reminder will be sent on a different medium (mode FIRE_TO_END) (0 disable)
+    protected long retryMs;
 
     // ========================================
 
@@ -118,6 +123,8 @@ public class AlertTemplate implements CloneableObject<AlertTemplate> {
         t.setPreferred(new ArrayList<>());
         t.setDurationMs(0);
         t.setCriticality(AlertCriticality.DEFAULT);
+        t.setRetryTimes(0);
+        t.setRetryMs(0);
         return t;
     }
 
@@ -137,6 +144,8 @@ public class AlertTemplate implements CloneableObject<AlertTemplate> {
         u.setOwner(owner);
         u.setGlobal(global);
         u.setCriticality(criticality);
+        u.setRetryMs(retryMs);
+        u.setRetryTimes(retryTimes);
 
         // Deep copy of ordered parameter list
         u.setParameters(new ArrayList<>());
@@ -287,6 +296,22 @@ public class AlertTemplate implements CloneableObject<AlertTemplate> {
 
     public void setCriticality(AlertCriticality criticality) {
         this.criticality = criticality;
+    }
+
+    public int getRetryTimes() {
+        return retryTimes;
+    }
+
+    public void setRetryTimes(int retryTimes) {
+        this.retryTimes = retryTimes;
+    }
+
+    public long getRetryMs() {
+        return retryMs;
+    }
+
+    public void setRetryMs(long retryMs) {
+        this.retryMs = retryMs;
     }
 }
 

@@ -83,6 +83,16 @@ public class AlertTemplateResponseItf {
             example = "INFO", requiredMode = Schema.RequiredMode.REQUIRED)
     protected AlertCriticality criticality;
 
+    @Schema(description = "Number of alert repeat before retry message sent",
+            example = "5", requiredMode = Schema.RequiredMode.REQUIRED)
+    protected int retryTimes;
+
+    // Duration for the retry period in Ms, after this duration a reminder will be sent on a different medium (mode FIRE_TO_END) (0 disable)
+    @Schema(description = "Alert duration until a retry message is sent",
+            example = "600000", requiredMode = Schema.RequiredMode.REQUIRED)
+    protected long retryMs;
+
+
     // ==========================
     // Builder
 
@@ -103,6 +113,8 @@ public class AlertTemplateResponseItf {
         this.preferred = t.getPreferred();
         this.durationMs = t.getDurationMs();
         this.criticality = t.getCriticality();
+        this.retryTimes = t.getRetryTimes();
+        this.retryMs = t.getRetryMs();
     }
 
     // ==========================
@@ -147,6 +159,22 @@ public class AlertTemplateResponseItf {
 
     public void setCriticality(AlertCriticality criticality) {
         this.criticality = criticality;
+    }
+
+    public int getRetryTimes() {
+        return retryTimes;
+    }
+
+    public void setRetryTimes(int retryTimes) {
+        this.retryTimes = retryTimes;
+    }
+
+    public long getRetryMs() {
+        return retryMs;
+    }
+
+    public void setRetryMs(long retryMs) {
+        this.retryMs = retryMs;
     }
 }
 

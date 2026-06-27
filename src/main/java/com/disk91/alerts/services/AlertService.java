@@ -343,6 +343,7 @@ public class AlertService {
             log.error("[alerts] Template {} not found for alert {}, moving to ENDED",
                     alert.getAlertTemplateId(), alert.getAlertId());
             alert.setState(AlertState.ENDED);
+            alert.setRequestMs(Now.NowUtcMs());
             alert.setError("alerts-template-not-found");
             alertRepository.save(alert);
             return;
@@ -391,6 +392,7 @@ public class AlertService {
             // - Select the user with ROLE_DEVICE_ALERTING (global or ACL) in groups where alertGroup is true
             if (alert.getTargetedGroups() == null) {
                 alert.setState(AlertState.ENDED);
+                alert.setRequestMs(Now.NowUtcMs());
                 alert.setError("alerts-target-not-found");
                 alertRepository.save(alert);
                 return;
@@ -593,7 +595,10 @@ public class AlertService {
                 alert.setFireMs(now);
                 AlertBehavior behavior = template.getBehavior();
                 switch (behavior) {
-                    case SILENT, FIRE_FORGET -> alert.setState(AlertState.ENDED);
+                    case SILENT, FIRE_FORGET -> {
+                        alert.setRequestMs(Now.NowUtcMs());
+                        alert.setState(AlertState.ENDED);
+                    }
                     case FIRE_TO_END, FIRE_UNTIL -> {
                         alert.setState(AlertState.RUNNING);
                         if (template.getDurationMs() > 0) {
@@ -602,6 +607,7 @@ public class AlertService {
                     }
                     default -> {
                         log.warn("[alerts] Unknown behavior {} for alert {}, moving to ENDED", behavior, alert.getAlertId());
+                        alert.setRequestMs(Now.NowUtcMs());
                         alert.setState(AlertState.ENDED);
                     }
                 }
@@ -776,6 +782,16 @@ public class AlertService {
             if (!active.isEmpty()) {
                 log.debug("[alerts] Alert {} already active (state={}), duplicate ignored",
                         alertId, active.getFirst().getState());
+                for ( Alert alert : active) {
+                    if (alert.getState() == AlertState.RUNNING) {
+                        alert.fire();
+                        if ( alert.getFires() >= template.getRetryTimes() ) {
+                            // @TODO - process the message retry on the second medium
+                            alert.setFires(0);
+                        }
+                        alertRepository.save(alert);
+                    }
+                }
                 return null;
             }
         }
@@ -783,6 +799,9 @@ public class AlertService {
         String publicAccessId = RandomString.getRandomString(24);
         // Persist first as PENDING to obtain the MongoDB id, then transition to PENDING_QUEUE
         Alert alert = Alert.newAlert(alertId, alertDefRef, alertTemplateId, deviceId, targetedGroups, parameters, requestMs, publicAccessId);
+        if ( template.getBehavior() == AlertBehavior.FIRE_TO_END) {
+            alert.setRetryMs(requestMs+template.getRetryMs());
+        }
         alert = alertRepository.save(alert);
         log.debug("[alerts] Alert {} created (template={}, groups={})", alertId, alertTemplateId, targetedGroups);
         auditIntegration.auditLog(
@@ -799,15 +818,60 @@ public class AlertService {
 
     /**
      * Signal the end of a RUNNING alert: transition to ENDING and enqueue for close-notification delivery.
+     * If multiple non-ENDED instances exist for the same alertId (abnormal situation), the older ones
+     * are force-closed to ENDED and only the most recent is processed normally.
      * @param alertId - stable business identifier of the RUNNING alert to end
      * @throws ITNotFoundException when no RUNNING alert is found for this alertId
      */
     public void endAlert(String alertId) throws ITNotFoundException {
-        Alert alert = alertRepository.findOneAlertByAlertId(alertId);
-        if (alert == null || alert.getState() != AlertState.RUNNING) {
+        List<Alert> activeAlerts = alertRepository.findNonEndedAlertsByAlertId(alertId, AlertState.ENDED);
+        if (activeAlerts.isEmpty()) {
+            log.warn("[alerts] endAlert called on non-existing alert {}", alertId);
+            throw new ITNotFoundException("alerts-not-running");
+        }
+
+        // Sort by requestMs descending — most recent first
+        activeAlerts.sort((a, b) -> Long.compare(b.getRequestMs(), a.getRequestMs()));
+
+        // Force-end stale duplicates (should not happen; logged as a warning)
+        if (activeAlerts.size() > 1) {
+            log.warn("[alerts] Found {} non-ENDED instances for alertId {}; force-ending {} stale instance(s)",
+                    activeAlerts.size(), alertId, activeAlerts.size() - 1);
+            long nowMs = Now.NowUtcMs();
+            for (int i = 1; i < activeAlerts.size(); i++) {
+                Alert stale = activeAlerts.get(i);
+                stale.setState(AlertState.ENDED);
+                stale.setExpirationMs(nowMs);
+                alertRepository.save(stale);
+            }
+        }
+
+        Alert alert = activeAlerts.getFirst();
+        if (alert.getState() != AlertState.RUNNING) {
             log.warn("[alerts] endAlert called on non-RUNNING alert {}", alertId);
             throw new ITNotFoundException("alerts-not-running");
         }
+
+        AlertTemplate template = null;
+        try {
+            template = alertTemplateCache.getTemplateByShortId(alert.getAlertTemplateId());
+            if (template.getBehavior() != AlertBehavior.FIRE_TO_END) {
+                // we can manually cancel but it's not the objective
+                alert.setState(AlertState.ENDED);
+                alert.setRequestMs(Now.NowUtcMs());
+                alertRepository.save(alert);
+                return;
+            }
+        } catch (ITNotFoundException e) {
+            log.error("[alerts] Template {} not found for alert {}, moving to ENDED 1",
+                    alert.getAlertTemplateId(), alert.getAlertId());
+            alert.setState(AlertState.ENDED);
+            alert.setRequestMs(Now.NowUtcMs());
+            alert.setError("alerts-template-not-found");
+            alertRepository.save(alert);
+            return;
+        }
+
         alert.setState(AlertState.ENDING);
         alertRepository.save(alert);
         log.debug("[alerts] Alert {} moved to ENDING_QUEUE and enqueued", alertId);
@@ -896,8 +960,18 @@ public class AlertService {
         for (Alert alert : expired) {
             log.info("[alerts] Alert {} expired, moving to ENDED", alert.getAlertId());
             alert.setState(AlertState.ENDED);
+            alert.setRequestMs(Now.NowUtcMs());
             alertRepository.save(alert);
         }
+
+        List<Alert> retries = alertRepository.findRetryRunningAlerts(AlertState.RUNNING, now);
+        for (Alert alert : retries) {
+            log.info("[alerts] Alert {} in retry, (to be implemented)", alert.getAlertId());
+            alert.setRetryMs(0); // do not process any more retry
+            alertRepository.save(alert);
+            // @TODO - process the retrial on a second medium if any or previous
+        }
+
     }
 
     /**

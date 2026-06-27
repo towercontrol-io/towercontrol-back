@@ -66,6 +66,17 @@ public interface AlertRepository extends MongoRepository<Alert, String> {
     List<Alert> findExpiredRunningAlerts(AlertState state, long nowMs);
 
     /**
+     * Find RUNNING alerts whose retry time has passed and whose expiration is set (> 0).
+     * Used by the async processor to auto-close expired alerts.
+     * @param state         - expected to be AlertState.RUNNING
+     * @param nowMs         - current time in milliseconds; alerts with expirationMs <= nowMs are returned
+     * @return list of expired RUNNING alerts
+     */
+    @Query("{ 'state': ?0, 'retryMs': { $gt: 0, $lte: ?1 } }")
+    List<Alert> findRetryRunningAlerts(AlertState state, long nowMs);
+
+
+    /**
      * Find RUNNING or PENDING alert instances for a given alertId.
      * Used to detect duplicate active alerts before creating a new one.
      * @param alertId - stable business identifier
@@ -74,6 +85,16 @@ public interface AlertRepository extends MongoRepository<Alert, String> {
      */
     @Query("{ 'alertId': ?0, 'state': { $in: ?1 } }")
     List<Alert> findActiveAlertsByAlertId(String alertId, List<AlertState> states);
+
+    /**
+     * Find all alert instances for a given alertId whose state is not the excluded one.
+     * Used to detect and clean up stale duplicates before processing an end event.
+     * @param alertId      - stable business identifier
+     * @param excludedState - state to exclude (typically AlertState.ENDED)
+     * @return list of matching Alert instances
+     */
+    @Query("{ 'alertId': ?0, 'state': { $ne: ?1 } }")
+    List<Alert> findNonEndedAlertsByAlertId(String alertId, AlertState excludedState);
 
     /**
      * Delete all alerts in ENDED state whose requestMs is before the given cutoff.

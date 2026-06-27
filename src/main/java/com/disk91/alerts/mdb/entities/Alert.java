@@ -22,6 +22,7 @@ package com.disk91.alerts.mdb.entities;
 import com.disk91.alerts.mdb.entities.sub.AlertMedium;
 import com.disk91.alerts.mdb.entities.sub.AlertSentEntry;
 import com.disk91.alerts.mdb.entities.sub.AlertState;
+import com.disk91.common.tools.Now;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
@@ -89,6 +90,11 @@ public class Alert {
     // possible error string if the error has not been proceeded.
     protected String error;
 
+    // Number of times the alert was re-triggered during the running period. This can be used to trigger specific actions, as a backup contact method.
+    protected int fires;
+
+    protected long retryMs;
+
     // ========================================
 
     /**
@@ -126,7 +132,13 @@ public class Alert {
         a.setTargetedGroups(groupIds != null ? groupIds : new ArrayList<>());
         a.setPublicAccessId(publicAccessId);
         a.setError("");
+        a.setFires(0);
+        a.setRequestMs(0);
         return a;
+    }
+
+    public void fire() {
+        this.fires++;
     }
 
     // ========================================
@@ -207,5 +219,21 @@ public class Alert {
 
     public void setDeviceId(String deviceId) {
         this.deviceId = deviceId;
+    }
+
+    public int getFires() {
+        return fires;
+    }
+
+    public void setFires(int fires) {
+        this.fires = fires;
+    }
+
+    public long getRetryMs() {
+        return retryMs;
+    }
+
+    public void setRetryMs(long retryMs) {
+        this.retryMs = retryMs;
     }
 }
